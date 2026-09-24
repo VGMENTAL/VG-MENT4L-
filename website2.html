@@ -68,6 +68,9 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
 .researchBox .help{line-height:1.5}
 
 .issuePanel{margin-top:16px;padding:16px;border:1px solid rgba(108,236,255,.28);border-radius:16px;background:linear-gradient(135deg,rgba(10,30,50,.62),rgba(55,10,75,.5));box-shadow:0 0 22px rgba(80,60,255,.12)}.issueGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.issuePanel textarea{width:100%;min-height:86px;border:1px solid rgba(184,94,255,.38);background:rgba(2,1,8,.82);color:white;border-radius:13px;padding:13px 14px;outline:none;font-size:14px;resize:vertical}.issueResult{margin-top:12px;padding:12px;border-radius:12px;background:rgba(2,1,8,.55);border:1px solid rgba(108,236,255,.2);line-height:1.55}.issueValues{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}.issueValue{padding:8px;border-radius:9px;background:rgba(0,0,0,.28);text-align:center}.issueValue b{display:block;font-size:18px}.issueValue span{font-size:9px;opacity:.8}@media(max-width:700px){.issueGrid{grid-template-columns:1fr}.issueValues{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.update-progress{display:none;margin:16px 0 6px;padding:16px 18px;border:1px solid rgba(108,236,255,.35);border-radius:18px;background:rgba(4,8,20,.78);box-shadow:0 0 28px rgba(185,60,255,.12)}
+.update-progress.show{display:block}.update-progress .up-top{display:flex;justify-content:space-between;gap:12px;align-items:center;font-weight:800}.update-progress .up-pct{font-size:22px;color:#6cecff}.update-progress .up-track{height:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0}.update-progress .up-bar{height:100%;width:0;background:linear-gradient(90deg,#6cecff,#b93cff,#ff36e7);transition:width .35s ease}.update-progress .up-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:11px;color:#c9b8d9;text-align:center}.update-progress .up-done{color:#72ffbd;font-weight:800}.update-progress .up-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.25);border-top-color:#6cecff;border-radius:50%;animation:vgspin .8s linear infinite;margin-right:7px;vertical-align:-1px}@keyframes vgspin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -91,7 +94,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
 
   <div id="codePanel">
     <h2>Update saved VG MENT4L profile</h2>
-    <p class="help">Website 1 se mila Profile ID yahan dalo. Agar profile isi browser mein saved hai to details automatically load hongi. Cross-device/public code retrieval ke liye later a real backend/database connection is required.</p>
+    <p class="help">Website 1 se mila Profile ID yahan dalo. Backend available hone par profile kisi bhi device/browser se load hogi. Browser-local copy sirf fallback hai.</p>
     <div class="grid">
       <div class="field">
         <label>VG MENT4L Profile ID</label>
@@ -104,7 +107,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
       </div>
     </div>
     <button class="primary" id="loadCode">LOAD PROFILE + PREVIEW UPDATE</button>
-    <div id="profileStatus" class="notice">Code enter karke load karo.</div>
+    <div id="profileStatus" class="notice">Code enter karke load karo.</div><div id="backendStatus" class="notice">Backend status checking…</div>
   </div>
 
   <div id="manualPanel" class="hidden">
@@ -132,19 +135,19 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     <div class="grid">
       <div class="field">
         <label>Current / Target OB</label>
-        <input id="manualTargetOb" placeholder="OB55" value="OB55">
+        <input id="manualTargetOb" placeholder="OB55" value="OB55" readonly aria-readonly="true">
       </div>
       <div class="field">
         <label>Latest supported OB</label>
         <input value="OB55" readonly>
       </div>
     </div>
-    <div class="notice warn"><b>Current live OB in this build: OB55.</b> Old sensitivity can be updated from <b>any historical OB up to OB55</b> — for example OB49, OB50, OB51, OB52, OB53, or OB54. OB56+ is blocked until its official release is analysed and added.</div>
+    <div class="notice warn"><b>Current live OB in this build: OB55.</b> Old sensitivity can be updated from <b>any historical OB up to OB55</b> — for example OB49, OB50, OB51, OB52, OB53, or OB54. Future OBs are blocked until their official Garena release is verified and analysed.</div>
     <div class="researchBox">
       <div class="researchTitle">🌐 ONLINE PATCH RESEARCH</div>
       <div id="researchStatus" class="help">Update button ke saath official Garena patch notes research automatically try hogi. Internet unavailable hone par built-in verified knowledge fallback use hoga.</div>
     </div>
-    <button class="primary" id="manualUpdate">ANALYSE OB + UPDATE SENSITIVITY</button>
+    <button class="primary" id="manualUpdate">ANALYSE OB + UPDATE SENSITIVITY</button><div class="update-progress" id="manualUpdateProgress" aria-live="polite"><div class="up-top"><span id="manualProgressStage"><span class="up-spin"></span>Preparing update…</span><span class="up-pct" id="manualProgressPct">0%</span></div><div class="up-track"><div class="up-bar" id="manualProgressBar"></div></div><div class="up-steps"><span>Validate</span><span>Research</span><span>Analyse</span><span>Recalibrate</span><span>Save</span></div></div>
     <div class="issuePanel" id="manualIssuePanel">
       <h3>🛠️ SENSITIVITY PROBLEM FIXER</h3>
       <div class="help">Agar sensitivity pehle sahi chal rahi thi aur ab aim head/chest/neck pe lock, drag slow, overshoot, recoil shaky ya koi custom problem de rahi hai, yahan problem batao. Manual values ko baseline bana kar targeted correction milega.</div>
@@ -164,14 +167,14 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     </div>
     <div class="field">
       <label>Target / Current OB</label>
-      <input id="targetOb" maxlength="12" placeholder="OB56">
+      <input id="targetOb" maxlength="12" value="OB55" readonly aria-readonly="true">
     </div>
   </div>
   <div class="researchBox">
     <div class="researchTitle">🌐 ONLINE PATCH RESEARCH</div>
     <div id="researchStatusProfile" class="help">Official patch information is researched before the update calculation when internet access is available.</div>
   </div>
-  <button class="primary" id="updateProfile">ANALYSE OLD OB → TARGET OB + GENERATE NEW SENSITIVITY</button>
+  <button class="primary" id="updateProfile">ANALYSE OLD OB → TARGET OB + GENERATE NEW SENSITIVITY</button><div class="update-progress" id="profileUpdateProgress" aria-live="polite"><div class="up-top"><span id="profileProgressStage"><span class="up-spin"></span>Preparing update…</span><span class="up-pct" id="profileProgressPct">0%</span></div><div class="up-track"><div class="up-bar" id="profileProgressBar"></div></div><div class="up-steps"><span>Validate</span><span>Research</span><span>Analyse</span><span>Recalibrate</span><span>Save</span></div></div>
   <div class="issuePanel" id="profileIssuePanel">
     <h3>🛠️ PROFILE SENSITIVITY PROBLEM FIXER</h3>
     <div class="help">Code se loaded device, style, mode, fingers, HUD, guns aur saved sensitivity ko baseline bana kar problem-specific recalibration karo. Agar OB same hai to sirf aim problem fix hogi; old profile overwrite nahi hogi.</div>
@@ -206,7 +209,9 @@ const normalizeOb=x=>String(x||'').trim().toUpperCase().replace(/\s+/g,'');
 const obNum=x=>{const m=normalizeOb(x).match(/^OB(\d+)$/);return m?Number(m[1]):null};
 
 let currentProfile=null;
-const MAX_SUPPORTED_OB=55;
+let MAX_SUPPORTED_OB=55;
+let LATEST_OB='OB55';
+let BACKEND_AVAILABLE=false;
 
 const OB_KNOWLEDGE={
   "OB55":{
@@ -269,18 +274,11 @@ function patchResearchSignals(text, ob){
 async function fetchOfficialPatchText(ob){
   const url=OFFICIAL_OB_URLS[ob];
   if(!url) return null;
-  // r.jina.ai is used only as a browser-readable relay; the source itself remains Garena.
-  const relay='https://r.jina.ai/'+url;
-  const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),8000);
   try{
-    const res=await fetch(relay,{signal:ctl.signal,headers:{'Accept':'text/plain'}});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const txt=await res.text();
-    return {text:txt.slice(0,180000),url};
-  }catch(e){
-    return null;
-  }finally{clearTimeout(timer);}
+    const r=await fetch('/api/patch-research?ob='+encodeURIComponent(ob),{cache:'no-store'});
+    if(r.ok){const j=await r.json(); if(j.text) return {text:j.text,url:j.url||url,serverResearch:true};}
+  }catch(e){}
+  return null;
 }
 
 async function researchOfficial(oldOb,targetOb,mode){
@@ -302,7 +300,7 @@ async function researchOfficial(oldOb,targetOb,mode){
   }
 
   // Aggregate signals across every researched OB between the player's old and target version.
-  const agg={general:0,red:0,x2:0,x4:0,sniper:0,freeLook:0,hasResearch:false,versions:[],notes:[]};
+  const agg={general:0,red:0,x2:0,x4:0,sniper:0,freeLook:0,hasResearch:false,serverResearch:false,versions:[],notes:[]};
   for(const item of results){
     const sig=patchResearchSignals(item.text,item.ob);
     agg.general+=sig.general; agg.red+=sig.red; agg.x2+=sig.x2;
@@ -326,6 +324,25 @@ async function researchOfficial(oldOb,targetOb,mode){
   if(el) el.textContent=status;
   return results;
 }
+async function loadServerConfig(){
+  try{
+    const r=await fetch('/api/config',{cache:'no-store'});
+    if(!r.ok) throw new Error('config');
+    const j=await r.json();
+    const n=Number(j.latestObNumber);
+    if(Number.isFinite(n)&&n>=1){MAX_SUPPORTED_OB=n;LATEST_OB='OB'+n;BACKEND_AVAILABLE=!!j.backend;}
+    const t=$('#targetOb'), m=$('#manualTargetOb');
+    if(t) { t.value=LATEST_OB; t.maxLength=12; t.readOnly=true; }
+    if(m) { m.value=LATEST_OB; m.maxLength=12; m.readOnly=true; }
+    const badge=$('#backendStatus');
+    if(badge){badge.className='notice ok';badge.textContent='✓ Backend connected • Latest verified official OB: '+LATEST_OB;}
+  }catch(e){
+    BACKEND_AVAILABLE=false;
+    const badge=$('#backendStatus');
+    if(badge){badge.className='notice warn';badge.textContent='⚠ Backend unavailable • using local fallback • Latest bundled verified OB: '+LATEST_OB;}
+  }
+}
+
 function showObFacts(oldOb,targetOb){
   const t=OB_KNOWLEDGE[normalizeOb(targetOb)];
   const o=OB_KNOWLEDGE[normalizeOb(oldOb)];
@@ -342,8 +359,12 @@ function showObFacts(oldOb,targetOb){
 
 async function loadProfileRemoteOrLocal(code){
   code=String(code||'').trim().toUpperCase();
-  try{const r=await fetch('/api/profiles/'+encodeURIComponent(code),{cache:'no-store'}); if(r.ok){const j=await r.json(); if(j.profile){localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(j.profile)); return j.profile;}}}catch(e){}
-  const raw=localStorage.getItem('vg_ment4l_profile_'+code); if(raw){try{return JSON.parse(raw)}catch(e){}}
+  try{
+    const r=await fetch('/api/profiles/'+encodeURIComponent(code),{cache:'no-store'});
+    if(r.ok){const j=await r.json(); if(j.profile){BACKEND_AVAILABLE=true; localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(j.profile)); return {...j.profile,__source:'backend'};}}
+  }catch(e){BACKEND_AVAILABLE=false;}
+  const raw=localStorage.getItem('vg_ment4l_profile_'+code);
+  if(raw){try{return {...JSON.parse(raw),__source:'local-fallback'}}catch(e){}}
   return null;
 }
 function loadLocalProfile(code){const raw=localStorage.getItem('vg_ment4l_profile_'+String(code||'').trim().toUpperCase()); if(raw){try{return JSON.parse(raw)}catch(e){}} return null;}
@@ -519,6 +540,26 @@ function bindIssueFixers(){
     renderIssueResult($('#manualIssueResult'),base,fixed,issue,'Manual sensitivity recalibration complete');
   };
 }
+async function persistUpdatedProfile(profile,newVals,oldOb,target){
+  const history=Array.isArray(profile.sensitivityHistory)?profile.sensitivityHistory.slice():[];
+  history.unshift({time:new Date().toISOString(),from:oldOb,to:target,sensitivity:newVals});
+  const next={...profile,sensitivity:newVals,obVersion:target,sensitivityHistory:history.slice(0,25),lastUpdate:{time:new Date().toISOString(),from:oldOb,to:target},updatedAt:new Date().toISOString()};
+  delete next.__source;
+  localStorage.setItem('vg_ment4l_profile_'+(next.code||''),JSON.stringify(next));
+  try{const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(next)}); if(r.ok) BACKEND_AVAILABLE=true;}catch(e){BACKEND_AVAILABLE=false;}
+  currentProfile=next;
+  return next;
+}
+
+let updateBusy=false;
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+async function showUpdateProgress(kind,stage,pct,done=false){
+  const box=$('#'+kind+'UpdateProgress'), bar=$('#'+kind+'ProgressBar'), pctEl=$('#'+kind+'ProgressPct'), stageEl=$('#'+kind+'ProgressStage');
+  if(!box||!bar||!pctEl||!stageEl)return;
+  box.classList.add('show'); bar.style.width=pct+'%'; pctEl.textContent=pct+'%';
+  stageEl.innerHTML=done?'<span class="up-done">✓ '+esc(stage)+'</span>':'<span class="up-spin"></span>'+esc(stage);
+}
+
 async function runProfileUpdate(){
   if(!currentProfile)return;
   const oldOb=normalizeOb($('#loadedOldOb').value||currentProfile.oldOb||'OB55');
@@ -526,10 +567,14 @@ async function runProfileUpdate(){
   const targetNum=obNum(target);
   const unknown=/^(UNKNOWN|NA|N\/A|DONTKNOW|IDONTKNOW)$/.test(oldOb);
   if(targetNum==null || targetNum>MAX_SUPPORTED_OB){
-    alert(`Is build mein latest supported OB ${'OB'+MAX_SUPPORTED_OB} hai. OB56+ tabhi milega jab official patch analyse karke website update ki jayegi.`); return;
+    alert(`Is build mein latest verified official OB ${LATEST_OB} hai. Future OBs tabhi unlock honge jab Garena ka official patch release aur analysis complete ho.`); return;
   }
+  if(updateBusy)return; updateBusy=true; $('#updateProfile').disabled=true;
+  await showUpdateProgress('profile','Validating profile + OB inputs…',8); await sleep(180);
+  await showUpdateProgress('profile','Loading official patch research…',24);
   const oldVals=baseSensitivity(currentProfile);
   await researchOfficial(oldOb,target,'profile');
+  await showUpdateProgress('profile','Analysing OB gameplay signals + saved profile…',48); await sleep(180);
   let newVals, analysis, shownOld=oldOb;
   if(unknown){
     if(target!=='OB55'){alert('Old OB unknown mode abhi sirf current supported OB55 ke liye hai.');return;}
@@ -538,17 +583,23 @@ async function runProfileUpdate(){
     analysis='Old OB yaad nahi tha, isliye saved profile values ko baseline rakha gaya aur OB55 ke current calibration ko small, controlled adjustment ke saath apply kiya gaya. Ye historical patch-by-patch reconstruction nahi hai.';
   }else{
     const oldNum=obNum(oldOb);
-    if(oldNum==null || oldNum>MAX_SUPPORTED_OB){alert(`Old OB OB1 se OB${MAX_SUPPORTED_OB} ke beech hona chahiye, ya UNKNOWN likho.`);return;}
-    if(oldNum===targetNum){alert('Old OB aur Target OB same hain.');return;}
+    if(oldNum==null || oldNum>MAX_SUPPORTED_OB){alert(`Old OB OB1 se OB${MAX_SUPPORTED_OB} ke beech hona chahiye, ya UNKNOWN likho.`); updateBusy=false; $('#updateProfile').disabled=false; $('#profileUpdateProgress')?.classList.remove('show'); return;}
+    if(oldNum===targetNum){window.__OB_RESEARCH__={hasResearch:false}; renderResult(oldOb,target,oldVals,oldVals,`<span class="pill">No version change</span><span class="pill">${esc(oldOb)}</span>`,`Old OB aur target OB same hain. No OB delta was applied; use the Problem Fixer below if you want aim-specific recalibration.`); await showUpdateProgress('profile','No OB delta — recalibration complete 100%',100,true); updateBusy=false; $('#updateProfile').disabled=false; setTimeout(()=>$('#profileUpdateProgress')?.classList.remove('show'),1200); return;}
     newVals=updateByOb(oldOb,target,oldVals,currentProfile);
     analysis=target==='OB55'
       ? `Baseline ${oldOb} se OB55 tak version-aware recalculation ki gayi. Online research available hone par official Garena patch text ke gameplay signals bhi calculation mein include kiye gaye. OB55 ke official notes weapon/recoil-system aur movement/range/accuracy changes document karte hain; old values ko overwrite nahi kiya gaya.`
       : `Baseline ${oldOb} ko preserve karke ${target} ke liye bounded version-delta estimate nikala gaya. Historical OB ke exact gameplay effects tabhi claim kiye ja sakte hain jab unke official patch notes knowledge layer mein available hon.`;
   }
   showObFacts(unknown?'':oldOb,target);
+  await showUpdateProgress('profile','Recalibrating six sensitivity values…',72); await sleep(180);
+  await persistUpdatedProfile(currentProfile,newVals,shownOld,target);
+  await showUpdateProgress('profile','Saving Profile ID + update history…',92); await sleep(180);
   saveUpdateHistory('profile',shownOld,target,oldVals,newVals,currentProfile.code||'');
-  const meta=`<span class="pill">Code: ${esc(currentProfile.code||'—')}</span><span class="pill">Device: ${esc(currentProfile.device||'Unknown')}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?'🌐 Web researched':'📚 Fallback knowledge'}</span>`;
+  const meta=`<span class="pill">Code: ${esc(currentProfile.code||'—')}</span><span class="pill">Device: ${esc(currentProfile.device||'Unknown')}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
   renderResult(shownOld,target,oldVals,newVals,meta,analysis);
+  await showUpdateProgress('profile','Update generation complete — 100%',100,true);
+  updateBusy=false; $('#updateProfile').disabled=false;
+  setTimeout(()=>$('#profileUpdateProgress')?.classList.remove('show'),1200);
 }
 
 async function runManualUpdate(){
@@ -556,13 +607,17 @@ async function runManualUpdate(){
   const targetNum=obNum(target);
   const unknown=/^(UNKNOWN|NA|N\/A|DONTKNOW|IDONTKNOW)$/.test(oldOb);
   if(targetNum==null){alert('Target OB format sahi dalo, example: OB55.');return;}
-  if(targetNum>MAX_SUPPORTED_OB){alert(`Is build mein latest supported OB ${'OB'+MAX_SUPPORTED_OB} hai. OB56+ official release ke baad hi unlock hoga.`);return;}
-  if(!unknown && (obNum(oldOb)==null || obNum(oldOb)>MAX_SUPPORTED_OB)){alert(`Old OB OB1 se OB${MAX_SUPPORTED_OB} ke beech hona chahiye, ya UNKNOWN likho.`);return;}
-  if(!unknown && obNum(oldOb)===targetNum){alert('Old OB aur Target OB same hain.');return;}
-  if(unknown && target!=='OB55'){alert('UNKNOWN old OB mode abhi current supported OB55 ke liye use karo.');return;}
+  if(targetNum>MAX_SUPPORTED_OB){alert(`Is build mein latest verified official OB ${LATEST_OB} hai. Future OBs official release aur analysis ke baad hi unlock honge.`);return;}
+  if(updateBusy)return; updateBusy=true; $('#manualUpdate').disabled=true;
+  await showUpdateProgress('manual','Validating imported sensitivity + OB…',8); await sleep(180);
+  await showUpdateProgress('manual','Loading official patch research…',24);
+  if(!unknown && (obNum(oldOb)==null || obNum(oldOb)>MAX_SUPPORTED_OB)){alert(`Old OB OB1 se OB${MAX_SUPPORTED_OB} ke beech hona chahiye, ya UNKNOWN likho.`); updateBusy=false; $('#manualUpdate').disabled=false; $('#manualUpdateProgress')?.classList.remove('show'); return;}
+  if(!unknown && obNum(oldOb)===targetNum){const same={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)}; renderResult(oldOb,target,same,same,`<span class="pill">No version change</span><span class="pill">Manual import</span>`,`Old OB aur target OB same hain. No OB delta was applied; use the Manual Problem Fixer for aim-specific recalibration.`); await showUpdateProgress('manual','No OB delta — recalibration complete 100%',100,true); updateBusy=false; $('#manualUpdate').disabled=false; setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200); return;}
+  if(unknown && target!=='OB55'){alert('UNKNOWN old OB mode abhi current supported OB55 ke liye use karo.'); updateBusy=false; $('#manualUpdate').disabled=false; $('#manualUpdateProgress')?.classList.remove('show'); return;}
   const oldVals={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
   const p={preset:$('#manualPreset').value};
   await researchOfficial(oldOb,target,'manual');
+  await showUpdateProgress('manual','Analysing patch signals + imported values…',48); await sleep(180);
   let newVals,shownOld,analysis;
   if(unknown){
     newVals=returningPlayerUpdate(oldVals,p);
@@ -576,9 +631,14 @@ async function runManualUpdate(){
       : `Imported ${oldOb} values ko baseline rakha gaya aur ${target} ke liye bounded version-delta estimate apply kiya gaya.`;
   }
   showObFacts(unknown?'':oldOb,target);
+  await showUpdateProgress('manual','Recalibrating six sensitivity values…',72); await sleep(180);
   saveUpdateHistory('manual',shownOld,target,oldVals,newVals,'');
-  const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?'🌐 Web researched':'📚 Fallback knowledge'}</span>`;
+  await showUpdateProgress('manual','Saving update history…',92); await sleep(180);
+  const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
   renderResult(shownOld,target,oldVals,newVals,meta,analysis);
+  await showUpdateProgress('manual','Update generation complete — 100%',100,true);
+  updateBusy=false; $('#manualUpdate').disabled=false;
+  setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200);
 }
 
 $('#tabCode').onclick=()=>{ $('#tabCode').classList.add('active');$('#tabManual').classList.remove('active');$('#codePanel').classList.remove('hidden');$('#manualPanel').classList.add('hidden') };
@@ -592,13 +652,13 @@ $('#loadCode').onclick=async()=>{
   const p=await loadProfileRemoteOrLocal(code);
   if(!p){
     $('#profileStatus').className='notice warn';
-    $('#profileStatus').innerHTML=`Profile <b>${esc(code)}</b> is not stored in this browser. This standalone build cannot access a remote database. Use Manual Sensitivity Import, or connect both sites to a real backend/database for universal code lookup.`;
+    $('#profileStatus').innerHTML=`Profile <b>${esc(code)}</b> was not found on the backend or in this browser. Check the ID or create a new profile in Website 1.`;
     return;
   }
   currentProfile=p;
   if(!currentProfile.sensitivity) currentProfile.sensitivity=baseSensitivity(currentProfile);
   $('#profileStatus').className='notice ok';
-  $('#profileStatus').textContent=`Profile ${code} loaded.`;
+  $('#profileStatus').textContent=`Profile ${code} loaded • ${p.__source==='backend'?'backend':'local fallback'}.`;
   $('#profilePanel').classList.remove('hidden');
   $('#profileTitle').textContent=`Profile ${code}`;
   $('#profileChips').innerHTML=chips(p);
@@ -611,6 +671,7 @@ $('#loadCode').onclick=async()=>{
 $('#updateProfile').onclick=runProfileUpdate;
 $('#manualUpdate').onclick=runManualUpdate;
 bindIssueFixers();
+loadServerConfig();
 </script>
 </body>
 </html>
