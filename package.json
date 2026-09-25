@@ -1,8 +1,8 @@
 {
   "name":"vg-mental-public",
-  "version":"1.0.0",
+  "version":"3.1.0",
   "private":true,
-  "description":"VG MENT4L public Free Fire MAX sensitivity tools with cross-device Profile ID storage",
+  "description":"VG MENT4L Free Fire MAX sensitivity tools with mobile-safe frontend, Profile ID backend, verified patch research and HUD analysis.",
   "scripts":{"start":"node server.js"},
   "engines":{"node":">=18"}
 }
