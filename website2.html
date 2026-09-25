@@ -15,7 +15,7 @@
 body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#07030d;min-height:100vh}
 body:before{content:"";position:fixed;inset:0;background:
 linear-gradient(180deg,rgba(4,1,10,.54),rgba(7,2,15,.91)),
-url('/bg2.webp') center/cover fixed no-repeat;z-index:-2}
+url('/bg2.png') center/cover fixed no-repeat;z-index:-2}
 body:after{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 10%,rgba(184,43,255,.18),transparent 35%),radial-gradient(circle at 10% 80%,rgba(111,22,255,.12),transparent 35%);z-index:-1;pointer-events:none}
 .wrap{width:min(1050px,94%);margin:auto;padding:26px 0 70px}
 header{text-align:center;padding:18px 10px 22px}
@@ -135,7 +135,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     <div class="grid">
       <div class="field">
         <label>Current / Target OB</label>
-        <input id="manualTargetOb" placeholder="OB55" value="OB55" readonly aria-readonly="true">
+        <select id="manualTargetOb" aria-label="Target OB"></select>
       </div>
       <div class="field">
         <label>Latest supported OB</label>
@@ -150,9 +150,9 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     <button class="primary" id="manualUpdate">ANALYSE OB + UPDATE SENSITIVITY</button><div class="update-progress" id="manualUpdateProgress" aria-live="polite"><div class="up-top"><span id="manualProgressStage"><span class="up-spin"></span>Preparing update…</span><span class="up-pct" id="manualProgressPct">0%</span></div><div class="up-track"><div class="up-bar" id="manualProgressBar"></div></div><div class="up-steps"><span>Validate</span><span>Research</span><span>Analyse</span><span>Recalibrate</span><span>Save</span></div></div>
     <div class="issuePanel" id="manualIssuePanel">
       <h3>🛠️ SENSITIVITY PROBLEM FIXER</h3>
-      <div class="help">Agar sensitivity pehle sahi chal rahi thi aur ab aim head/chest/neck pe lock, drag slow, overshoot, recoil shaky ya koi custom problem de rahi hai, yahan problem batao. Manual values ko baseline bana kar targeted correction milega.</div>
+      <div class="help">Yahan isi imported sensitivity ko baseline rakho. Source OB aur Target OB upar select karo — dono same bhi ho sakte hain. Problem preset select karo ya apni problem khud likho. Code ki zarurat nahi.</div>
       <div class="issueGrid"><div class="field"><label>Problem select karo</label><select id="manualIssuePreset"><option>Aim head se upar ja raha hai</option><option>Aim chest pe lock ho raha hai</option><option>Aim neck pe lock ho raha hai</option><option>Drag slow lag raha hai</option><option>Drag bahut fast / overshoot</option><option>Recoil / spray shaky</option><option>Close-range tracking slow</option><option>Long-range aim unstable</option><option>Aim target pe stick nahi kar raha</option><option value="CUSTOM">CUSTOM / KHUD LIKHO</option></select></div><div class="field"><label>Apni problem likho</label><textarea id="manualIssueText" placeholder="Example: M1887 mein drag neck se upar chala jaata hai aur MP40 spray chest pe rukta hai..."></textarea></div></div>
-      <button class="secondary" id="manualIssueFix">ANALYSE PROBLEM + FIX SENSITIVITY</button><div id="manualIssueResult" class="issueResult hidden"></div>
+      <div class="actions"><button class="secondary" id="manualIssueFix">ANALYSE PROBLEM + FIX SENSITIVITY</button><button class="secondary" id="manualRestoreSensitivity" type="button">RESTORE ORIGINAL IMPORT</button></div><div id="manualIssueResult" class="issueResult hidden"></div>
     </div>
   </div>
 </section>
@@ -167,7 +167,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     </div>
     <div class="field">
       <label>Target / Current OB</label>
-      <input id="targetOb" maxlength="12" value="OB55" readonly aria-readonly="true">
+      <select id="targetOb" aria-label="Target OB"></select>
     </div>
   </div>
   <div class="researchBox">
@@ -177,7 +177,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
   <button class="primary" id="updateProfile">ANALYSE OLD OB → TARGET OB + GENERATE NEW SENSITIVITY</button><div class="update-progress" id="profileUpdateProgress" aria-live="polite"><div class="up-top"><span id="profileProgressStage"><span class="up-spin"></span>Preparing update…</span><span class="up-pct" id="profileProgressPct">0%</span></div><div class="up-track"><div class="up-bar" id="profileProgressBar"></div></div><div class="up-steps"><span>Validate</span><span>Research</span><span>Analyse</span><span>Recalibrate</span><span>Save</span></div></div>
   <div class="issuePanel" id="profileIssuePanel">
     <h3>🛠️ PROFILE SENSITIVITY PROBLEM FIXER</h3>
-    <div class="help">Code se loaded device, style, mode, fingers, HUD, guns aur saved sensitivity ko baseline bana kar problem-specific recalibration karo. Agar OB same hai to sirf aim problem fix hogi; old profile overwrite nahi hogi.</div>
+    <div class="help">Code se loaded device, style, mode, fingers, HUD, guns aur saved sensitivity baseline rahenge. Source OB aur Target OB choose karo — same OB bhi allowed hai. Problem preset ya custom text se recalibration karo; original saved sensitivity overwrite nahi hogi.</div><div class="grid3"><div class="field"><label>Source / Existing Sensitivity OB</label><input id="profileIssueOldOb" placeholder="OB55"></div><div class="field"><label>Target / Required OB</label><select id="profileIssueTargetOb" aria-label="Problem fixer target OB"></select></div><div class="field"><label>Adjustment mode</label><input value="Problem fix + OB context" readonly></div></div>
     <div class="issueGrid"><div class="field"><label>Problem select karo</label><select id="profileIssuePreset"><option>Aim head se upar ja raha hai</option><option>Aim chest pe lock ho raha hai</option><option>Aim neck pe lock ho raha hai</option><option>Drag slow lag raha hai</option><option>Drag bahut fast / overshoot</option><option>Recoil / spray shaky</option><option>Close-range tracking slow</option><option>Long-range aim unstable</option><option>Aim target pe stick nahi kar raha</option><option value="CUSTOM">CUSTOM / KHUD LIKHO</option></select></div><div class="field"><label>Apni problem likho</label><textarea id="profileIssueText" placeholder="Example: OB55 mein 4-finger HUD par M1887 drag head ke upar ja raha hai..."></textarea></div></div>
     <button class="secondary" id="profileIssueFix">ANALYSE PROFILE + FIX SENSITIVITY</button><div id="profileIssueResult" class="issueResult hidden"></div>
   </div>
@@ -324,6 +324,24 @@ async function researchOfficial(oldOb,targetOb,mode){
   if(el) el.textContent=status;
   return results;
 }
+function fillObSelect(select, selected){
+  if(!select) return;
+  const max=Math.max(1,Number(MAX_SUPPORTED_OB)||55);
+  const want=normalizeOb(selected)||LATEST_OB;
+  select.innerHTML='';
+  for(let n=1;n<=max;n++){
+    const ob='OB'+n;
+    const opt=document.createElement('option');
+    opt.value=ob; opt.textContent=ob;
+    if(ob===want) opt.selected=true;
+    select.appendChild(opt);
+  }
+}
+function setTargetOptions(){
+  fillObSelect($('#targetOb'),LATEST_OB);
+  fillObSelect($('#manualTargetOb'),LATEST_OB);
+  fillObSelect($('#profileIssueTargetOb'),LATEST_OB);
+}
 async function loadServerConfig(){
   try{
     const r=await fetch('/api/config',{cache:'no-store'});
@@ -331,18 +349,16 @@ async function loadServerConfig(){
     const j=await r.json();
     const n=Number(j.latestObNumber);
     if(Number.isFinite(n)&&n>=1){MAX_SUPPORTED_OB=n;LATEST_OB='OB'+n;BACKEND_AVAILABLE=!!j.backend;}
-    const t=$('#targetOb'), m=$('#manualTargetOb');
-    if(t) { t.value=LATEST_OB; t.maxLength=12; t.readOnly=true; }
-    if(m) { m.value=LATEST_OB; m.maxLength=12; m.readOnly=true; }
+    setTargetOptions();
     const badge=$('#backendStatus');
     if(badge){badge.className='notice ok';badge.textContent='✓ Backend connected • Latest verified official OB: '+LATEST_OB;}
   }catch(e){
     BACKEND_AVAILABLE=false;
+    setTargetOptions();
     const badge=$('#backendStatus');
     if(badge){badge.className='notice warn';badge.textContent='⚠ Backend unavailable • using local fallback • Latest bundled verified OB: '+LATEST_OB;}
   }
 }
-
 function showObFacts(oldOb,targetOb){
   const t=OB_KNOWLEDGE[normalizeOb(targetOb)];
   const o=OB_KNOWLEDGE[normalizeOb(oldOb)];
@@ -522,23 +538,74 @@ function renderIssueResult(el,base,fixed,issue,label){
   const names=[['General','general'],['Red Dot','red_dot'],['2×','scope_2x'],['4×','scope_4x'],['Sniper','sniper'],['Free Look','free_look']];
   el.classList.remove('hidden'); el.innerHTML='<b>✓ '+esc(label)+'</b><div style="margin-top:5px">Problem: '+esc(issue)+'</div><div class="issueValues">'+names.map(([n,k])=>'<div class="issueValue"><b>'+fixed[k]+'</b><span>'+n+' • '+(fixed[k]-base[k]>=0?'+':'')+(fixed[k]-base[k])+'</span></div>').join('')+'</div><div style="margin-top:10px">Original values history mein preserve hain. Naye values ko Training Room mein test karo.</div>';
 }
+function issueContext(oldOb,targetOb){
+  const a=obNum(oldOb), b=obNum(targetOb);
+  if(a==null || b==null) return {label:'OB context: '+(oldOb||'UNKNOWN')+' → '+(targetOb||LATEST_OB), factor:1};
+  const distance=Math.min(5,Math.abs(b-a));
+  return {label:'OB context: '+oldOb+' → '+targetOb, factor:1 + distance*0.08};
+}
+function applyIssueFixWithContext(base,issue,p={}){
+  const d=ISSUE_DELTAS[issue]||inferIssue(issue);
+  const ctx=issueContext(p.oldOb,p.targetOb);
+  // Problem-fix deltas are deliberately small and bounded. OB context changes the
+  // correction only slightly; it never replaces the user's baseline sensitivity.
+  const factor=Math.min(1.35,ctx.factor||1);
+  const out={
+    general:clamp(base.general+Math.round(d.general*factor)),
+    red_dot:clamp(base.red_dot+Math.round(d.red_dot*factor)),
+    scope_2x:clamp(base.scope_2x+Math.round(d.scope_2x*factor)),
+    scope_4x:clamp(base.scope_4x+Math.round(d.scope_4x*factor)),
+    sniper:clamp(base.sniper+Math.round(d.sniper*factor)),
+    free_look:clamp(base.free_look+Math.round(d.free_look*factor))
+  };
+  const style=String(p.style||p.preset||'').toLowerCase();
+  if(/one-tap|aggressive|drag/.test(style)){out.red_dot=clamp(out.red_dot+1)}
+  if(/spray|recoil/.test(style)){out.scope_2x=clamp(out.scope_2x-1);out.scope_4x=clamp(out.scope_4x-1)}
+  if(/tracking|close/.test(style)){out.general=clamp(out.general+1);out.red_dot=clamp(out.red_dot+1)}
+  if(Object.keys(out).every(k=>out[k]===base[k])) out.general=clamp(base.general+(d.general>=0?2:-2));
+  return out;
+}
+function showIssueOutput(el,base,fixed,issue,label,oldOb,targetOb){
+  const names=[['General','general'],['Red Dot','red_dot'],['2×','scope_2x'],['4×','scope_4x'],['Sniper','sniper'],['Free Look','free_look']];
+  el.classList.remove('hidden');
+  el.innerHTML='<b>✓ '+esc(label)+'</b><div style="margin-top:5px">Problem: '+esc(issue)+'</div><div style="margin-top:5px"><span class="pill">'+esc(oldOb||'UNKNOWN')+' → '+esc(targetOb||LATEST_OB)+'</span><span class="pill">Original sensitivity preserved</span></div><div class="issueValues">'+names.map(([n,k])=>'<div class="issueValue"><b>'+fixed[k]+'</b><span>'+n+' • '+(fixed[k]-base[k]>=0?'+':'')+(fixed[k]-base[k])+'</span></div>').join('')+'</div><div style="margin-top:10px">Ye adjusted values problem-fix result hain. Profile ki original sensitivity overwrite nahi ki gayi.</div>';
+}
+let manualImportedBaseline=null;
+function readManualSensitivity(){return {general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)}}
+function writeManualSensitivity(v){['mGeneral','mRed','m2x','m4x','mSniper','mFree'].forEach((id,i)=>$('#'+id).value=[v.general,v.red_dot,v.scope_2x,v.scope_4x,v.sniper,v.free_look][i]);}
+function captureManualBaseline(){manualImportedBaseline=readManualSensitivity();}
 function bindIssueFixers(){
-  const pb=$('#profileIssueFix'); if(pb) pb.onclick=()=>{
-    if(!currentProfile || !currentProfile.sensitivity){alert('Pehle Profile Code load karo.');return;}
-    const preset=$('#profileIssuePreset').value, custom=$('#profileIssueText').value.trim(); const issue=preset==='CUSTOM'?(custom||'Target tracking / aim lock issue'):custom||preset;
-    const base=baseSensitivity(currentProfile), fixed=applyIssueFix(base,issue,currentProfile);
-    const p={...currentProfile,sensitivity:fixed,lastIssue:{issue,time:new Date().toISOString(),before:base,after:fixed}};
-    localStorage.setItem('vg_ment4l_profile_'+(currentProfile.code||''),JSON.stringify(p)); currentProfile=p; try{fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).catch(()=>{});}catch(e){}
-    saveUpdateHistory('issue-fix',currentProfile.obVersion||'OB55',currentProfile.obVersion||'OB55',base,fixed,currentProfile.code||'');
-    renderIssueResult($('#profileIssueResult'),base,fixed,issue,'Profile code recalibration complete');
+  const pb=$('#profileIssueFix'); if(pb) pb.onclick=async()=>{
+    if(!currentProfile || !currentProfile.sensitivity){alert('Pehle Profile ID load karo.');return;}
+    const preset=$('#profileIssuePreset').value, custom=$('#profileIssueText').value.trim();
+    const issue=preset==='CUSTOM'?(custom||'Target tracking / aim lock issue'):custom||preset;
+    const oldOb=normalizeOb($('#profileIssueOldOb').value||$('#loadedOldOb').value||currentProfile.obVersion||'OB55');
+    const targetOb=normalizeOb($('#profileIssueTargetOb').value||LATEST_OB);
+    const base=baseSensitivity(currentProfile);
+    const fixed=applyIssueFixWithContext(base,issue,{...currentProfile,oldOb,targetOb});
+    const rec={issue,time:new Date().toISOString(),from:oldOb,to:targetOb,before:base,after:fixed};
+    const history=Array.isArray(currentProfile.recalibrationHistory)?currentProfile.recalibrationHistory.slice():[];
+    history.unshift(rec);
+    const p={...currentProfile,recalibrationHistory:history.slice(0,25),lastRecalibration:rec};
+    delete p.__source;
+    // Preserve the original generated sensitivity. Save only recalibration metadata/result.
+    localStorage.setItem('vg_ment4l_profile_'+(currentProfile.code||''),JSON.stringify(p));
+    try{const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});if(r.ok)BACKEND_AVAILABLE=true;}catch(e){BACKEND_AVAILABLE=false;}
+    saveUpdateHistory('issue-fix',oldOb,targetOb,base,fixed,currentProfile.code||'');
+    showIssueOutput($('#profileIssueResult'),base,fixed,issue,'Profile sensitivity recalibration complete',oldOb,targetOb);
   };
   const mb=$('#manualIssueFix'); if(mb) mb.onclick=()=>{
-    const base={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
-    const preset=$('#manualIssuePreset').value, custom=$('#manualIssueText').value.trim(); const issue=preset==='CUSTOM'?(custom||'Target tracking / aim lock issue'):custom||preset;
-    const fixed=applyIssueFix(base,issue,{preset:$('#manualPreset').value});
+    if(!manualImportedBaseline) captureManualBaseline();
+    const base={...manualImportedBaseline};
+    const preset=$('#manualIssuePreset').value, custom=$('#manualIssueText').value.trim();
+    const issue=preset==='CUSTOM'?(custom||'Target tracking / aim lock issue'):custom||preset;
+    const oldOb=normalizeOb($('#manualOldOb').value||'UNKNOWN');
+    const targetOb=normalizeOb($('#manualTargetOb').value||LATEST_OB);
+    const fixed=applyIssueFixWithContext(base,issue,{preset:$('#manualPreset').value,oldOb,targetOb});
     ['mGeneral','mRed','m2x','m4x','mSniper','mFree'].forEach((id,i)=>$('#'+id).value=[fixed.general,fixed.red_dot,fixed.scope_2x,fixed.scope_4x,fixed.sniper,fixed.free_look][i]);
-    renderIssueResult($('#manualIssueResult'),base,fixed,issue,'Manual sensitivity recalibration complete');
+    showIssueOutput($('#manualIssueResult'),base,fixed,issue,'Manual sensitivity recalibration complete',oldOb,targetOb);
   };
+  const restore=$('#manualRestoreSensitivity'); if(restore) restore.onclick=()=>{ if(!manualImportedBaseline) captureManualBaseline(); writeManualSensitivity(manualImportedBaseline); $('#manualIssueResult').classList.add('hidden'); };
 }
 async function persistUpdatedProfile(profile,newVals,oldOb,target){
   const history=Array.isArray(profile.sensitivityHistory)?profile.sensitivityHistory.slice():[];
@@ -603,6 +670,7 @@ async function runProfileUpdate(){
 }
 
 async function runManualUpdate(){
+  captureManualBaseline();
   const oldOb=normalizeOb($('#manualOldOb').value), target=normalizeOb($('#manualTargetOb').value);
   const targetNum=obNum(target);
   const unknown=/^(UNKNOWN|NA|N\/A|DONTKNOW|IDONTKNOW)$/.test(oldOb);
@@ -612,7 +680,13 @@ async function runManualUpdate(){
   await showUpdateProgress('manual','Validating imported sensitivity + OB…',8); await sleep(180);
   await showUpdateProgress('manual','Loading official patch research…',24);
   if(!unknown && (obNum(oldOb)==null || obNum(oldOb)>MAX_SUPPORTED_OB)){alert(`Old OB OB1 se OB${MAX_SUPPORTED_OB} ke beech hona chahiye, ya UNKNOWN likho.`); updateBusy=false; $('#manualUpdate').disabled=false; $('#manualUpdateProgress')?.classList.remove('show'); return;}
-  if(!unknown && obNum(oldOb)===targetNum){const same={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)}; renderResult(oldOb,target,same,same,`<span class="pill">No version change</span><span class="pill">Manual import</span>`,`Old OB aur target OB same hain. No OB delta was applied; use the Manual Problem Fixer for aim-specific recalibration.`); await showUpdateProgress('manual','No OB delta — recalibration complete 100%',100,true); updateBusy=false; $('#manualUpdate').disabled=false; setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200); return;}
+  if(!unknown && obNum(oldOb)===targetNum){
+    const same={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
+    window.__OB_RESEARCH__={hasResearch:false,serverResearch:false,versions:[],notes:[]};
+    renderResult(oldOb,target,same,same,`<span class="pill">Same OB</span><span class="pill">Manual import</span><span class="pill">Problem Fix available</span>`,`Source OB aur Target OB dono ${normalizeOb(target)} hain, isliye OB conversion apply nahi kiya gaya. Agar aim/drag/recoil mein problem hai to neeche Sensitivity Problem Fixer se isi sensitivity ko recalibrate karo.`);
+    await showUpdateProgress('manual','Same OB confirmed — ready for problem recalibration',100,true);
+    updateBusy=false; $('#manualUpdate').disabled=false; setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200); return;
+  }
   if(unknown && target!=='OB55'){alert('UNKNOWN old OB mode abhi current supported OB55 ke liye use karo.'); updateBusy=false; $('#manualUpdate').disabled=false; $('#manualUpdateProgress')?.classList.remove('show'); return;}
   const oldVals={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
   const p={preset:$('#manualPreset').value};
@@ -664,10 +738,14 @@ $('#loadCode').onclick=async()=>{
   $('#profileChips').innerHTML=chips(p);
   const ageNote=$('#profileAgeNote'); if(ageNote) ageNote.textContent=p.deviceAge?`Device age: ${p.deviceAge} — self-reported; used as performance/thermal context.`:'Device age was not saved in this profile.';
   $('#loadedOldOb').value=$('#oldObCode').value.trim() || p.ob || p.oldOb || 'OB55';
-  $('#targetOb').value='OB55';
+  fillObSelect($('#targetOb'),LATEST_OB);
+  fillObSelect($('#profileIssueTargetOb'),LATEST_OB);
+  $('#profileIssueOldOb').value=$('#loadedOldOb').value;
   showObFacts($('#loadedOldOb').value,'');
 };
 
+$('#loadedOldOb').addEventListener('input',e=>{const x=$('#profileIssueOldOb'); if(x) x.value=e.target.value;});
+$('#targetOb').addEventListener('change',e=>{const x=$('#profileIssueTargetOb'); if(x) x.value=e.target.value;});
 $('#updateProfile').onclick=runProfileUpdate;
 $('#manualUpdate').onclick=runManualUpdate;
 bindIssueFixers();
