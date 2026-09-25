@@ -172,6 +172,7 @@ const routes={
   '/':['index.html','text/html; charset=utf-8'],
   '/website1.html':['website1.html','text/html; charset=utf-8'],
   '/website2.html':['website2.html','text/html; charset=utf-8'],
+  '/website3.html':['website3.html','text/html; charset=utf-8'],
   '/robots.txt':['robots.txt','text/plain; charset=utf-8'],
   '/sitemap.xml':['sitemap.xml','application/xml; charset=utf-8']
 };
