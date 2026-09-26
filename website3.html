@@ -1,18 +1,229 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VG MENT4L — CHECK SENSITIVITY</title><style>
-:root{--bg:#060915;--card:#0d1428;--line:#293963;--txt:#eef4ff;--mut:#9eabd0;--a:#50eaff;--p:#9c70ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#18234b,#060915 48%);color:var(--txt);font:15px system-ui,Arial}.wrap{max-width:920px;margin:auto;padding:18px 12px 45px}.hero{text-align:center;padding:18px}.logo{font-size:30px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--a),white,var(--p));color:transparent;background-clip:text}.mut{color:var(--mut)}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px}.tabs button,.btn{padding:13px;border:1px solid var(--line);border-radius:12px;background:#101831;color:var(--txt);font-weight:800}.tabs .on,.primary{background:linear-gradient(135deg,#155b77,#4e328a)!important;border-color:#57e8ff!important}.panel{margin-top:12px;padding:17px;border:1px solid var(--line);border-radius:17px;background:rgba(13,20,40,.94)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{font-size:13px;font-weight:700;display:block;margin:5px 0}input,select,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #30436f;background:#070d1c;color:var(--txt);font:inherit}textarea{min-height:90px}.hidden{display:none}.status{margin-top:10px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#091022}.ok{border-color:#27624d}.warn{border-color:#725b2a;color:#f4d58a}.sens{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.sens div{padding:9px;background:#080e1e;border:1px solid var(--line);border-radius:9px}.sens b{font-size:20px;display:block}.probs{display:grid;grid-template-columns:1fr 1fr;gap:7px}.prob{padding:10px;border:1px solid var(--line);border-radius:10px;background:#080e1e}.prob input{width:auto}.video{padding:15px;text-align:center;border:1px dashed #40578d;border-radius:13px}.bar{height:7px;background:#111a31;border-radius:9px;margin-top:10px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--p));border-radius:9px}.result{margin-top:12px;padding:15px;border:1px solid #38537e;border-radius:14px;background:linear-gradient(135deg,#102d3c,#25183f)}li{margin:6px 0}.footer{text-align:center;color:#7180a7;font-size:12px;margin-top:18px}@media(max-width:650px){.grid,.probs{grid-template-columns:1fr}.sens{grid-template-columns:1fr 1fr}}
-</style></head><body><main class="wrap"><div class="hero"><div class="logo">VG MENT4L</div><div class="mut">CHECK SENSITIVITY · Gameplay Recalibration</div></div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VG MENT4L — CHECK SENSITIVITY</title>
+<style>
+:root{--bg:#060915;--card:#0d1428;--line:#293963;--txt:#eef4ff;--mut:#9eabd0;--a:#50eaff;--p:#9c70ff;--ok:#38d39f;--warn:#f4d58a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#18234b,#060915 48%);color:var(--txt);font:15px system-ui,Arial}
+.wrap{max-width:940px;margin:auto;padding:18px 12px 45px}.hero{text-align:center;padding:18px}.logo{font-size:clamp(30px,7vw,48px);font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--a),white,var(--p));color:transparent;background-clip:text}.mut{color:var(--mut)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px}.tabs button,.btn{padding:13px;border:1px solid var(--line);border-radius:12px;background:#101831;color:var(--txt);font-weight:800}.tabs .on,.primary{background:linear-gradient(135deg,#155b77,#4e328a)!important;border-color:#57e8ff!important}
+.panel{margin-top:12px;padding:17px;border:1px solid var(--line);border-radius:17px;background:rgba(13,20,40,.94)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+label{font-size:13px;font-weight:700;display:block;margin:5px 0}input,select,textarea{width:100%;padding:11px;border-radius:10px;border:1px solid #30436f;background:#070d1c;color:var(--txt);font:inherit}textarea{min-height:90px}.hidden{display:none!important}
+.status{margin-top:10px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#091022}.ok{border-color:#27624d}.warn{border-color:#725b2a;color:var(--warn)}
+.infoGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.infoBox{padding:10px;background:#080e1e;border:1px solid var(--line);border-radius:9px}.infoBox b{display:block;margin-top:3px}
+.sens{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.sens div{padding:9px;background:#080e1e;border:1px solid var(--line);border-radius:9px}.sens b{font-size:20px;display:block}
+.probs{display:grid;grid-template-columns:1fr 1fr;gap:7px}.prob{padding:10px;border:1px solid var(--line);border-radius:10px;background:#080e1e}.prob input{width:auto}
+.video{padding:15px;text-align:center;border:1px dashed #40578d;border-radius:13px}.bar{height:7px;background:#111a31;border-radius:9px;margin-top:10px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--p));border-radius:9px}
+.result{margin-top:12px;padding:15px;border:1px solid #38537e;border-radius:14px;background:linear-gradient(135deg,#102d3c,#25183f)}li{margin:6px 0}.footer{text-align:center;color:#7180a7;font-size:12px;margin-top:18px}
+.issueGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.issueBox{padding:10px;border:1px solid var(--line);border-radius:10px;background:#080e1e}.issueBox input{width:auto}.codeNew{font-size:24px;font-weight:900;letter-spacing:.12em;color:#7deeff}
+@media(max-width:650px){.grid,.probs,.issueGrid,.infoGrid{grid-template-columns:1fr}.sens{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<div class="hero"><div class="logo">VG MENT4L</div><div class="mut">CHECK SENSITIVITY · Gameplay Recalibration</div></div>
+
 <div class="tabs"><button id="pt" class="on">1 · ENTER PROFILE ID</button><button id="mt">2 · MANUAL SENSITIVITY</button></div>
-<section id="pp" class="panel"><h2>Profile ID + Gameplay</h2><p class="mut">Website 1/2 ka Profile ID daalo. Saved profile baseline rahega; recalibration original ko overwrite nahi karega.</p><input id="code" maxlength="11" placeholder="#A7K2P9X4M7"><button id="load" class="btn primary full" style="margin-top:10px;width:100%">LOAD PROFILE</button><div id="info" class="status">Profile load nahi hua.</div></section>
-<section id="mp" class="panel hidden"><h2>Manual Sensitivity + Gameplay</h2><p class="mut">Kahin se bhi mili sensitivity use karo. Profile ID ki zarurat nahi.</p><div class="grid"><div><label>Type</label><select id="type"><option>Default</option><option>High</option></select></div><div><label>Source OB</label><select id="sob"></select></div><div><label>Target OB</label><select id="tob"></select></div><div><label>Device (optional)</label><input id="dev" placeholder="e.g. iQOO Neo 10"></div><div><label>General</label><input id="g" type="number" min="0" max="200" value="170"></div><div><label>Red Dot</label><input id="r" type="number" min="0" max="200" value="165"></div><div><label>2×</label><input id="s2" type="number" min="0" max="200" value="155"></div><div><label>4×</label><input id="s4" type="number" min="0" max="200" value="145"></div><div><label>Sniper</label><input id="sn" type="number" min="0" max="200" value="95"></div><div><label>Free Look</label><input id="fl" type="number" min="0" max="200" value="130"></div></div></section>
-<section class="panel"><h2>Gameplay Video</h2><p class="mut">Daily allowance: <b>1 GB/day</b>. Ye permanent storage limit nahi hai.</p><div class="video"><input id="vid" type="file" accept="video/*"><div id="vm" class="status">Video select karo.</div><div class="bar"><i id="prog"></i></div></div></section>
-<section class="panel"><h2>Sensitivity Problem / Recalibration</h2><p class="mut">Preset problems + custom problem. Same OB bhi allowed hai, jaise OB55 → OB55.</p><div class="probs" id="probs"></div><label>Custom Problem</label><textarea id="custom" placeholder="Apni problem khud likho..."></textarea><button id="go" class="btn primary" style="width:100%;margin-top:10px">ANALYZE GAMEPLAY & RECALIBRATE</button><div id="out" class="result hidden"></div></section><div class="footer">Video quality, visible gameplay, FPS/lag and recording conditions affect confidence. Result is a recommendation, not a guarantee.</div></main>
+
+<section id="pp" class="panel">
+<h2>Profile ID + Mobile Information</h2>
+<p class="mut">Website 1/2 ka Profile ID daalo. Device, player profile, OB aur current sensitivity analysis ke liye baseline banenge.</p>
+<input id="code" maxlength="11" placeholder="#A7K2P9X4M7">
+<button id="load" class="btn primary full" style="margin-top:10px">LOAD PROFILE</button>
+<div id="info" class="status">Profile load nahi hua.</div>
+</section>
+
+<section id="mp" class="panel hidden">
+<h2>Manual Sensitivity + Mobile</h2>
+<p class="mut">Profile ID ke bina bhi gameplay analysis kar sakte ho.</p>
+<div class="grid">
+<div><label>Type</label><select id="type"><option>Default</option><option>High</option></select></div>
+<div><label>Source OB</label><select id="sob"></select></div>
+<div><label>Target OB</label><select id="tob"></select></div>
+<div><label>Device (optional)</label><input id="dev" placeholder="e.g. iQOO Neo 10"></div>
+<div><label>General</label><input id="g" type="number" min="0" max="200" value="170"></div>
+<div><label>Red Dot</label><input id="r" type="number" min="0" max="200" value="165"></div>
+<div><label>2×</label><input id="s2" type="number" min="0" max="200" value="155"></div>
+<div><label>4×</label><input id="s4" type="number" min="0" max="200" value="145"></div>
+<div><label>Sniper</label><input id="sn" type="number" min="0" max="200" value="95"></div>
+<div><label>Free Look</label><input id="fl" type="number" min="0" max="200" value="130"></div>
+</div>
+<button id="research" class="btn" style="width:100%;margin-top:10px">GET DEVICE INFORMATION</button>
+<div id="manualDevice" class="status">Device research optional hai.</div>
+</section>
+
+<section class="panel">
+<h2>Gameplay Video</h2>
+<p class="mut"><b>Privacy:</b> Full video permanently store nahi kiya jayega. Browser video se temporary analysis frames banayega. Server/database mein video save nahi hoga.</p>
+<div class="video"><input id="vid" type="file" accept="video/*"><div id="vm" class="status">Gameplay video select karo.</div><div class="bar"><i id="prog"></i></div></div>
+</section>
+
+<section class="panel">
+<h2>Gameplay Analysis</h2>
+<p class="mut">Pehle manual problem select karna zaroori nahi. System gameplay frames + profile/device/current sensitivity ko analyse karke player type, drag style, range preference, visible issues aur recommended sensitivity nikalega.</p>
+<button id="go" class="btn primary" style="width:100%">ANALYZE GAMEPLAY & CREATE SENSITIVITY</button>
+<div id="out" class="result hidden"></div>
+</section>
+
+<section id="fixPanel" class="panel hidden">
+<h2>Recommended Sensitivity — Problem Fixer</h2>
+<p class="mut">Nayi sensitivity mein baad mein jo problem aaye, ek se zyada problems select kar sakte ho. Custom text bhi saath analyse hoga. Fix karne par <b>new Profile ID</b> banega; original code/sensitivity untouched rahega.</p>
+<div class="issueGrid" id="issues"></div>
+<label style="margin-top:10px">Apni problem likho</label>
+<textarea id="custom" placeholder="Example: M1887 close range mein head ke upar ja raha hai aur MP40 spray chest par ruk raha hai..."></textarea>
+<button id="fix" class="btn" style="width:100%;margin-top:10px">ANALYZE PROBLEMS + MAKE NEW SENSITIVITY</button>
+<div id="fixOut" class="status hidden"></div>
+</section>
+
+<div class="footer">Gameplay analysis is evidence-based but not a guarantee. Recording quality, FPS/lag, visible crosshair and fight variety affect confidence. Full video is not stored by this workflow.</div>
+</main>
+
 <script>
-(()=>{const $=x=>document.getElementById(x), max=1024*1024*1024;let mode='p',profile=null,file=null,meta=null;const problems=['Aim head se upar ja raha hai','Aim chest par lock ho raha hai','Aim neck par lock ho raha hai','Drag slow hai','Drag fast / overshoot ho raha hai','Recoil / spray shaky hai','Close-range tracking slow hai','Long-range aim unstable hai','Aim target par stick nahi kar raha'];$('probs').innerHTML=problems.map((x,i)=>`<label class="prob"><input type="checkbox" value="${x}"> ${x}</label>`).join('');let obs='';for(let i=55;i>=1;i--)obs+=`<option>OB${i}</option>`;$('sob').innerHTML=obs;$('tob').innerHTML=obs;
-function tab(m){mode=m;$('pp').classList.toggle('hidden',m!=='p');$('mp').classList.toggle('hidden',m!=='m');$('pt').classList.toggle('on',m==='p');$('mt').classList.toggle('on',m==='m')}$('pt').onclick=()=>tab('p');$('mt').onclick=()=>tab('m');
-const valid=c=>/^#[A-Z0-9]{10}$/.test(c)||/^#[A-Z0-9]{5}$/.test(c);const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));function sens(){return{General:clamp($('g').value),RedDot:clamp($('r').value),'2x':clamp($('s2').value),'4x':clamp($('s4').value),Sniper:clamp($('sn').value),FreeLook:clamp($('fl').value)}}function boxes(s){return '<div class="sens">'+Object.entries(s).map(([k,v])=>`<div><span class="mut">${k}</span><b>${clamp(v)}</b></div>`).join('')+'</div>'}
-$('load').onclick=async()=>{let c=$('code').value.toUpperCase().trim();if(!valid(c)){ $('info').className='status warn';$('info').textContent='Valid Profile ID dalo.';return}$('info').textContent='Loading...';try{let r=await fetch('/api/profiles/'+encodeURIComponent(c),{cache:'no-store'});if(!r.ok)throw 0;let d=await r.json();profile=d.profile||d;let s=profile.sensitivity||{};$('info').className='status ok';$('info').innerHTML='<b>'+String(profile.device||profile.deviceName||'Device')+'</b><br>OB: '+String(profile.ob||profile.sourceOb||'—')+' · '+String(profile.gameSensitivity||profile.sensitivityType||'—')+boxes({General:s.General,RedDot:s.RedDot,'2x':s['2x'],'4x':s['4x'],Sniper:s.Sniper,FreeLook:s.FreeLook})}catch(e){profile=null;$('info').className='status warn';$('info').textContent='Profile not found / backend unavailable.'}};
-$('vid').onchange=async()=>{file=$('vid').files[0]||null;if(!file)return;$('vm').innerHTML=`<b>${file.name}</b> · ${(file.size/1048576).toFixed(1)} MB`;let day=new Date().toISOString().slice(0,10),d=localStorage.getItem('vg3day'),u=d===day?+localStorage.getItem('vg3bytes')||0:0;if(file.size+u>max){$('vm').className='status warn';$('vm').textContent='Aaj ka 1 GB quota cross hoga. Chhota video choose karo.';file=null;return}try{let v=document.createElement('video');v.preload='metadata';v.src=URL.createObjectURL(file);await new Promise((a,b)=>{v.onloadedmetadata=a;v.onerror=b});meta={duration:v.duration,w:v.videoWidth,h:v.videoHeight};URL.revokeObjectURL(v.src);$('vm').innerHTML=`<b>${file.name}</b> · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s`}catch{$('vm').className='status warn';$('vm').textContent='Video metadata read nahi hua.'}};
-function base(){if(mode==='p'&&profile?.sensitivity){let s=profile.sensitivity;return{General:clamp(s.General),RedDot:clamp(s.RedDot),'2x':clamp(s['2x']),'4x':clamp(s['4x']),Sniper:clamp(s.Sniper),FreeLook:clamp(s.FreeLook)}}return sens()}function selected(){let a=[...document.querySelectorAll('#probs input:checked')].map(x=>x.value),c=$('custom').value.trim();if(c)a.push(c);return a}
-function recal(s,p){let o={...s},n=[],c=55,has=x=>p.some(q=>q.toLowerCase().includes(x));if(has('head se upar')||has('overshoot')){o.General-=6;o.RedDot-=5;o['2x']-=4;o['4x']-=3;n.push('Overshoot control: drag/scoped response reduced slightly.');c+=10}if(has('chest')||has('neck')){o.General+=5;o.RedDot+=5;o['2x']+=3;n.push('Under-drag/body-lock: close-range response increased slightly.');c+=8}if(has('drag slow')){o.General+=7;o.RedDot+=6;o['2x']+=4;n.push('Slow drag: response increased conservatively.');c+=8}if(has('recoil')||has('spray')){o.General-=3;o.RedDot-=4;o['2x']-=5;o['4x']-=6;n.push('Spray stability: scoped sensitivity reduced modestly.');c+=7}if(has('close-range')){o.General+=4;o.RedDot+=4;n.push('Close-range tracking tuned.');c+=5}if(has('long-range')){o['4x']-=4;o.Sniper-=4;n.push('Long-range stability tuned conservatively.');c+=5}if(has('stick')){o.RedDot+=2;o['2x']+=2;n.push('Target acquisition adjusted conservatively.');c+=3}Object.keys(o).forEach(k=>o[k]=clamp(o[k]));return{o,n,c:Math.min(94,c)}}
-$('go').onclick=async()=>{if(!file){$('out').className='result';$('out').textContent='Gameplay video upload karo.';return}if(mode==='p'&&!profile){$('out').className='result';$('out').textContent='Pehle Profile ID load karo.';return}let p=selected(),r=recal(base(),p),notes=[];if(meta?.duration<5){notes.push('Video bahut short hai; confidence limited.')}if(meta?.w<720){notes.push('Low resolution fine crosshair movement ko hide kar sakti hai.')}if(meta?.duration>180){notes.push('Long video ko representative portions ke basis par treat kiya gaya hai.')}r.n=[...notes,...r.n];r.c=Math.max(30,r.c-notes.length*6);$('prog').style.width='55%';await new Promise(x=>setTimeout(x,300));$('prog').style.width='100%';let day=new Date().toISOString().slice(0,10),d=localStorage.getItem('vg3day'),u=d===day?+localStorage.getItem('vg3bytes')||0:0;localStorage.setItem('vg3day',day);localStorage.setItem('vg3bytes',u+file.size);let so=mode==='p'?(profile.ob||profile.sourceOb||'OB55'):$('sob').value,to=mode==='p'?(profile.targetOb||so):$('tob').value;$('out').className='result';$('out').innerHTML='<h3>Recalibrated Sensitivity</h3><p><b>Source:</b> '+so+' · <b>Target:</b> '+to+' · <b>Confidence:</b> '+r.c+'%</p>'+boxes(r.o)+'<ul>'+r.n.map(x=>'<li>'+x+'</li>').join('')+'</ul><div class="status warn"><b>Note:</b> Original baseline is preserved. Same-OB recalibration is allowed. Test in-game and adjust in small steps.</div>'};
-})();</script></body></html>
+(()=>{
+const $=id=>document.getElementById(id), clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
+let mode='p',profile=null,file=null,meta=null,frames=[],lastResult=null;
+const issues=[
+'Aim head se upar ja raha hai','Aim chest pe lock ho raha hai','Aim neck pe lock ho raha hai',
+'Drag slow lag raha hai','Drag bahut fast / overshoot','Recoil / spray shaky',
+'Close-range tracking slow','Long-range aim unstable','Aim target pe stick nahi kar raha',
+'Crosshair shaky','One-tap timing inconsistent','Flick target ke aage nikal raha hai'
+];
+$('issues').innerHTML=issues.map(x=>`<label class="issueBox"><input type="checkbox" value="${x}"> ${x}</label>`).join('');
+let obs='';for(let i=55;i>=1;i--)obs+=`<option>OB${i}</option>`;$('sob').innerHTML=obs;$('tob').innerHTML=obs;
+
+function tab(m){mode=m;$('pp').classList.toggle('hidden',m!=='p');$('mp').classList.toggle('hidden',m!=='m');$('pt').classList.toggle('on',m==='p');$('mt').classList.toggle('on',m==='m')}
+$('pt').onclick=()=>tab('p');$('mt').onclick=()=>tab('m');
+const valid=c=>/^#[A-Z0-9]{10}$/.test(c)||/^#[A-Z0-9]{5}$/.test(c);
+function getSensFromProfile(s){
+s=s||{};
+return {General:clamp(s.General??s.general),RedDot:clamp(s.RedDot??s.red_dot??s.redDot),'2x':clamp(s['2x']??s.scope_2x??s.scope2x),'4x':clamp(s['4x']??s.scope_4x??s.scope4x),Sniper:clamp(s.Sniper??s.sniper),'FreeLook':clamp(s.FreeLook??s.free_look??s.freeLook)};
+}
+function manualSens(){return{General:clamp($('g').value),RedDot:clamp($('r').value),'2x':clamp($('s2').value),'4x':clamp($('s4').value),Sniper:clamp($('sn').value),FreeLook:clamp($('fl').value)}}
+function boxes(s){return '<div class="sens">'+Object.entries(s).map(([k,v])=>`<div><span class="mut">${k}</span><b>${clamp(v)}</b></div>`).join('')+'</div>'}
+function infoBoxes(d){
+if(!d)return '';
+return `<div class="infoGrid">${[
+['Brand',d.brand],['Platform',d.platform],['Chipset',d.chipset],['GPU',d.gpu],['RAM',d.ram],
+['Display',d.display],['Refresh',d.refreshRate],['Touch',d.touchSampling],['OS',d.os],['Gaming',d.gaming]
+].map(x=>`<div class="infoBox"><span class="mut">${x[0]}</span><b>${x[1]||'—'}</b></div>`).join('')}</div>`;
+}
+function profileInfo(p,d){
+const s=getSensFromProfile(p.sensitivity);
+$('info').className='status ok';
+$('info').innerHTML=`<b>Device: ${p.device||p.deviceName||d?.canonical||'—'}</b>
+<div class="infoGrid">
+<div class="infoBox"><span class="mut">OB</span><b>${p.obVersion||p.ob||p.sourceOb||'—'}</b></div>
+<div class="infoBox"><span class="mut">Sensitivity Type</span><b>${p.preset||p.gameSensitivity||p.sensitivityType||'—'}</b></div>
+<div class="infoBox"><span class="mut">Player Style</span><b>${p.style||p.playerStyle||'—'}</b></div>
+<div class="infoBox"><span class="mut">Game Mode</span><b>${p.mode||p.gameMode||'—'}</b></div>
+<div class="infoBox"><span class="mut">RAM</span><b>${p.ram||'—'}</b></div>
+<div class="infoBox"><span class="mut">Fingers</span><b>${p.fingers||'—'}</b></div>
+<div class="infoBox"><span class="mut">Device Age</span><b>${p.deviceAge||'—'}</b></div>
+<div class="infoBox"><span class="mut">Guns</span><b>${p.allGuns?'All Guns':(p.guns||[]).join(', ')||'—'}</b></div>
+</div>${infoBoxes(d)}<h3 style="margin-top:12px">Current Sensitivity</h3>${boxes(s)}`;
+}
+async function loadDevice(name,target){
+if(!name){target.className='status warn';target.textContent='Device name/profile mein device nahi mila.';return null}
+try{
+let r=await fetch('/api/device-research?device='+encodeURIComponent(name),{cache:'no-store'}),j=await r.json();
+if(j.verified){target.className='status ok';target.innerHTML='<b>Verified device information</b>'+infoBoxes(j.device);return j.device}
+target.className='status warn';target.textContent='Exact device backend verified catalog mein nahi mila; specs invent nahi kiye jayenge.';return null
+}catch(e){target.className='status warn';target.textContent='Device research backend unavailable.';return null}
+}
+$('load').onclick=async()=>{
+const c=$('code').value.toUpperCase().trim();
+if(!valid(c)){$('info').className='status warn';$('info').textContent='Valid Profile ID dalo.';return}
+$('info').textContent='Profile + device information load ho raha hai...';
+try{
+const r=await fetch('/api/profiles/'+encodeURIComponent(c),{cache:'no-store'});if(!r.ok)throw new Error('Profile not found');
+const j=await r.json();profile=j.profile||j;
+const d=await loadDevice(profile.device||profile.deviceName||'',document.createElement('div'));
+profile.__device=d;profileInfo(profile,d);
+}catch(e){profile=null;$('info').className='status warn';$('info').textContent='Profile load nahi hua. Profile ID/backend check karo.'}
+};
+$('research').onclick=()=>loadDevice($('dev').value.trim(),$('manualDevice'));
+
+$('vid').onchange=async()=>{
+file=$('vid').files[0]||null;frames=[];meta=null;
+if(!file)return;
+$('vm').textContent='Temporary gameplay frames sample ho rahe hain...';$('prog').style.width='5%';
+try{
+const v=document.createElement('video');v.preload='metadata';v.muted=true;v.playsInline=true;v.src=URL.createObjectURL(file);
+await new Promise((a,b)=>{v.onloadedmetadata=a;v.onerror=b});
+meta={duration:v.duration,w:v.videoWidth,h:v.videoHeight,size:file.size};
+const count=Math.min(16,Math.max(8,Math.ceil(v.duration/6)));
+const canvas=document.createElement('canvas'), scale=Math.min(1,720/v.videoWidth);
+canvas.width=Math.max(320,Math.round(v.videoWidth*scale));canvas.height=Math.max(180,Math.round(v.videoHeight*scale));
+const ctx=canvas.getContext('2d');
+for(let i=0;i<count;i++){
+const t=Math.min(Math.max(.15,v.duration*(i+.35)/count),Math.max(.15,v.duration-.1));
+v.currentTime=t;await new Promise((a,b)=>{v.onseeked=a;v.onerror=b});
+ctx.drawImage(v,0,0,canvas.width,canvas.height);
+frames.push({t:Number(t.toFixed(2)),image:canvas.toDataURL('image/jpeg',.56)});
+$('prog').style.width=Math.round((i+1)/count*60)+'%';
+}
+URL.revokeObjectURL(v.src);
+$('vm').className='status ok';$('vm').innerHTML=`<b>${file.name}</b> · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s · ${frames.length} temporary frames`;
+}catch(e){$('vm').className='status warn';$('vm').textContent='Video read/sampling failed.';file=null;frames=[]}
+};
+
+function baseSens(){return mode==='p'&&profile?getSensFromProfile(profile.sensitivity):manualSens()}
+function dataPayload(){
+const b=baseSens(),device=mode==='p'?(profile?.device||profile?.deviceName||''):$('dev').value.trim();
+return {device,sensitivity:b,gameSensitivity:mode==='p'?(profile?.preset||profile?.gameSensitivity||'Default'):$('type').value,
+sourceOb:mode==='p'?(profile?.obVersion||profile?.ob||profile?.sourceOb||'OB55'):$('sob').value,
+targetOb:mode==='p'?(profile?.obVersion||profile?.ob||'OB55'):$('tob').value,
+playerStyle:profile?.style||profile?.playerStyle||'',gameMode:profile?.mode||profile?.gameMode||'',
+ram:profile?.ram||'',fingers:profile?.fingers||'',deviceAge:profile?.deviceAge||'',guns:profile?.guns||[],
+meta,frames};
+}
+$('go').onclick=async()=>{
+if(!file||!frames.length){$('out').className='result';$('out').textContent='Gameplay video select karo.';return}
+if(mode==='p'&&!profile){$('out').className='result';$('out').textContent='Pehle Profile ID load karo.';return}
+$('out').className='result';$('out').innerHTML='<b>Deep gameplay analysis chal raha hai...</b><p class="mut">Frames temporary hain; full video database mein save nahi ho raha.</p>';
+$('prog').style.width='72%';
+try{
+const r=await fetch('/api/gameplay-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataPayload())});
+const j=await r.json();if(!r.ok)throw new Error(j.error||'Analysis failed');
+lastResult=j.analysis||{};
+$('prog').style.width='100%';
+const s=getSensFromProfile(lastResult.recalibratedSensitivity);
+$('out').innerHTML=`<h3>Gameplay Analysis Complete</h3>
+<p><b>Analysis:</b> ${j.ai?'AI vision analysis':'fallback analysis'} · <b>Confidence:</b> ${lastResult.confidence??'—'}%</p>
+<div class="infoGrid">
+<div class="infoBox"><span class="mut">Player Type</span><b>${lastResult.playerType||'—'}</b></div>
+<div class="infoBox"><span class="mut">Sensitivity Type</span><b>${lastResult.sensitivityType||'—'}</b></div>
+<div class="infoBox"><span class="mut">Drag Style</span><b>${lastResult.dragStyle||'—'}</b></div>
+<div class="infoBox"><span class="mut">Range</span><b>${lastResult.rangePreference||'—'}</b></div>
+<div class="infoBox"><span class="mut">Suggested Focus</span><b>${lastResult.focusGuns||'—'}</b></div>
+<div class="infoBox"><span class="mut">Main Issue</span><b>${lastResult.mainIssue||'—'}</b></div>
+</div>
+<h4>Observed Gameplay</h4><ul>${(lastResult.findings||[]).map(x=>`<li>${x}</li>`).join('')||'<li>No reliable finding returned.</li>'}</ul>
+<h4>Recommended Sensitivity</h4>${boxes(s)}
+${(lastResult.adjustmentReasons||[]).length?`<h4>Why this sensitivity?</h4><ul>${lastResult.adjustmentReasons.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}
+<div class="status warn">Ye recommended starting configuration hai; guaranteed headshots/zero recoil nahi.</div>`;
+$('fixPanel').classList.remove('hidden');
+}catch(e){$('out').className='result';$('out').innerHTML='<b>Analysis failed:</b> '+String(e.message||e)+'<br><span class="mut">Backend AI configuration check karo.</span>'}
+};
+
+function selectedIssues(){return [...document.querySelectorAll('#issues input:checked')].map(x=>x.value)}
+$('fix').onclick=async()=>{
+if(!lastResult?.recalibratedSensitivity){$('fixOut').className='status warn';$('fixOut').textContent='Pehle gameplay analysis complete karo.';return}
+const selected=selectedIssues(),custom=$('custom').value.trim();
+if(!selected.length&&!custom){$('fixOut').className='status warn';$('fixOut').textContent='Kam se kam ek problem select karo ya custom problem likho.';return}
+$('fixOut').className='status';$('fixOut').textContent='Problem analysis + new sensitivity + new code ban raha hai...';
+const payload={baseSensitivity:getSensFromProfile(lastResult.recalibratedSensitivity),selectedProblems:selected,customProblem:custom,device:profile?.device||profile?.deviceName||$('dev').value.trim(),sourceProfile:profile||null};
+try{
+const r=await fetch('/api/gameplay-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+const j=await r.json();if(!r.ok)throw new Error(j.error||'Fix failed');
+const s=getSensFromProfile(j.sensitivity);
+$('fixOut').innerHTML=`<b>✓ New sensitivity ready</b>${boxes(s)}<p><b>New Profile ID:</b> <span class="codeNew">${j.code}</span></p><button class="btn" id="copyNew">COPY NEW CODE</button><p class="mut">Original Profile ID untouched hai. New code mein same profile/device information rahegi; sensitivity updated hai.</p>`;
+$('copyNew').onclick=()=>navigator.clipboard?.writeText(j.code);
+}catch(e){$('fixOut').className='status warn';$('fixOut').textContent='Fix failed: '+String(e.message||e)}
+};
+})();
+</script>
+</body>
+</html>
