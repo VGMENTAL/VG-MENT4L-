@@ -241,7 +241,18 @@ function extractText(d) {
   if (typeof d.output_text === 'string') return d.output_text;
   if (Array.isArray(d.output)) {
     let s = '';
-    for (const item of d.output) for (const c of item.content || []) if (typeof c.text === 'string') s += c.text;
+    for (const item of d.output) {
+      if (typeof item?.text === 'string') s += item.text;
+      for (const c of item.content || []) if (typeof c.text === 'string') s += c.text;
+    }
+    if (s) return s.trim();
+  }
+  if (Array.isArray(d.outputs)) {
+    let s = '';
+    for (const item of d.outputs) {
+      if (typeof item?.text === 'string') s += item.text;
+      for (const c of item.content || []) if (typeof c.text === 'string') s += c.text;
+    }
     if (s) return s.trim();
   }
   if (Array.isArray(d.steps)) {
@@ -351,7 +362,7 @@ IMPORTANT: Analyze the ENTIRE supplied gameplay video, not a small set of screen
 
 Goal: diagnose the CURRENT sensitivity from actual gameplay behavior and create a NEW sensitivity tailored to this player.
 Study natural drag speed and length, upward drag consistency, one-tap/flick timing, chest/neck/head stopping point, overshoot and under-drag, recoil/spray control, close/mid/long tracking, target switching, movement while firing, visible guns, repeated patterns, FPS/frame pacing/lag when observable, and sensitivity imbalance between scopes.
-Do not assume every miss is caused by sensitivity. Separate player-input mistakes, ping/FPS/recording issues, and sensitivity-related patterns.
+Do not assume every miss is caused by sensitivity. Separate player-input mistakes, ping/FPS/recording issues, and sensitivity-related patterns. Use the ENTIRE timeline and base the recommendation on repeated evidence. If the same video is analyzed again, apply the same calibration logic: do not invent a different sensitivity merely because the observed moments can be described differently. Start from the supplied CURRENT sensitivity and change each value only when the video evidence supports that specific direction.
 RAM is context only and must NOT directly multiply sensitivity.
 
 PROFILE CONTEXT:
@@ -378,27 +389,43 @@ Sensitivity values must be integers 0-200. Do not promise zero recoil or guarant
     // If a model returns a temporary 503/high-demand response, retry briefly and
     // then fail over to another current video-capable Flash model. This keeps a
     // temporary Gemini capacity spike from breaking the whole Website 3 analysis.
-    const models = [model, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash']
+    const models = [model, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
       .filter((m, i, arr) => m && arr.indexOf(m) === i);
     let response = null;
     let usedModel = model;
     let last503 = null;
 
+    // IMPORTANT: use Gemini agentic video processing for gameplay. Static video
+    // processing samples at 1 FPS and can miss fast drag/flick events. Agentic
+    // processing dynamically navigates the timeline and is supported by the
+    // current Flash models used below.
     for (const candidate of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
-        const r = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent`, {
+        const r = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions', {
           method: 'POST',
           headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                { file_data: { mime_type: mime, file_uri: fileInfo.uri } }
-              ]
-            }],
-            generationConfig: {
-              responseMimeType: 'application/json'
-            }
+            model: candidate,
+            input: [
+              {
+                type: 'video',
+                uri: fileInfo.uri,
+                mime_type: mime,
+                processing: 'agentic'
+              },
+              { type: 'text', text: prompt }
+            ],
+            generation_config: {
+              temperature: 0,
+              seed: 42,
+              thinking_level: 'medium',
+              max_output_tokens: 5000
+            },
+            response_format: {
+              type: 'text',
+              mime_type: 'application/json'
+            },
+            store: false
           })
         }, GAMEPLAY_TIMEOUT_MS);
 
@@ -411,7 +438,7 @@ Sensitivity values must be integers 0-200. Do not promise zero recoil or guarant
 
         if (r.status === 503) {
           last503 = responseText.slice(0, 1800);
-          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 1200));
+          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 1500));
           continue;
         }
 
@@ -421,7 +448,7 @@ Sensitivity values must be integers 0-200. Do not promise zero recoil or guarant
     }
 
     if (!response) {
-      throw new Error(`Gemini video analysis HTTP 503: ${last503 || 'Gemini models temporarily unavailable'}`);
+      throw new Error(`Gemini video analysis HTTP 503: ${last503 || 'Gemini video models temporarily unavailable'}`);
     }
 
     const out = parseJsonOutput(extractText(JSON.parse(response.text)));
