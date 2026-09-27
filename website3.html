@@ -137,8 +137,15 @@ const c=$('code').value.toUpperCase().trim();
 if(!valid(c)){$('info').className='status warn';$('info').textContent='Valid Profile ID dalo.';return}
 $('info').textContent='Profile + device information load ho raha hai...';
 try{
-const r=await fetch('/api/profiles/'+encodeURIComponent(c),{cache:'no-store'});if(!r.ok)throw new Error('Profile not found');
-const j=await r.json();profile=j.profile||j;
+const r=await fetch('/api/profiles/'+encodeURIComponent(c),{cache:'no-store'});
+let j=null;
+if(r.ok) j=await r.json();
+else {
+  const local=localStorage.getItem('vg_ment4l_profile_'+c);
+  if(!local) throw new Error('Profile not found');
+  j={profile:JSON.parse(local),source:'browser-local'};
+}
+profile=j.profile||j;
 const d=await loadDevice(profile.device||profile.deviceName||'',document.createElement('div'));
 profile.__device=d;profileInfo(profile,d);
 }catch(e){profile=null;$('info').className='status warn';$('info').textContent='Profile load nahi hua. Profile ID/backend check karo.'}
@@ -148,21 +155,31 @@ $('research').onclick=()=>loadDevice($('dev').value.trim(),$('manualDevice'));
 $('vid').onchange=async()=>{
 file=$('vid').files[0]||null;frames=[];meta=null;
 if(!file)return;
+const DAILY_LIMIT=1024*1024*1024;
+const today=new Date().toISOString().slice(0,10);
+let used=0;
+try{const q=JSON.parse(localStorage.getItem('vg_ment4l_gameplay_usage')||'{}');used=q.date===today?Number(q.bytes)||0:0}catch(e){}
+if(file.size>DAILY_LIMIT || used+file.size>DAILY_LIMIT){
+  $('vm').className='status warn';$('vm').textContent='Daily 1 GB gameplay limit reached. Aaj aur video analyse nahi hoga.';
+  file=null;return;
+}
+
 $('vm').textContent='Temporary gameplay frames sample ho rahe hain...';$('prog').style.width='5%';
 try{
 const v=document.createElement('video');v.preload='metadata';v.muted=true;v.playsInline=true;v.src=URL.createObjectURL(file);
 await new Promise((a,b)=>{v.onloadedmetadata=a;v.onerror=b});
 meta={duration:v.duration,w:v.videoWidth,h:v.videoHeight,size:file.size};
-const count=Math.min(16,Math.max(8,Math.ceil(v.duration/6)));
-const canvas=document.createElement('canvas'), scale=Math.min(1,720/v.videoWidth);
+const count=Math.min(12,Math.max(6,Math.ceil(v.duration/10)));
+const canvas=document.createElement('canvas'), scale=Math.min(1,640/v.videoWidth);
 canvas.width=Math.max(320,Math.round(v.videoWidth*scale));canvas.height=Math.max(180,Math.round(v.videoHeight*scale));
 const ctx=canvas.getContext('2d');
 for(let i=0;i<count;i++){
 const t=Math.min(Math.max(.15,v.duration*(i+.35)/count),Math.max(.15,v.duration-.1));
 v.currentTime=t;await new Promise((a,b)=>{v.onseeked=a;v.onerror=b});
 ctx.drawImage(v,0,0,canvas.width,canvas.height);
-frames.push({t:Number(t.toFixed(2)),image:canvas.toDataURL('image/jpeg',.56)});
+frames.push(canvas.toDataURL('image/jpeg',.46));
 $('prog').style.width=Math.round((i+1)/count*60)+'%';
+if(i===count-1){try{localStorage.setItem('vg_ment4l_gameplay_usage',JSON.stringify({date:today,bytes:used+file.size}));}catch(e){}}
 }
 URL.revokeObjectURL(v.src);
 $('vm').className='status ok';$('vm').innerHTML=`<b>${file.name}</b> · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s · ${frames.length} temporary frames`;
@@ -172,12 +189,14 @@ $('vm').className='status ok';$('vm').innerHTML=`<b>${file.name}</b> · ${(file.
 function baseSens(){return mode==='p'&&profile?getSensFromProfile(profile.sensitivity):manualSens()}
 function dataPayload(){
 const b=baseSens(),device=mode==='p'?(profile?.device||profile?.deviceName||''):$('dev').value.trim();
-return {device,sensitivity:b,gameSensitivity:mode==='p'?(profile?.preset||profile?.gameSensitivity||'Default'):$('type').value,
-sourceOb:mode==='p'?(profile?.obVersion||profile?.ob||profile?.sourceOb||'OB55'):$('sob').value,
-targetOb:mode==='p'?(profile?.obVersion||profile?.ob||'OB55'):$('tob').value,
-playerStyle:profile?.style||profile?.playerStyle||'',gameMode:profile?.mode||profile?.gameMode||'',
-ram:profile?.ram||'',fingers:profile?.fingers||'',deviceAge:profile?.deviceAge||'',guns:profile?.guns||[],
-meta,frames};
+return {
+  context:{device,sensitivity:b,gameSensitivity:mode==='p'?(profile?.preset||profile?.gameSensitivity||'Default'):$('type').value,
+  sourceOb:mode==='p'?(profile?.obVersion||profile?.ob||profile?.sourceOb||'OB55'):$('sob').value,
+  targetOb:mode==='p'?(profile?.obVersion||profile?.ob||'OB55'):$('tob').value,
+  playerStyle:profile?.style||profile?.playerStyle||'',gameMode:profile?.mode||profile?.gameMode||'',
+  ram:profile?.ram||'',fingers:profile?.fingers||'',deviceAge:profile?.deviceAge||'',guns:profile?.guns||[],meta},
+  frames
+};
 }
 $('go').onclick=async()=>{
 if(!file||!frames.length){$('out').className='result';$('out').textContent='Gameplay video select karo.';return}
@@ -187,11 +206,15 @@ $('prog').style.width='72%';
 try{
 const r=await fetch('/api/gameplay-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataPayload())});
 const j=await r.json();if(!r.ok)throw new Error(j.error||'Analysis failed');
-lastResult=j.analysis||{};
+lastResult=j.result||j.analysis||{};
 $('prog').style.width='100%';
-const s=getSensFromProfile(lastResult.recalibratedSensitivity);
+if(lastResult.configured===false){
+  $('out').innerHTML=`<h3>Gameplay frames ready, AI vision is OFF</h3><div class="status warn">${lastResult.message||'Render server par OPENAI_API_KEY configure nahi hai.'}</div><p class="mut">Video ko dobara upload karne ki zarurat nahi. AI key enable hone ke baad isi workflow se analysis chalega.</p>`;
+  return;
+}
+const s=getSensFromProfile(lastResult.recommendedSensitivity||lastResult.recalibratedSensitivity);
 $('out').innerHTML=`<h3>Gameplay Analysis Complete</h3>
-<p><b>Analysis:</b> ${j.ai?'AI vision analysis':'fallback analysis'} · <b>Confidence:</b> ${lastResult.confidence??'—'}%</p>
+<p><b>Analysis:</b> ${lastResult.configured===false?'AI not configured':(lastResult.configured?'AI vision analysis':'AI analysis')} · <b>Confidence:</b> ${lastResult.confidence??'—'}%</p>
 <div class="infoGrid">
 <div class="infoBox"><span class="mut">Player Type</span><b>${lastResult.playerType||'—'}</b></div>
 <div class="infoBox"><span class="mut">Sensitivity Type</span><b>${lastResult.sensitivityType||'—'}</b></div>
@@ -210,17 +233,18 @@ $('fixPanel').classList.remove('hidden');
 
 function selectedIssues(){return [...document.querySelectorAll('#issues input:checked')].map(x=>x.value)}
 $('fix').onclick=async()=>{
-if(!lastResult?.recalibratedSensitivity){$('fixOut').className='status warn';$('fixOut').textContent='Pehle gameplay analysis complete karo.';return}
+if(!lastResult?.recommendedSensitivity&&!lastResult?.recalibratedSensitivity){$('fixOut').className='status warn';$('fixOut').textContent='Pehle gameplay analysis complete karo.';return}
 const selected=selectedIssues(),custom=$('custom').value.trim();
 if(!selected.length&&!custom){$('fixOut').className='status warn';$('fixOut').textContent='Kam se kam ek problem select karo ya custom problem likho.';return}
 $('fixOut').className='status';$('fixOut').textContent='Problem analysis + new sensitivity + new code ban raha hai...';
-const payload={baseSensitivity:getSensFromProfile(lastResult.recalibratedSensitivity),selectedProblems:selected,customProblem:custom,device:profile?.device||profile?.deviceName||$('dev').value.trim(),sourceProfile:profile||null};
+const payload={sensitivity:getSensFromProfile(lastResult.recommendedSensitivity||lastResult.recalibratedSensitivity),issues:selected,customText:custom,code:profile?.code||''};
 try{
 const r=await fetch('/api/gameplay-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
 const j=await r.json();if(!r.ok)throw new Error(j.error||'Fix failed');
 const s=getSensFromProfile(j.sensitivity);
-$('fixOut').innerHTML=`<b>✓ New sensitivity ready</b>${boxes(s)}<p><b>New Profile ID:</b> <span class="codeNew">${j.code}</span></p><button class="btn" id="copyNew">COPY NEW CODE</button><p class="mut">Original Profile ID untouched hai. New code mein same profile/device information rahegi; sensitivity updated hai.</p>`;
-$('copyNew').onclick=()=>navigator.clipboard?.writeText(j.code);
+if(j.newProfileId){try{localStorage.setItem('vg_ment4l_profile_'+j.newProfileId,JSON.stringify({...profile,code:j.newProfileId,sensitivity:j.sensitivity,derivedFromCode:profile?.code||null}));}catch(e){}}
+$('fixOut').innerHTML=`<b>✓ New sensitivity ready</b>${boxes(s)}<p><b>New Profile ID:</b> <span class="codeNew">${j.newProfileId||j.code||'—'}</span></p><button class="btn" id="copyNew">COPY NEW CODE</button><p class="mut">Original Profile ID untouched hai. New code mein same profile/device information rahegi; sensitivity updated hai.</p>`;
+$('copyNew').onclick=()=>navigator.clipboard?.writeText(j.newProfileId||j.code||'');
 }catch(e){$('fixOut').className='status warn';$('fixOut').textContent='Fix failed: '+String(e.message||e)}
 };
 })();
