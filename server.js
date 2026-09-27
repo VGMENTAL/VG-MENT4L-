@@ -378,7 +378,7 @@ Sensitivity values must be integers 0-200. Do not promise zero recoil or guarant
     // If a model returns a temporary 503/high-demand response, retry briefly and
     // then fail over to another current video-capable Flash model. This keeps a
     // temporary Gemini capacity spike from breaking the whole Website 3 analysis.
-    const models = [model, 'gemini-3.7-flash', 'gemini-3.6-flash']
+    const models = [model, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash']
       .filter((m, i, arr) => m && arr.indexOf(m) === i);
     let response = null;
     let usedModel = model;
