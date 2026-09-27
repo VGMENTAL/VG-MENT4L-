@@ -1,18 +1,22 @@
-# VG MENT4L — Public Deployment
+# VG MENT4L
 
-Free Fire MAX sensitivity tools with Website 1 (device/HUD sensitivity) and Website 2 (OB update recalibration).
+Free Fire MAX sensitivity tools with:
+- Website 1 — device/profile-based sensitivity generation
+- Website 2 — OB update recalibration
+- Website 3 — gameplay sensitivity checking
+- Profile ID backend storage
+- Gameplay AI analysis hooks
 
-## Render
-- Build command: `npm install`
-- Start command: `npm start`
-- Environment variables: none required
+## Persistent Profile ID setup
 
-## Important
-Profile data is written to the service filesystem as a backend fallback. On hosting plans with an ephemeral filesystem, data can be lost after a restart/redeploy; for permanent cross-device storage, connect a persistent database later.
+The code now includes a Render Blueprint in `render.yaml` that wires the Node web service to a PostgreSQL database through `DATABASE_URL`.
 
-## Routes
-- `/` — landing page
-- `/website1.html` — sensitivity generator
-- `/website2.html` — OB updates
-- `/api/health` — backend health
-- `/api/config` — latest supported OB configuration
+**Important:** Render's Free Postgres is intended for testing/hobby use and currently expires after 30 days. For long-term permanent profile storage, use a database plan that does not expire. The website keeps a browser-local fallback, but that fallback is not cross-device.
+
+After creating/syncing the Blueprint in Render:
+1. Confirm the web service is `vg-ment4l`.
+2. Confirm `DATABASE_URL` is present on the web service.
+3. Open `/api/health` and check that `database` is `connected`.
+4. Generate a new Profile ID in Website 1, then load that ID from another device in Website 2/3.
+
+AI keys are intentionally not stored in GitHub. Add them as Render environment variables when needed.
