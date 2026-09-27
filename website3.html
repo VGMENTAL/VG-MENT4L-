@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://vg-ment4l.onrender.com" crossorigin>
+<link rel="dns-prefetch" href="//vg-ment4l.onrender.com">
 <title>VG MENT4L — CHECK SENSITIVITY</title>
 <style>
 :root{--bg:#060915;--card:#0d1428;--line:#293963;--txt:#eef4ff;--mut:#9eabd0;--a:#50eaff;--p:#9c70ff;--ok:#38d39f;--warn:#f4d58a;--bad:#ff7b91}
@@ -95,6 +97,22 @@ const $=id=>document.getElementById(id);
 // API must point to the VG MENT4L Render backend when this HTML is previewed outside the deployed site (e.g. ChatGPT Library).
 const API_BASE=(location.hostname==='vg-ment4l.onrender.com')?'':'https://vg-ment4l.onrender.com';
 const api=path=>API_BASE+path;
+
+// Warm the free Render instance in the background so the first real analysis
+// request does not have to pay the cold-start delay.
+let warmPromise=null;
+function warmBackend(){
+  if(warmPromise)return warmPromise;
+  warmPromise=fetch(api('/api/health'),{cache:'no-store',keepalive:true})
+    .catch(()=>null)
+    .finally(()=>{warmPromise=null});
+  return warmPromise;
+}
+warmBackend();
+// Keep the free instance warm while this page is actively open.
+// This does not change AI analysis; it only reduces server cold-start/loading delay.
+setInterval(()=>{ if(document.visibilityState==='visible') warmBackend(); }, 4*60*1000);
+
 const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
 let mode='p',profile=null,file=null,meta=null,lastResult=null,working=false;
 
@@ -214,6 +232,8 @@ async function extractTimelineFrames(f, meta){
 }
 $('vid').onchange=async()=>{
  file=$('vid').files[0]||null;meta=null;lastResult=null;$('fixPanel').classList.add('hidden');
+// Start waking the backend as soon as the user chooses a video.
+warmBackend();
  if(!file)return;
  const MAX=2*1024*1024*1024;
  if(file.size>MAX){status(`Video ${(file.size/1073741824).toFixed(2)} GB hai. Maximum 2 GB hai.`,'status warn');file=null;return}
