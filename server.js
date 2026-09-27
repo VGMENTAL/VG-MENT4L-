@@ -320,8 +320,8 @@ async function waitGeminiFile(name, key) {
     const text = await r.text();
     if (!r.ok) throw new Error(`Gemini file-status HTTP ${r.status}: ${text.slice(0, 1000)}`);
     const d = JSON.parse(text);
-    const state = String(d.state || '').toUpperCase();
-    if (state === 'ACTIVE') return d;
+    const state = String(d.state || d.file?.state || '').toUpperCase();
+    if (state === 'ACTIVE') return d.file || d;
     if (state === 'FAILED') throw new Error('Gemini video processing failed');
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
@@ -371,19 +371,25 @@ Return ONLY valid JSON with this shape:
 }
 Sensitivity values must be integers 0-200. Do not promise zero recoil or guaranteed headshots. Prefer measured changes over extreme values.`;
 
-    const r = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    // Use Gemini's stable multimodal generateContent path for uploaded video files.
+    // The uploaded File API object is reused as file_data; no video is stored in VG MENT4L.
+    const r = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model,
-        input: [
-          { type: 'video', uri: fileInfo.uri, mime_type: mime, processing: 'agentic' },
-          { type: 'text', text: prompt }
-        ]
+        contents: [{
+          parts: [
+            { text: prompt },
+            { file_data: { mime_type: mime, file_uri: fileInfo.uri } }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: 'application/json'
+        }
       })
     }, GAMEPLAY_TIMEOUT_MS);
     const text = await r.text();
-    if (!r.ok) throw new Error(`Gemini vision HTTP ${r.status}: ${text.slice(0, 1400)}`);
+    if (!r.ok) throw new Error(`Gemini video analysis HTTP ${r.status}: ${text.slice(0, 1800)}`);
     const out = parseJsonOutput(extractText(JSON.parse(text)));
     out.recommendedSensitivity = normSens(out.recommendedSensitivity);
     out.findings = Array.isArray(out.findings) ? out.findings.slice(0, 30) : [];
