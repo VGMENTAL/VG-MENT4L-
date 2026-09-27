@@ -456,7 +456,7 @@ Sensitivity values are integers 0-200. Do not promise zero recoil or guaranteed 
   const r = await fetchWithTimeout('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: OPENAI_GAMEPLAY_MODEL, input: [{ role: 'user', content }], max_output_tokens: 5000 })
+    body: JSON.stringify({ model: OPENAI_GAMEPLAY_MODEL, reasoning: { effort: 'none' }, input: [{ role: 'user', content }], max_output_tokens: 5000 })
   }, GAMEPLAY_TIMEOUT_MS);
   const raw = await r.text();
   if (!r.ok) throw new Error(`OpenAI vision HTTP ${r.status}: ${raw.slice(0, 1600)}`);
