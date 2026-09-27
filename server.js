@@ -351,140 +351,133 @@ async function deleteGeminiFile(name, key) {
 
 async function runGeminiVideo(stream, mime, size, context) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
-  const model = String(process.env.GEMINI_MODEL || 'gemini-3.8-flash').trim();
+  const configuredModel = String(process.env.GEMINI_MODEL || 'gemini-3.8-flash').trim();
   if (!key) return { configured: false, message: 'GEMINI_API_KEY is not configured. Render Environment Variables mein Gemini API key add karo.' };
 
-  const fileInfo = await uploadGeminiStream(stream, mime, size, 'VG-MENT4L-gameplay-' + Date.now(), key);
-  try {
-    await waitGeminiFile(fileInfo.name, key);
-    const prompt = `You are the full-video gameplay calibration analyst for VG MENT4L Free Fire MAX.
-IMPORTANT: Analyze the ENTIRE supplied gameplay video, not a small set of screenshots. Dynamically inspect different timestamps and fast-action moments. Track repeated behavior across the whole recording before making a sensitivity recommendation.
+  // FAST MODE: short gameplay clips use static processing because it avoids the
+  // extra agentic navigation/tool round-trips that can increase latency.
+  const models = [configuredModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
+    .filter((m, i, arr) => m && arr.indexOf(m) === i);
 
-Goal: diagnose the CURRENT sensitivity from actual gameplay behavior and create a NEW sensitivity tailored to this player.
-Study natural drag speed and length, upward drag consistency, one-tap/flick timing, chest/neck/head stopping point, overshoot and under-drag, recoil/spray control, close/mid/long tracking, target switching, movement while firing, visible guns, repeated patterns, FPS/frame pacing/lag when observable, and sensitivity imbalance between scopes.
-Do not assume every miss is caused by sensitivity. Separate player-input mistakes, ping/FPS/recording issues, and sensitivity-related patterns. Use the ENTIRE timeline and base the recommendation on repeated evidence. If the same video is analyzed again, apply the same calibration logic: do not invent a different sensitivity merely because the observed moments can be described differently. Start from the supplied CURRENT sensitivity and change each value only when the video evidence supports that specific direction.
-RAM is context only and must NOT directly multiply sensitivity.
+  // Keep the complete-video upload path, but analyze the uploaded video directly
+  // with generateContent. The browser does not create representative screenshots.
+  const fileInfo = await uploadGeminiStream(stream, mime, size, 'VG-MENT4L-gameplay-' + Date.now(), key);
+
+  try {
+    const prompt = `You are VG MENT4L's Free Fire MAX gameplay sensitivity calibration engine.
+Analyze the COMPLETE supplied video from beginning to end. Use repeated evidence, not one isolated moment.
+
+Check: drag speed/length, upward flick stopping point, head vs neck vs chest, overshoot/under-drag, recoil/spray control, close/mid/long tracking, target switching, movement while firing, visible weapon/scope behavior, and repeated patterns. Separate player-input mistakes and FPS/ping/recording artifacts from sensitivity-related patterns.
+
+IMPORTANT CALIBRATION RULES:
+- Start from CURRENT sensitivity in PROFILE CONTEXT.
+- Change a sensitivity value only when repeated video evidence supports that direction.
+- Do not assume every miss is a sensitivity problem.
+- Do not make random opposite recommendations for the same evidence.
+- RAM is context only; never multiply sensitivity by RAM.
+- Prefer the smallest useful change.
+- Return only valid JSON.
 
 PROFILE CONTEXT:
 ${JSON.stringify(context)}
 
-Return ONLY valid JSON with this shape:
+JSON shape:
 {
   "playerType":"",
   "dragStyle":"",
   "rangePreference":"",
   "mainIssue":"",
-  "problemDiagnosis":["evidence-based statements about current sensitivity"],
-  "findings":["observations from different parts/timestamps of the entire video"],
+  "problemDiagnosis":[""],
+  "findings":[""],
   "recommendedSensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},
-  "adjustmentReasons":["why important changes were made"],
+  "adjustmentReasons":[""],
   "evidenceSummary":"",
   "confidence":"low|medium|high",
   "videoDuration":"",
   "timestampEvidence":["timestamp + observation"]
 }
-Sensitivity values must be integers 0-200. Do not promise zero recoil or guaranteed headshots. Prefer measured changes over extreme values.`;
+Sensitivity values must be integers 0-200. Do not promise zero recoil or guaranteed headshots.`;
 
-    // Use Gemini's multimodal generateContent path for the uploaded video.
-    // If a model returns a temporary 503/high-demand response, retry briefly and
-    // then fail over to another current video-capable Flash model. This keeps a
-    // temporary Gemini capacity spike from breaking the whole Website 3 analysis.
-    const models = [model, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
-      .filter((m, i, arr) => m && arr.indexOf(m) === i);
-    let response = null;
-    let usedModel = model;
     let last503 = null;
 
-    // IMPORTANT: use Gemini agentic video processing for gameplay. Static video
-    // processing samples at 1 FPS and can miss fast drag/flick events. Agentic
-    // processing dynamically navigates the timeline and is supported by the
-    // current Flash models used below.
     for (const candidate of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
-        const r = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions', {
-          method: 'POST',
-          headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: candidate,
-            input: [
-              {
-                type: 'video',
-                uri: fileInfo.uri,
-                mime_type: mime,
-                processing: 'agentic'
-              },
-              { type: 'text', text: prompt }
-            ],
-            generation_config: {
-              temperature: 0,
-              seed: 42,
-              thinking_level: 'medium',
-              max_output_tokens: 5000
+        const started = Date.now();
+        const r = await fetchWithTimeout(
+          'https://generativelanguage.googleapis.com/v1beta/models/' +
+          encodeURIComponent(candidate) + ':generateContent',
+          {
+            method: 'POST',
+            headers: {
+              ['x-goog-' + 'api-key']: key,
+              'Content-Type': 'application/json'
             },
-            response_format: {
-              type: 'text',
-              mime_type: 'application/json'
-            },
-            store: false
-          })
-        }, GAMEPLAY_TIMEOUT_MS);
+            body: JSON.stringify({
+              contents: [{
+                role: 'user',
+                parts: [
+                  {
+                    file_data: {
+                      file_uri: fileInfo.uri,
+                      mime_type: mime
+                    },
+                    media_resolution: {
+                      level: 'MEDIA_RESOLUTION_LOW'
+                    },
+                    media_processing: 'STATIC'
+                  },
+                  { text: prompt }
+                ]
+              }],
+              generation_config: {
+                temperature: 0,
+                seed: 42,
+                max_output_tokens: 2200,
+                response_mime_type: 'application/json',
+                media_resolution: 'MEDIA_RESOLUTION_LOW'
+              }
+            })
+          },
+          GAMEPLAY_TIMEOUT_MS
+        );
 
         const responseText = await r.text();
+        const elapsedMs = Date.now() - started;
+
         if (r.ok) {
-          response = { r, text: responseText };
-          usedModel = candidate;
-          break;
+          const data = JSON.parse(responseText);
+          const out = parseJsonOutput(extractText(data));
+          out.recommendedSensitivity = normSens(out.recommendedSensitivity);
+          out.findings = Array.isArray(out.findings) ? out.findings.slice(0, 24) : [];
+          out.problemDiagnosis = Array.isArray(out.problemDiagnosis) ? out.problemDiagnosis.slice(0, 16) : [];
+          out.adjustmentReasons = Array.isArray(out.adjustmentReasons) ? out.adjustmentReasons.slice(0, 16) : [];
+          out.timestampEvidence = Array.isArray(out.timestampEvidence) ? out.timestampEvidence.slice(0, 24) : [];
+          out.model = candidate;
+          out.configured = true;
+          out.fullVideo = true;
+          out.processingMode = 'static-fast';
+          out.mediaResolution = 'low';
+          out.aiAnalysisMs = elapsedMs;
+          return out;
         }
 
         if (r.status === 503) {
-          last503 = responseText.slice(0, 1800);
-          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 1500));
+          last503 = new Error(`Gemini video analysis HTTP 503: ${responseText.slice(0, 1200)}`);
+          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 700));
           continue;
         }
 
         throw new Error(`Gemini video analysis HTTP ${r.status}: ${responseText.slice(0, 1800)}`);
       }
-      if (response) break;
     }
 
-    if (!response) {
-      throw new Error(`Gemini video analysis HTTP 503: ${last503 || 'Gemini video models temporarily unavailable'}`);
-    }
-
-    const out = parseJsonOutput(extractText(JSON.parse(response.text)));
-    out.recommendedSensitivity = normSens(out.recommendedSensitivity);
-    out.findings = Array.isArray(out.findings) ? out.findings.slice(0, 30) : [];
-    out.problemDiagnosis = Array.isArray(out.problemDiagnosis) ? out.problemDiagnosis.slice(0, 20) : [];
-    out.adjustmentReasons = Array.isArray(out.adjustmentReasons) ? out.adjustmentReasons.slice(0, 20) : [];
-    out.timestampEvidence = Array.isArray(out.timestampEvidence) ? out.timestampEvidence.slice(0, 30) : [];
-    out.model = usedModel;
-    out.configured = true;
-    out.fullVideo = true;
-    return out;
+    if (last503) throw last503;
+    throw new Error('Gemini video analysis failed');
   } finally {
     await deleteGeminiFile(fileInfo.name, key);
   }
 }
 
-
-function extractOpenAIOutput(data) {
-  if (typeof data?.output_text === 'string' && data.output_text.trim()) return data.output_text.trim();
-  const out = Array.isArray(data?.output) ? data.output : [];
-  const parts = [];
-  for (const item of out) for (const c of (item?.content || [])) {
-    if (typeof c?.text === 'string') parts.push(c.text);
-  }
-  return parts.join('\n').trim();
-}
-function parseLooseJson(text) {
-  const t = String(text || '').trim();
-  try { return JSON.parse(t); } catch {}
-  const fenced = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  if (fenced) { try { return JSON.parse(fenced[1]); } catch {} }
-  const a = t.indexOf('{'), b = t.lastIndexOf('}');
-  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch {} }
-  throw new Error('OpenAI returned invalid JSON');
-}
 async function runOpenAIGameplayFrames(frames, context) {
   const key = String(process.env.OPENAI_API_KEY || '').trim();
   if (!key) return { configured: false, message: 'OPENAI_API_KEY is not configured. Render Environment Variables mein OpenAI API key add karo.' };
@@ -636,9 +629,9 @@ const server = http.createServer(async (req, res) => {
         gameplayAI: !!String(process.env.GEMINI_API_KEY || '').trim(),
         aiProvider: 'gemini',
         gameplayModel: String(process.env.GEMINI_MODEL || 'gemini-3.8-flash'),
-        videoMode: 'full-video-direct-stream',
+        videoMode: 'full-video-direct-stream-fast-static',
         maxVideoBytes: GAMEPLAY_MAX_BODY,
-        version: '7.0-streamed-video'
+        version: '8.0-fast-static-video'
       });
     }
     if (req.method === 'GET' && u.pathname === '/api/health') {
