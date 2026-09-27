@@ -356,7 +356,7 @@ async function runGeminiVideo(stream, mime, size, context) {
 
   // FAST MODE: short gameplay clips use static processing because it avoids the
   // extra agentic navigation/tool round-trips that can increase latency.
-  const models = [configuredModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
+  const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', configuredModel]
     .filter((m, i, arr) => m && arr.indexOf(m) === i);
 
   // Keep the complete-video upload path, but analyze the uploaded video directly
@@ -364,39 +364,22 @@ async function runGeminiVideo(stream, mime, size, context) {
   const fileInfo = await uploadGeminiStream(stream, mime, size, 'VG-MENT4L-gameplay-' + Date.now(), key);
 
   try {
-    const prompt = `You are VG MENT4L's Free Fire MAX gameplay sensitivity calibration engine.
-Analyze the COMPLETE supplied video from beginning to end. Use repeated evidence, not one isolated moment.
+    const prompt = `Analyze this COMPLETE Free Fire MAX gameplay video for sensitivity calibration.
+Use repeated evidence across the whole clip. Check drag speed, overshoot/under-drag, head/neck/chest stopping point, recoil control, range, target switching and movement while firing. Separate player mistakes/FPS/ping/recording artifacts from sensitivity problems.
 
-Check: drag speed/length, upward flick stopping point, head vs neck vs chest, overshoot/under-drag, recoil/spray control, close/mid/long tracking, target switching, movement while firing, visible weapon/scope behavior, and repeated patterns. Separate player-input mistakes and FPS/ping/recording artifacts from sensitivity-related patterns.
-
-IMPORTANT CALIBRATION RULES:
-- Start from CURRENT sensitivity in PROFILE CONTEXT.
-- Change a sensitivity value only when repeated video evidence supports that direction.
-- Do not assume every miss is a sensitivity problem.
-- Do not make random opposite recommendations for the same evidence.
-- RAM is context only; never multiply sensitivity by RAM.
+Rules:
+- Anchor to CURRENT sensitivity in PROFILE CONTEXT.
+- Change a value only when repeated evidence supports that direction.
 - Prefer the smallest useful change.
-- Return only valid JSON.
+- Do not assume every miss is sensitivity-related.
+- Return concise JSON only.
 
 PROFILE CONTEXT:
 ${JSON.stringify(context)}
 
-JSON shape:
-{
-  "playerType":"",
-  "dragStyle":"",
-  "rangePreference":"",
-  "mainIssue":"",
-  "problemDiagnosis":[""],
-  "findings":[""],
-  "recommendedSensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},
-  "adjustmentReasons":[""],
-  "evidenceSummary":"",
-  "confidence":"low|medium|high",
-  "videoDuration":"",
-  "timestampEvidence":["timestamp + observation"]
-}
-Sensitivity values must be integers 0-200. Do not promise zero recoil or guaranteed headshots.`;
+JSON:
+{"playerType":"","dragStyle":"","rangePreference":"","mainIssue":"","problemDiagnosis":[""],"findings":[""],"recommendedSensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"adjustmentReasons":[""],"evidenceSummary":"","confidence":"low|medium|high","videoDuration":"","timestampEvidence":["MM:SS observation"]}
+Values 0-200 integers. No guaranteed headshots/recoil.`;
 
     let last503 = null;
 
@@ -429,12 +412,13 @@ Sensitivity values must be integers 0-200. Do not promise zero recoil or guarant
                   { text: prompt }
                 ]
               }],
-              generation_config: {
+              generationConfig: {
                 temperature: 0,
                 seed: 42,
-                max_output_tokens: 2200,
-                response_mime_type: 'application/json',
-                media_resolution: 'MEDIA_RESOLUTION_LOW'
+                thinkingConfig: { thinkingLevel: 'minimal' },
+                maxOutputTokens: 1200,
+                responseMimeType: 'application/json',
+                mediaResolution: 'MEDIA_RESOLUTION_LOW'
               }
             })
           },
@@ -451,11 +435,11 @@ Sensitivity values must be integers 0-200. Do not promise zero recoil or guarant
           out.findings = Array.isArray(out.findings) ? out.findings.slice(0, 24) : [];
           out.problemDiagnosis = Array.isArray(out.problemDiagnosis) ? out.problemDiagnosis.slice(0, 16) : [];
           out.adjustmentReasons = Array.isArray(out.adjustmentReasons) ? out.adjustmentReasons.slice(0, 16) : [];
-          out.timestampEvidence = Array.isArray(out.timestampEvidence) ? out.timestampEvidence.slice(0, 24) : [];
+          out.timestampEvidence = Array.isArray(out.timestampEvidence) ? out.timestampEvidence.slice(0, 12) : [];
           out.model = candidate;
           out.configured = true;
           out.fullVideo = true;
-          out.processingMode = 'static-fast';
+          out.processingMode = 'static-fast-minimal';
           out.mediaResolution = 'low';
           out.aiAnalysisMs = elapsedMs;
           return out;
