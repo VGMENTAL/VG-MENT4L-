@@ -273,10 +273,12 @@ async function fetchWithTimeout(url, options = {}, ms = 900000) {
 }
 
 async function startGeminiUpload(mime, size, displayName, key) {
-  const r = await fetchWithTimeout('https://generativelanguage.googleapis.com/upload/v1beta/files', {
+  // Gemini's current REST examples support the API key on the upload URL.
+  // Keep the resumable headers exactly as required by the Files API.
+  const uploadEndpoint = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(key)}`;
+  const r = await fetchWithTimeout(uploadEndpoint, {
     method: 'POST',
     headers: {
-      'x-goog-api-key': key,
       'X-Goog-Upload-Protocol': 'resumable',
       'X-Goog-Upload-Command': 'start',
       'X-Goog-Upload-Header-Content-Length': String(size),
