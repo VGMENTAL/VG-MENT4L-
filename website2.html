@@ -351,7 +351,10 @@ async function loadServerConfig(){
     if(Number.isFinite(n)&&n>=1){MAX_SUPPORTED_OB=n;LATEST_OB='OB'+n;BACKEND_AVAILABLE=!!j.backend;}
     setTargetOptions();
     const badge=$('#backendStatus');
-    if(badge){badge.className='notice ok';badge.textContent='✓ Backend connected • Latest verified official OB: '+LATEST_OB;}
+    if(badge){
+      if(BACKEND_AVAILABLE){badge.className='notice ok';badge.textContent='✓ Persistent backend connected • Latest verified official OB: '+LATEST_OB;}
+      else{badge.className='notice warn';badge.textContent='⚠ Persistent database is not connected • Browser fallback only • Latest verified official OB: '+LATEST_OB;}
+    }
   }catch(e){
     BACKEND_AVAILABLE=false;
     setTargetOptions();
