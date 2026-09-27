@@ -57,7 +57,7 @@ label{font-size:13px;font-weight:700;display:block;margin:5px 0}input,select,tex
 <section class="panel">
 <h2>Gameplay Video</h2>
 <p class="mut"><b>Privacy:</b> Full video permanently store nahi kiya jayega. Browser video se temporary analysis frames banayega. Server/database mein video save nahi hoga.</p>
-<div class="video"><input id="vid" type="file" accept="video/*"><div id="vm" class="status">Gameplay video select karo.</div><div class="bar"><i id="prog"></i></div></div>
+<div class="video"><input id="vid" type="file" accept="video/*"><div id="vm" class="status">Gameplay video select karo.</div><div id="timer" class="mut" style="margin-top:8px">Time: 0s</div><div class="bar"><i id="prog"></i></div></div>
 </section>
 
 <section class="panel">
@@ -163,29 +163,37 @@ if(file.size>DAILY_LIMIT || used+file.size>DAILY_LIMIT){
   $('vm').className='status warn';$('vm').textContent='Daily 1 GB gameplay limit reached. Aaj aur video analyse nahi hoga.';
   file=null;return;
 }
-
-$('vm').textContent='Temporary gameplay frames sample ho rahe hain...';$('prog').style.width='5%';
+const started=performance.now();let timerId=setInterval(()=>{$('timer').textContent='Time: '+((performance.now()-started)/1000).toFixed(1)+'s';},100);
+$('vm').className='status';$('vm').innerHTML='<b>Stage 1/2:</b> Video metadata read ho raha hai...';$('prog').style.width='3%';
 try{
 const v=document.createElement('video');v.preload='metadata';v.muted=true;v.playsInline=true;v.src=URL.createObjectURL(file);
-await new Promise((a,b)=>{v.onloadedmetadata=a;v.onerror=b});
+await new Promise((a,b)=>{v.onloadedmetadata=a;v.onerror=()=>b(new Error('Video metadata read failed'))});
 meta={duration:v.duration,w:v.videoWidth,h:v.videoHeight,size:file.size};
-const count=Math.min(12,Math.max(6,Math.ceil(v.duration/10)));
+$('vm').innerHTML=`<b>Stage 1/2:</b> ${file.name} · ${(file.size/1048576).toFixed(1)} MB · ${v.videoWidth}×${v.videoHeight} · ${v.duration.toFixed(1)}s<br><span class="mut">Fast sampling: 8 representative gameplay moments. Full video upload nahi ho raha.</span>`;
+$('prog').style.width='8%';
+const count=Math.min(8,Math.max(6,Math.ceil(v.duration/16)));
 const canvas=document.createElement('canvas'), scale=Math.min(1,640/v.videoWidth);
 canvas.width=Math.max(320,Math.round(v.videoWidth*scale));canvas.height=Math.max(180,Math.round(v.videoHeight*scale));
-const ctx=canvas.getContext('2d');
+const ctx=canvas.getContext('2d',{willReadFrequently:false});
+function seekTo(t){return new Promise(resolve=>{
+ let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(to);v.removeEventListener('seeked',finish);resolve()};
+ const to=setTimeout(finish,2200);v.addEventListener('seeked',finish,{once:true});v.currentTime=t;
+})}
 for(let i=0;i<count;i++){
-const t=Math.min(Math.max(.15,v.duration*(i+.35)/count),Math.max(.15,v.duration-.1));
-v.currentTime=t;await new Promise((a,b)=>{v.onseeked=a;v.onerror=b});
-ctx.drawImage(v,0,0,canvas.width,canvas.height);
-frames.push(canvas.toDataURL('image/jpeg',.46));
-$('prog').style.width=Math.round((i+1)/count*60)+'%';
-if(i===count-1){try{localStorage.setItem('vg_ment4l_gameplay_usage',JSON.stringify({date:today,bytes:used+file.size}));}catch(e){}}
+ const t=Math.min(Math.max(.25,v.duration*(i+.5)/count),Math.max(.25,v.duration-.15));
+ await seekTo(t);
+ ctx.drawImage(v,0,0,canvas.width,canvas.height);
+ const data=canvas.toDataURL('image/jpeg',.42);
+ if(data.length>1000)frames.push(data);
+ $('prog').style.width=Math.round(10+(i+1)/count*48)+'%';
+ $('vm').innerHTML=`<b>Stage 1/2:</b> Sampling gameplay ${i+1}/${count}<br><span class="mut">${frames.length} useful frames ready · full video server par upload nahi ho raha.</span>`;
 }
+try{localStorage.setItem('vg_ment4l_gameplay_usage',JSON.stringify({date:today,bytes:used+file.size}));}catch(e){}
 URL.revokeObjectURL(v.src);
-$('vm').className='status ok';$('vm').innerHTML=`<b>${file.name}</b> · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s · ${frames.length} temporary frames`;
-}catch(e){$('vm').className='status warn';$('vm').textContent='Video read/sampling failed.';file=null;frames=[]}
+$('prog').style.width='60%';$('vm').className='status ok';$('vm').innerHTML=`<b>Stage 1/2 complete.</b> ${file.name} · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s · ${frames.length} useful frames<br><span class="mut">Ab AI analysis ke liye ready hai.</span>`;
+}catch(e){$('vm').className='status warn';$('vm').innerHTML='<b>Video sampling failed.</b> '+String(e.message||e);file=null;frames=[]}
+clearInterval(timerId);
 };
-
 function baseSens(){return mode==='p'&&profile?getSensFromProfile(profile.sensitivity):manualSens()}
 function dataPayload(){
 const b=baseSens(),device=mode==='p'?(profile?.device||profile?.deviceName||''):$('dev').value.trim();
@@ -199,38 +207,27 @@ return {
 };
 }
 $('go').onclick=async()=>{
-if(!file||!frames.length){$('out').className='result';$('out').textContent='Gameplay video select karo.';return}
+if(!file||!frames.length){$('out').className='result';$('out').textContent='Gameplay video select karo aur sampling complete hone do.';return}
 if(mode==='p'&&!profile){$('out').className='result';$('out').textContent='Pehle Profile ID load karo.';return}
-$('out').className='result';$('out').innerHTML='<b>Deep gameplay analysis chal raha hai...</b><p class="mut">Frames temporary hain; full video database mein save nahi ho raha.</p>';
-$('prog').style.width='72%';
+const started=performance.now();let timerId=setInterval(()=>{$('out').querySelector('[data-timer]')?.replaceChildren(document.createTextNode('Analysis time: '+((performance.now()-started)/1000).toFixed(1)+'s'));},100);
+$('out').className='result';$('out').innerHTML='<b>Stage 2/2: AI gameplay analysis chal raha hai...</b><p class="mut" data-timer>Analysis time: 0.0s</p><p class="mut">'+frames.length+' selected gameplay frames analyze ho rahe hain. Full video server par upload nahi hua.</p>';
+$('prog').style.width='75%';
 try{
-const r=await fetch('/api/gameplay-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dataPayload())});
+const payload=dataPayload();
+const r=await fetch('/api/gameplay-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
 const j=await r.json();if(!r.ok)throw new Error(j.error||'Analysis failed');
-lastResult=j.result||j.analysis||{};
-$('prog').style.width='100%';
+lastResult=j.result||j.analysis||{};$('prog').style.width='100%';clearInterval(timerId);
 if(lastResult.configured===false){
-  $('out').innerHTML=`<h3>Gameplay frames ready, AI vision is OFF</h3><div class="status warn">${lastResult.message||'Render server par OPENAI_API_KEY configure nahi hai.'}</div><p class="mut">Video ko dobara upload karne ki zarurat nahi. AI key enable hone ke baad isi workflow se analysis chalega.</p>`;
-  return;
+  $('out').innerHTML=`<h3>Gameplay frames ready, AI vision is OFF</h3><div class="status warn">${lastResult.message||'Render server par OPENAI_API_KEY configure nahi hai.'}</div><p class="mut">Sampling complete ho chuki hai. AI key enable hone ke baad analysis chalega.</p>`;return;
 }
 const s=getSensFromProfile(lastResult.recommendedSensitivity||lastResult.recalibratedSensitivity);
 $('out').innerHTML=`<h3>Gameplay Analysis Complete</h3>
-<p><b>Analysis:</b> ${lastResult.configured===false?'AI not configured':(lastResult.configured?'AI vision analysis':'AI analysis')} · <b>Confidence:</b> ${lastResult.confidence??'—'}%</p>
-<div class="infoGrid">
-<div class="infoBox"><span class="mut">Player Type</span><b>${lastResult.playerType||'—'}</b></div>
-<div class="infoBox"><span class="mut">Sensitivity Type</span><b>${lastResult.sensitivityType||'—'}</b></div>
-<div class="infoBox"><span class="mut">Drag Style</span><b>${lastResult.dragStyle||'—'}</b></div>
-<div class="infoBox"><span class="mut">Range</span><b>${lastResult.rangePreference||'—'}</b></div>
-<div class="infoBox"><span class="mut">Suggested Focus</span><b>${lastResult.focusGuns||'—'}</b></div>
-<div class="infoBox"><span class="mut">Main Issue</span><b>${lastResult.mainIssue||'—'}</b></div>
-</div>
-<h4>Observed Gameplay</h4><ul>${(lastResult.findings||[]).map(x=>`<li>${x}</li>`).join('')||'<li>No reliable finding returned.</li>'}</ul>
-<h4>Recommended Sensitivity</h4>${boxes(s)}
-${(lastResult.adjustmentReasons||[]).length?`<h4>Why this sensitivity?</h4><ul>${lastResult.adjustmentReasons.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}
-<div class="status warn">Ye recommended starting configuration hai; guaranteed headshots/zero recoil nahi.</div>`;
+<p><b>Analysis:</b> AI vision analysis · <b>Confidence:</b> ${lastResult.confidence??'—'}</p>
+<div class="infoGrid"><div class="infoBox"><span class="mut">Player Type</span><b>${lastResult.playerType||'—'}</b></div><div class="infoBox"><span class="mut">Sensitivity Type</span><b>${lastResult.sensitivityType||'—'}</b></div><div class="infoBox"><span class="mut">Drag Style</span><b>${lastResult.dragStyle||'—'}</b></div><div class="infoBox"><span class="mut">Range</span><b>${lastResult.rangePreference||'—'}</b></div><div class="infoBox"><span class="mut">Suggested Focus</span><b>${Array.isArray(lastResult.focusGuns)?lastResult.focusGuns.join(', '):(lastResult.focusGuns||'—')}</b></div><div class="infoBox"><span class="mut">Main Issue</span><b>${lastResult.mainIssue||'—'}</b></div></div>
+<h4>Observed Gameplay</h4><ul>${(lastResult.findings||[]).map(x=>`<li>${x}</li>`).join('')||'<li>No reliable finding returned.</li>'}</ul><h4>Recommended Sensitivity</h4>${boxes(s)}${(lastResult.adjustmentReasons||[]).length?`<h4>Why this sensitivity?</h4><ul>${lastResult.adjustmentReasons.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}<div class="status warn">Ye recommended starting configuration hai; guaranteed headshots/zero recoil nahi.</div>`;
 $('fixPanel').classList.remove('hidden');
-}catch(e){$('out').className='result';$('out').innerHTML='<b>Analysis failed:</b> '+String(e.message||e)+'<br><span class="mut">Backend AI configuration check karo.</span>'}
+}catch(e){clearInterval(timerId);$('out').className='result';$('out').innerHTML='<b>Analysis failed:</b> '+String(e.message||e)+'<br><span class="mut">Backend AI configuration/API response check karo.</span>'}
 };
-
 function selectedIssues(){return [...document.querySelectorAll('#issues input:checked')].map(x=>x.value)}
 $('fix').onclick=async()=>{
 if(!lastResult?.recommendedSensitivity&&!lastResult?.recalibratedSensitivity){$('fixOut').className='status warn';$('fixOut').textContent='Pehle gameplay analysis complete karo.';return}
