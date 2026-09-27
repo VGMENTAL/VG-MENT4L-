@@ -58,7 +58,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section class="panel">
 <h2>Gameplay Video</h2>
-<p class="mut"><b>Full-video AI:</b> Is version mein sirf representative frames nahi bheje jaate. Tumhara <b>poora gameplay video</b> temporary server par stream hoke AI video analysis ke liye upload hota hai. Analysis ke baad temporary file delete karne ki koshish hoti hai; video Profile/Database mein save nahi hota.</p>
+<p class="mut"><b>Full-video AI:</b> Tumhara <b>poora gameplay video</b> temporary stream ke through AI video analysis ko bheja jaata hai. Analysis ke liye representative screenshots par depend nahi kiya jaata; video Profile/Database mein save nahi hota.</p>
 <div class="video">
 <input id="vid" type="file" accept="video/*">
 <div id="vm" class="status">Gameplay video select karo.</div>
@@ -70,7 +70,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section class="panel">
 <h2>Gameplay Analysis</h2>
-<p class="mut">System gameplay frames + profile/device/current sensitivity ko analyse karke visible problem, player pattern aur updated sensitivity nikalega.</p>
+<p class="mut">Poore gameplay video + profile/device/current sensitivity ko analyse karke visible problem, player pattern aur updated sensitivity nikalega.</p>
 <button id="go" class="btn primary" style="width:100%">ANALYZE GAMEPLAY & CREATE NEW SENSITIVITY</button>
 <div id="out" class="result hidden"></div>
 </section>
@@ -221,9 +221,23 @@ $('vid').onchange=async()=>{
   setStep('prep');$('prog').style.width='8%';
   meta=await readVideoMeta(file);
   $('prog').style.width='18%';setStep('upload');
-  status(`<b>Stage 1/5 complete.</b> ${esc(file.name)} · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s<br><span class="mut">Ab poore timeline ko chhote chronological AI-vision frames mein read kiya jayega. Video server/database mein save nahi hoga.</span>`,'status ok');
+  status(`<b>Stage 1/5 complete.</b> ${esc(file.name)} · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s<br><span class="mut">Ab complete video directly full-video AI analysis ke liye stream hoga. Video Profile/Database mein save nahi hoga.</span>`,'status ok');
  }catch(e){meta=null;status('<b>Video read failed:</b> '+esc(e.message||e),'status warn');file=null}
 };
+
+function analyzeWithGeminiFullVideo(context){
+ return new Promise((resolve,reject)=>{
+  const xhr=new XMLHttpRequest();xhr.open('POST',api('/api/gameplay-analyze'),true);
+  xhr.setRequestHeader('Content-Type',file?.type||'video/mp4');
+  try{xhr.setRequestHeader('X-VG-Context',btoa(unescape(encodeURIComponent(JSON.stringify(context)))))}catch{}
+  xhr.upload.onprogress=e=>{if(e.lengthComputable){const pct=20+(e.loaded/e.total)*60;$('prog').style.width=pct.toFixed(1)+'%';status(`<b>Stage 2/5:</b> Complete gameplay video upload ${Math.round(e.loaded/e.total*100)}%<br><span class="mut">Poora video directly AI video analysis ke liye stream ho raha hai.</span>`);}};
+  xhr.onload=()=>{let j={};try{j=JSON.parse(xhr.responseText||'{}')}catch{};if(xhr.status>=200&&xhr.status<300)resolve(j);else reject(new Error((j.error||'Full-video AI analysis failed')+(j.detail?' — '+j.detail:'')))};
+  xhr.onerror=()=>reject(new Error('Network error while sending the complete gameplay video to AI'));
+  xhr.ontimeout=()=>reject(new Error('Full-video AI analysis timed out.'));
+  xhr.timeout=30*60*1000;
+  xhr.send(file);
+ });
+}
 
 function analyzeWithOpenAI(context, frames){
  return new Promise((resolve,reject)=>{
@@ -247,11 +261,10 @@ $('go').onclick=async()=>{
  $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Video ke beginning se end tak chronological evidence collect ho raha hai.</p>';
  $('prog').style.width='18%';setStep('upload');
  try{
-  const frames=await extractTimelineFrames(file,meta);
-  $('bar').classList.add('aiBusy');setStep('vision');$('prog').style.width='55%';
-  status(`<b>Stage 3/5:</b> ${frames.length} frames ready — ab OpenAI Vision poore gameplay evidence ko compare kar raha hai.`,'status ok');
-  $('out').innerHTML='<b>Stage 3/5: OpenAI Vision analysis in progress...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Early + middle + late gameplay sab compare ho raha hai.</p>';
-  const j=await analyzeWithOpenAI(contextPayload(),frames);
+  $('bar').classList.add('aiBusy');setStep('upload');$('prog').style.width='20%';
+  $('out').innerHTML='<b>Stage 2/5: Complete gameplay video AI ko stream ho raha hai...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Beginning se end tak poora video analysis ke liye bheja ja raha hai. Browser representative frames par depend nahi karega.</p>';
+  const j=await analyzeWithGeminiFullVideo(contextPayload());
+  $('bar').classList.remove('aiBusy');setStep('diagnosis');
   $('bar').classList.remove('aiBusy');$('timer').textContent='AI time: '+((performance.now()-started)/1000).toFixed(1)+'s';$('prog').style.width='92%';setStep('diagnosis');
   if(!j.ok)throw new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:''));
   lastResult=j.result||j.analysis||{};
@@ -259,7 +272,7 @@ $('go').onclick=async()=>{
   setStep('final');$('prog').style.width='100%';
   const s=getSensFromProfile(lastResult.recommendedSensitivity);
   $('out').innerHTML=`<h3>✓ Full Gameplay Analysis Complete</h3>
-  <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'OpenAI')} · <b>Frames:</b> ${esc(lastResult.framesAnalyzed||'—')} · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
+  <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'Gemini')} · <b>Full Video:</b> Yes · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
   <div class="infoGrid"><div class="infoBox"><span class="mut">Player Type</span><b>${esc(lastResult.playerType||'—')}</b></div><div class="infoBox"><span class="mut">Drag Style</span><b>${esc(lastResult.dragStyle||'—')}</b></div><div class="infoBox"><span class="mut">Range</span><b>${esc(lastResult.rangePreference||'—')}</b></div><div class="infoBox"><span class="mut">Main Issue</span><b>${esc(lastResult.mainIssue||'—')}</b></div></div>
   <h4>1. Tumhari current sensitivity mein kya problem thi?</h4><ul>${list(lastResult.problemDiagnosis,'Reliable diagnosis nahi mila.')}</ul>
   <h4>2. Poore gameplay se kya observe hua?</h4><ul>${list(lastResult.findings,'No reliable finding returned.')}</ul>
