@@ -181,7 +181,11 @@ function contextPayload(){
  targetOb:mode==='p'?(profile?.obVersion||profile?.ob||'OB55'):$('tob').value,
  playerStyle:profile?.style||profile?.playerStyle||'',gameMode:profile?.mode||profile?.gameMode||'',
  ram:profile?.ram||'',fingers:profile?.fingers||'',deviceAge:profile?.deviceAge||'',
- guns:profile?.allGuns?'All Guns':(profile?.guns||[]),meta};
+ guns:profile?.allGuns?'All Guns':(profile?.guns||[]),
+videoDuration: meta?.duration || 0,
+videoName: meta?.name || '',
+videoSizeBytes: meta?.size || 0,
+meta};
 }
 
 /* OpenAI Vision path: the browser walks the ENTIRE video timeline and sends chronological frames. */
@@ -250,7 +254,20 @@ function analyzeWithGeminiFullVideo(context){
   const xhr=new XMLHttpRequest();xhr.open('POST',api('/api/gameplay-analyze'),true);
   xhr.setRequestHeader('Content-Type',file?.type||'video/mp4');
   try{xhr.setRequestHeader('X-VG-Context',btoa(unescape(encodeURIComponent(JSON.stringify(context)))))}catch{}
-  xhr.upload.onprogress=e=>{if(e.lengthComputable){const pct=20+(e.loaded/e.total)*60;$('prog').style.width=pct.toFixed(1)+'%';status(`<b>Stage 2/5:</b> Complete gameplay video upload ${Math.round(e.loaded/e.total*100)}%<br><span class="mut">Poora video directly AI video analysis ke liye stream ho raha hai.</span>`);}};
+  xhr.upload.onprogress=e=>{
+    if(e.lengthComputable){
+      const pct=20+(e.loaded/e.total)*60;
+      $('prog').style.width=pct.toFixed(1)+'%';
+      const done=Math.round(e.loaded/e.total*100);
+      status(`<b>Stage 2/5:</b> Complete gameplay video upload ${done}%<br><span class="mut">Poora video direct Gemini fast-analysis pipeline ko ja raha hai.</span>`);
+    }
+  };
+  xhr.upload.onload=()=>{
+    if(typeof window.__vgAiStarted==='function') window.__vgAiStarted();
+    setStep('vision');
+    $('prog').style.width='82%';
+    status('<b>Stage 3/5: Fast AI Vision</b><br><span class="mut">Upload complete. Ab short-video static analysis chal raha hai — agentic navigation nahi.</span>');
+  };
   xhr.onload=()=>{let j={};try{j=JSON.parse(xhr.responseText||'{}')}catch{};if(xhr.status>=200&&xhr.status<300)resolve(j);else reject(new Error((j.error||'Full-video AI analysis failed')+(j.detail?' — '+j.detail:'')))};
   xhr.onerror=()=>reject(new Error('Network error while sending the complete gameplay video to AI'));
   xhr.ontimeout=()=>reject(new Error('Full-video AI analysis timed out.'));
@@ -277,22 +294,30 @@ $('go').onclick=async()=>{
  if(!file){$('out').className='result';$('out').textContent='Pehle complete gameplay video select karo.';return}
  if(mode==='p'&&!profile){tab('m');$('out').className='result';$('out').textContent='Profile ID available nahi hai. Manual Sensitivity mode open kar diya gaya hai — current values check karke analysis start karo.';return}
  working=true;$('go').disabled=true;$('fix').disabled=true;$('bar').classList.remove('aiBusy');
- const started=performance.now(),timerId=setInterval(()=>{const t=((performance.now()-started)/1000).toFixed(1);$('timer').textContent='AI time: '+t+'s';$('out').querySelector('[data-timer]')?.replaceChildren(document.createTextNode('AI time: '+t+'s'));},200);
- $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Video ke beginning se end tak chronological evidence collect ho raha hai.</p>';
+ const started=performance.now();
+ let aiStarted=0;
+ window.__vgAiStarted=()=>{ if(!aiStarted) aiStarted=performance.now(); };
+ const timerId=setInterval(()=>{
+   const t=aiStarted?((performance.now()-aiStarted)/1000).toFixed(1):'0.0';
+   $('timer').textContent='AI analysis time: '+t+'s';
+   $('out').querySelector('[data-timer]')?.replaceChildren(document.createTextNode('AI analysis time: '+t+'s'));
+ },200);
+ $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Complete video upload ke baad fast static AI analysis chalega. Short gameplay ke liye latency optimize ki gayi hai.</p>';
  $('prog').style.width='18%';setStep('upload');
  try{
   $('bar').classList.add('aiBusy');setStep('upload');$('prog').style.width='20%';
-  $('out').innerHTML='<b>Stage 2/5: Complete gameplay video AI ko stream ho raha hai...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Beginning se end tak poora video analysis ke liye bheja ja raha hai. Browser representative frames par depend nahi karega.</p>';
+  $('out').innerHTML='<b>Stage 2/5: Complete gameplay video AI ko stream ho raha hai...</b><p class="mut" data-timer>AI analysis time: 0.0s</p><p class="mut">Upload ke baad Stage 3 mein fast static full-video analysis hoga. Browser representative frames par depend nahi karega.</p>';
   const j=await analyzeWithGeminiFullVideo(contextPayload());
   $('bar').classList.remove('aiBusy');setStep('diagnosis');
-  $('bar').classList.remove('aiBusy');$('timer').textContent='AI time: '+((performance.now()-started)/1000).toFixed(1)+'s';$('prog').style.width='92%';setStep('diagnosis');
+  $('bar').classList.remove('aiBusy');$('timer').textContent='AI analysis time: '+(aiStarted?((performance.now()-aiStarted)/1000).toFixed(1):'0.0')+'s';$('prog').style.width='92%';setStep('diagnosis');
   if(!j.ok)throw new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:''));
   lastResult=j.result||j.analysis||{};
   if(lastResult.configured===false){$('out').innerHTML=`<h3>OpenAI AI unavailable</h3><div class="status warn">${esc(lastResult.message||'OPENAI_API_KEY configure karo.')}</div>`;return}
   setStep('final');$('prog').style.width='100%';
   const s=getSensFromProfile(lastResult.recommendedSensitivity);
   $('out').innerHTML=`<h3>✓ Full Gameplay Analysis Complete</h3>
-  <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'Gemini')} · <b>Full Video:</b> Yes · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
+  <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'Gemini')} · <b>Mode:</b> Fast Static · <b>Full Video:</b> Yes · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
+  <p class="mut"><b>AI analysis time:</b> ${lastResult.aiAnalysisMs?((lastResult.aiAnalysisMs/1000).toFixed(1)+'s'):'—'}</p>
   <div class="infoGrid"><div class="infoBox"><span class="mut">Player Type</span><b>${esc(lastResult.playerType||'—')}</b></div><div class="infoBox"><span class="mut">Drag Style</span><b>${esc(lastResult.dragStyle||'—')}</b></div><div class="infoBox"><span class="mut">Range</span><b>${esc(lastResult.rangePreference||'—')}</b></div><div class="infoBox"><span class="mut">Main Issue</span><b>${esc(lastResult.mainIssue||'—')}</b></div></div>
   <h4>1. Tumhari current sensitivity mein kya problem thi?</h4><ul>${list(lastResult.problemDiagnosis,'Reliable diagnosis nahi mila.')}</ul>
   <h4>2. Poore gameplay se kya observe hua?</h4><ul>${list(lastResult.findings,'No reliable finding returned.')}</ul>
@@ -305,7 +330,13 @@ $('go').onclick=async()=>{
  }catch(e){
   $('bar').classList.remove('aiBusy');$('prog').style.width='45%';setStep('vision');$('out').className='result';
   $('out').innerHTML='<b>Analysis failed:</b> '+esc(e.message||e)+'<br><span class="mut">Exact OpenAI/backend detail show ki gayi hai.</span>';
- }finally{clearInterval(timerId);working=false;$('go').disabled=false;$('fix').disabled=false}
+ }finally{
+  clearInterval(timerId);
+  window.__vgAiStarted=null;
+  working=false;
+  $('go').disabled=false;
+  $('fix').disabled=false
+}
 };
 
 function selectedIssues(){return [...document.querySelectorAll('#issues input:checked')].map(x=>x.value)}
