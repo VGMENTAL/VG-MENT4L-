@@ -1,258 +1,47 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { Pool } = require('pg');
-
-const PORT = Number(process.env.PORT || 3000);
-const ROOT = __dirname;
-const DATA_DIR = path.join(ROOT, 'data');
-const PROFILES = path.join(DATA_DIR, 'profiles');
-const UPDATES = path.join(DATA_DIR, 'updates');
-fs.mkdirSync(PROFILES, {recursive:true});
-fs.mkdirSync(UPDATES, {recursive:true});
-
-const MAX_BODY = 3_000_000;
-const ALLOW = new Set(['GET','POST','PUT','OPTIONS']);
-const codeRe = /^#[A-Z0-9]{10}$/;
-const legacyRe = /^#[A-Z0-9]{5}$/;
-const validCode = c => codeRe.test(c) || legacyRe.test(c);
-const safeCode = c => String(c||'').toUpperCase().trim();
-const clamp = n => Math.max(0, Math.min(200, Math.round(Number(n)||0)));
-
-// Latest official patch verified from Garena at build time. Do not advance this
-// number until the next official Garena patch has actually been released and reviewed.
-const LATEST_OB = 55;
-const OFFICIAL_OB_URLS = {
-  OB55:'https://ff.garena.com/en/article/1712/',
-  OB54:'https://ff.garena.com/en/news/',
-  OB53:'https://ff.garena.com/en/article/1640/'
-};
-
-const VERIFIED_DEVICES = {
-  'iqoo neo 10': {
-    canonical:'iQOO Neo 10', brand:'iQOO', platform:'Android',
-    chipset:'Snapdragon 8s Gen 4', gpu:'Adreno-class GPU',
-    ram:'8/12/16 GB LPDDR5X Ultra', display:'6.78-inch 1.5K AMOLED',
-    refreshRate:'Up to 144 Hz', touchSampling:'Up to 3000 Hz instant touch / 360 Hz custom',
-    os:'Funtouch OS 15 based on Android 15', gaming:'Supercomputing Chip Q1; 144 FPS gaming support; 7000 mm² VC cooling',
-    source:'https://www.iqoo.com/in/products/neo10'
-  }
-};
-
-function json(res,status,obj){
-  res.writeHead(status,{
-    'Content-Type':'application/json; charset=utf-8',
-    'Cache-Control':'no-store',
-    'Access-Control-Allow-Origin':'*',
-    'Access-Control-Allow-Headers':'Content-Type',
-    'Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS'
-  });
-  res.end(JSON.stringify(obj));
-}
-function body(req){return new Promise((resolve,reject)=>{
-  let b='';
-  req.on('data',x=>{b+=x;if(b.length>MAX_BODY){req.destroy();reject(new Error('Payload too large'));}});
-  req.on('end',()=>{try{resolve(b?JSON.parse(b):{})}catch(e){reject(e)}});
-  req.on('error',reject);
-});}
-function fileFor(dir,code){return path.join(dir,encodeURIComponent(code)+'.json');}
-function readJson(file){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return null}}
-function writeJson(file,obj){const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(obj,null,2));fs.renameSync(tmp,file)}
-function cleanProfile(p,code){
-  if(!p || typeof p!=='object') return null;
-  const out={...p,code:safeCode(code)};
-  // Never store raw HUD screenshot bytes in the profile JSON.
-  delete out.hudImageData;
-  if(out.sensitivity && typeof out.sensitivity==='object'){
-    for(const k of Object.keys(out.sensitivity)) out.sensitivity[k]=clamp(out.sensitivity[k]);
-  }
-  out.updatedAt=new Date().toISOString();
-  return out;
-}
-function sendFile(res,file,type){
-  if(!fs.existsSync(file)){res.writeHead(404);return res.end('Not found');}
-  res.writeHead(200,{'Content-Type':type,'Cache-Control':'public, max-age=300'});
-  fs.createReadStream(file).pipe(res);
-}
-function normalizeDevice(s){return String(s||'').toLowerCase().replace(/[®™]/g,'').replace(/\s+/g,' ').trim();}
-function lookupDevice(name){
-  const n=normalizeDevice(name);
-  for(const [key,val] of Object.entries(VERIFIED_DEVICES)) if(n===key || n.includes(key) || key.includes(n)) return {...val,match:'exact',query:name};
-  return null;
-}
-
-async function fetchOfficial(ob){
-  const url=OFFICIAL_OB_URLS[ob];
-  if(!url) return null;
-  const ctl=new AbortController();
-  const timer=setTimeout(()=>ctl.abort(),9000);
-  try{
-    const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'VG-MENT4L-Patch-Research/1.0'}});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const text=await r.text();
-    return {ob,url,text:text.slice(0,220000),fetchedAt:new Date().toISOString()};
-  }catch(e){return null;}finally{clearTimeout(timer);}
-}
-
-// Supabase/PostgreSQL is the persistent cross-device store. If DATABASE_URL is
-// missing, the server keeps a local JSON fallback so the site can still boot.
-const DATABASE_URL = String(process.env.DATABASE_URL || '').trim();
-let pool = null;
-let dbReady = false;
-let dbError = '';
-
-async function initDb(){
-  if(!DATABASE_URL){
-    dbError = 'DATABASE_URL is not configured; using local fallback.';
-    return;
-  }
-  try{
-    pool = new Pool({
-      connectionString: DATABASE_URL,
-      max: 5,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-      ssl: { rejectUnauthorized:false }
-    });
-    await pool.query('SELECT 1');
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS vg_profiles (
-        code TEXT PRIMARY KEY,
-        profile JSONB NOT NULL,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS vg_updates (
-        id BIGSERIAL PRIMARY KEY,
-        code TEXT NULL,
-        item JSONB NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-    await pool.query('CREATE INDEX IF NOT EXISTS vg_updates_code_idx ON vg_updates(code)');
-    dbReady = true;
-    dbError = '';
-    console.log('VG MENT4L persistent database connected.');
-  }catch(e){
-    dbReady = false;
-    dbError = String(e && e.message || e);
-    console.error('Database connection failed; local fallback remains available:', dbError);
-    try{ await pool?.end(); }catch{}
-    pool = null;
-  }
-}
-
-async function dbGetProfile(code){
-  if(!dbReady || !pool) return null;
-  const r=await pool.query('SELECT profile FROM vg_profiles WHERE code=$1 LIMIT 1',[code]);
-  return r.rows[0]?.profile || null;
-}
-async function dbSaveProfile(profile){
-  if(!dbReady || !pool) return false;
-  await pool.query(
-    `INSERT INTO vg_profiles(code,profile,updated_at) VALUES($1,$2::jsonb,NOW())
-     ON CONFLICT(code) DO UPDATE SET profile=EXCLUDED.profile, updated_at=NOW()`,
-    [profile.code, JSON.stringify(profile)]
-  );
-  return true;
-}
-async function dbSaveUpdate(item){
-  if(!dbReady || !pool) return false;
-  await pool.query('INSERT INTO vg_updates(code,item) VALUES($1,$2::jsonb)',[item.code||null,JSON.stringify(item)]);
-  return true;
-}
-async function dbGetUpdates(code){
-  if(!dbReady || !pool) return null;
-  const r=await pool.query('SELECT item FROM vg_updates WHERE code=$1 ORDER BY created_at DESC LIMIT 100',[code]);
-  return r.rows.map(x=>x.item);
-}
-
-const routes={
-  '/':['index.html','text/html; charset=utf-8'],
-  '/website1.html':['website1.html','text/html; charset=utf-8'],
-  '/website2.html':['website2.html','text/html; charset=utf-8'],
-  '/website3.html':['website3.html','text/html; charset=utf-8'],
-  '/robots.txt':['robots.txt','text/plain; charset=utf-8'],
-  '/sitemap.xml':['sitemap.xml','application/xml; charset=utf-8']
-};
-
-const server=http.createServer(async(req,res)=>{
-  if(!ALLOW.has(req.method)) return json(res,405,{error:'Method not allowed'});
-  if(req.method==='OPTIONS') return json(res,204,{});
-  const u=new URL(req.url,`http://${req.headers.host||'localhost'}`);
-  try{
-    if(req.method==='GET' && u.pathname==='/api/config'){
-      return json(res,200,{ok:true,latestOb:`OB${LATEST_OB}`,latestObNumber:LATEST_OB,officialSource:OFFICIAL_OB_URLS[`OB${LATEST_OB}`],backend:dbReady,storage:dbReady?'supabase-postgres':'local-fallback',version:'4.0'});
-    }
-    if(req.method==='GET' && u.pathname==='/api/health') return json(res,200,{ok:true,service:'VG MENT4L API',version:'4.0',latestOb:`OB${LATEST_OB}`,database:dbReady?'connected':'fallback',databaseError:dbReady?'':dbError});
-
-    if(req.method==='GET' && u.pathname==='/api/device-research'){
-      const q=u.searchParams.get('device')||'';
-      const hit=lookupDevice(q);
-      return json(res,200,{ok:true,device:hit,verified:!!hit,query:q,notice:hit?'Exact/known device profile found.':'Exact device not in the verified catalog; do not invent hardware specs.'});
-    }
-
-    if(req.method==='GET' && u.pathname==='/api/patch-research'){
-      const ob=safeCode(u.searchParams.get('ob')||'');
-      if(!/^OB\d+$/.test(ob)) return json(res,400,{error:'Valid OB required'});
-      if(Number(ob.slice(2))>LATEST_OB) return json(res,409,{error:`${ob} is not officially supported yet`,latestOb:`OB${LATEST_OB}`});
-      const result=await fetchOfficial(ob);
-      if(!result) return json(res,503,{error:'Official Garena patch could not be fetched right now',ob});
-      return json(res,200,{ok:true,...result});
-    }
-
-    if(req.method==='GET' && u.pathname.startsWith('/api/profiles/')){
-      const code=safeCode(decodeURIComponent(u.pathname.split('/').pop()));
-      if(!validCode(code)) return json(res,400,{error:'Invalid Profile ID'});
-      if(dbReady){
-        const p=await dbGetProfile(code);
-        if(p) return json(res,200,{profile:p,source:'backend'});
-      }
-      const p=readJson(fileFor(PROFILES,code));
-      if(!p) return json(res,404,{error:'Profile not found'});
-      return json(res,200,{profile:p,source:'local-fallback'});
-    }
-
-    if((req.method==='POST'||req.method==='PUT') && u.pathname==='/api/profiles'){
-      const b=await body(req); const code=safeCode(b.code);
-      if(!validCode(code)) return json(res,400,{error:'Valid Profile ID required'});
-      const p=cleanProfile(b,code); if(!p) return json(res,400,{error:'Invalid profile'});
-      if(dbReady){
-        await dbSaveProfile(p);
-        return json(res,200,{ok:true,code,updatedAt:p.updatedAt,source:'backend'});
-      }
-      writeJson(fileFor(PROFILES,code),p);
-      return json(res,200,{ok:true,code,updatedAt:p.updatedAt,source:'local-fallback',warning:'Persistent database unavailable'});
-    }
-
-    if(req.method==='POST' && u.pathname==='/api/updates'){
-      const b=await body(req); const code=safeCode(b.code||'');
-      if(code && !validCode(code)) return json(res,400,{error:'Invalid Profile ID'});
-      const item={...b,code:code||null,time:b.time||new Date().toISOString()};
-      if(dbReady){
-        await dbSaveUpdate(item);
-        return json(res,200,{ok:true,source:'backend'});
-      }
-      const key=code||'manual'; const file=fileFor(UPDATES,key); const arr=readJson(file)||[];
-      arr.unshift(item); writeJson(file,arr.slice(0,100));
-      return json(res,200,{ok:true,source:'local-fallback'});
-    }
-
-    if(req.method==='GET' && u.pathname.startsWith('/api/updates/')){
-      const code=safeCode(decodeURIComponent(u.pathname.split('/').pop()));
-      if(!validCode(code)) return json(res,400,{error:'Invalid Profile ID'});
-      if(dbReady) return json(res,200,{updates:await dbGetUpdates(code),source:'backend'});
-      return json(res,200,{updates:readJson(fileFor(UPDATES,code))||[],source:'local-fallback'});
-    }
-
-    const r=routes[u.pathname];
-    if(req.method==='GET' && r) return sendFile(res,path.join(ROOT,r[0]),r[1]);
-    return json(res,404,{error:'Not found'});
-  }catch(e){console.error(e);return json(res,500,{error:'Server error'});}
-});
-
-server.listen(PORT,async()=>{
-  console.log(`VG MENT4L running on http://localhost:${PORT}`);
-  await initDb();
-});
+const http=require('http');
+const fs=require('fs');
+const path=require('path');
+const {Pool}=require('pg');
+const PORT=Number(process.env.PORT||3000),ROOT=__dirname,DATA_DIR=path.join(ROOT,'data'),PROFILES=path.join(DATA_DIR,'profiles'),UPDATES=path.join(DATA_DIR,'updates');
+fs.mkdirSync(PROFILES,{recursive:true});fs.mkdirSync(UPDATES,{recursive:true});
+const MAX_BODY=3000000,GAMEPLAY_MAX_BODY=20000000,ALLOW=new Set(['GET','POST','PUT','OPTIONS']);
+const codeRe=/^#[A-Z0-9]{10}$/,legacyRe=/^#[A-Z0-9]{5}$/;const validCode=c=>codeRe.test(c)||legacyRe.test(c);const safeCode=c=>String(c||'').toUpperCase().trim();const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
+const LATEST_OB=55,OFFICIAL_OB_URLS={OB55:'https://ff.garena.com/en/article/1712/',OB54:'https://ff.garena.com/en/news/',OB53:'https://ff.garena.com/en/article/1640/'};
+const VERIFIED_DEVICES={'iqoo neo 10':{canonical:'iQOO Neo 10',brand:'iQOO',platform:'Android',chipset:'Snapdragon 8s Gen 4',gpu:'Adreno-class GPU',ram:'8/12/16 GB LPDDR5X Ultra',display:'6.78-inch 1.5K AMOLED',refreshRate:'Up to 144 Hz',touchSampling:'Up to 3000 Hz instant touch / 360 Hz custom',os:'Funtouch OS 15 based on Android 15',gaming:'Supercomputing Chip Q1; 144 FPS gaming support; 7000 mm² VC cooling',source:'https://www.iqoo.com/in/products/neo10'}};
+function json(res,status,obj){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'GET,POST,PUT,OPTIONS'});res.end(JSON.stringify(obj));}
+function readBody(req,limit=MAX_BODY){return new Promise((resolve,reject)=>{let b='',done=false;req.on('data',x=>{if(done)return;b+=x;if(b.length>limit){done=true;req.destroy();reject(new Error('Payload too large'));}});req.on('end',()=>{if(done)return;done=true;try{resolve(b?JSON.parse(b):{})}catch(e){reject(e)}});req.on('error',e=>{if(!done){done=true;reject(e)}});});}
+function body(req){return readBody(req,MAX_BODY)}function fileFor(dir,code){return path.join(dir,encodeURIComponent(code)+'.json')}function readJson(file){try{return JSON.parse(fs.readFileSync(file,'utf8'))}catch{return null}}function writeJson(file,obj){const t=file+'.tmp';fs.writeFileSync(t,JSON.stringify(obj,null,2));fs.renameSync(t,file)}
+function cleanProfile(p,code){if(!p||typeof p!=='object')return null;const o={...p,code:safeCode(code)};delete o.hudImageData;if(o.sensitivity&&typeof o.sensitivity==='object')for(const k of Object.keys(o.sensitivity))o.sensitivity[k]=clamp(o.sensitivity[k]);o.updatedAt=new Date().toISOString();return o}
+function sendFile(res,file,type){if(!fs.existsSync(file)){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'Content-Type':type,'Cache-Control':'public, max-age=300'});fs.createReadStream(file).pipe(res)}
+function normalizeDevice(s){return String(s||'').toLowerCase().replace(/[®™]/g,'').replace(/\s+/g,' ').trim()}function lookupDevice(name){const n=normalizeDevice(name);for(const[k,v]of Object.entries(VERIFIED_DEVICES))if(n===k||n.includes(k)||k.includes(n))return {...v,match:'exact',query:name};return null}
+async function fetchOfficial(ob){const url=OFFICIAL_OB_URLS[ob];if(!url)return null;const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),9000);try{const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'VG-MENT4L-Patch-Research/1.0'}});if(!r.ok)throw new Error('HTTP '+r.status);return{ob,url,text:(await r.text()).slice(0,220000),fetchedAt:new Date().toISOString()}}catch{return null}finally{clearTimeout(timer)}}
+const DATABASE_URL=String(process.env.DATABASE_URL||'').trim();let pool=null,dbReady=false,dbError='';
+async function initDb(){if(!DATABASE_URL){dbError='DATABASE_URL is not configured; using local fallback.';return}try{pool=new Pool({connectionString:DATABASE_URL,max:5,idleTimeoutMillis:30000,connectionTimeoutMillis:10000,ssl:{rejectUnauthorized:false}});await pool.query('SELECT 1');await pool.query('CREATE TABLE IF NOT EXISTS vg_profiles (code TEXT PRIMARY KEY, profile JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');await pool.query('CREATE TABLE IF NOT EXISTS vg_updates (id BIGSERIAL PRIMARY KEY, code TEXT NULL, item JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');await pool.query('CREATE INDEX IF NOT EXISTS vg_updates_code_idx ON vg_updates(code)');dbReady=true;dbError='';console.log('VG MENT4L persistent database connected.')}catch(e){dbReady=false;dbError=String(e&&e.message||e);console.error('Database connection failed; local fallback remains available:',dbError);try{await pool?.end()}catch{}pool=null}}
+async function dbGetProfile(code){if(!dbReady||!pool)return null;const r=await pool.query('SELECT profile FROM vg_profiles WHERE code=$1 LIMIT 1',[code]);return r.rows[0]?.profile||null}async function dbSaveProfile(p){if(!dbReady||!pool)return false;await pool.query('INSERT INTO vg_profiles(code,profile,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(code) DO UPDATE SET profile=EXCLUDED.profile,updated_at=NOW()',[p.code,JSON.stringify(p)]);return true}async function dbSaveUpdate(i){if(!dbReady||!pool)return false;await pool.query('INSERT INTO vg_updates(code,item) VALUES($1,$2::jsonb)',[i.code||null,JSON.stringify(i)]);return true}async function dbGetUpdates(c){if(!dbReady||!pool)return null;const r=await pool.query('SELECT item FROM vg_updates WHERE code=$1 ORDER BY created_at DESC LIMIT 100',[c]);return r.rows.map(x=>x.item)}
+function makeNewProfileCode(){const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';let c='#';for(let i=0;i<10;i++)c+=chars[Math.floor(Math.random()*chars.length)];return c}
+function normSens(s){s=s||{};return{general:clamp(s.general??s.General),red_dot:clamp(s.red_dot??s.RedDot??s.redDot),scope_2x:clamp(s.scope_2x??s['2x']??s.scope2x),scope_4x:clamp(s.scope_4x??s['4x']??s.scope4x),sniper:clamp(s.sniper??s.Sniper),free_look:clamp(s.free_look??s.FreeLook??s.freeLook)}}
+const ISSUE_DELTAS={'Aim head se upar ja raha hai':{general:-5,red_dot:-6,scope_2x:-5,scope_4x:-4,sniper:-3,free_look:0},'Aim chest pe lock ho raha hai':{general:6,red_dot:7,scope_2x:5,scope_4x:4,sniper:2,free_look:0},'Aim neck pe lock ho raha hai':{general:3,red_dot:4,scope_2x:3,scope_4x:2,sniper:1,free_look:0},'Drag slow lag raha hai':{general:7,red_dot:7,scope_2x:5,scope_4x:3,sniper:2,free_look:2},'Drag bahut fast / overshoot':{general:-7,red_dot:-7,scope_2x:-5,scope_4x:-3,sniper:-2,free_look:-2},'Recoil / spray shaky':{general:-4,red_dot:-5,scope_2x:-6,scope_4x:-7,sniper:-4,free_look:0},'Close-range tracking slow':{general:6,red_dot:5,scope_2x:2,scope_4x:0,sniper:0,free_look:1},'Long-range aim unstable':{general:-2,red_dot:-2,scope_2x:-4,scope_4x:-6,sniper:-6,free_look:0},'Aim target pe stick nahi kar raha':{general:2,red_dot:2,scope_2x:1,scope_4x:1,sniper:1,free_look:0}};
+function inferCustomDeltas(t){t=String(t||'').toLowerCase();const d={general:0,red_dot:0,scope_2x:0,scope_4x:0,sniper:0,free_look:0},add=x=>Object.keys(d).forEach(k=>d[k]+=x[k]||0);if(/upar|above|overshoot|zyada|fast|tez|high/.test(t))add({general:-4,red_dot:-4,scope_2x:-3,scope_4x:-2,sniper:-2});if(/chest|body|neeche|low|under|kam|slow|dheere/.test(t))add({general:4,red_dot:4,scope_2x:3,scope_4x:2,sniper:2});if(/neck/.test(t))add({general:2,red_dot:2,scope_2x:2,scope_4x:1,sniper:1});if(/recoil|spray|shake|shaky|hil/.test(t))add({general:-2,red_dot:-3,scope_2x:-4,scope_4x:-5,sniper:-3});if(/close|near|tracking/.test(t))add({general:3,red_dot:3,scope_2x:1,free_look:1});if(/long|range|distance/.test(t))add({general:-1,red_dot:-1,scope_2x:-2,scope_4x:-3,sniper:-4});return d}
+function applyIssueList(base,issues=[],customText=''){const s=normSens(base),list=Array.isArray(issues)?issues.map(x=>String(x||'').trim()).filter(Boolean):[],t={general:0,red_dot:0,scope_2x:0,scope_4x:0,sniper:0,free_look:0};for(const i of list){const d=ISSUE_DELTAS[i];if(d)for(const k of Object.keys(t))t[k]+=Number(d[k]||0)}const c=inferCustomDeltas(customText);for(const k of Object.keys(t))t[k]+=c[k]||0;const fixed={};for(const k of Object.keys(s))fixed[k]=clamp(s[k]+Math.max(-15,Math.min(15,t[k])));return{sensitivity:fixed,issues:list,customText:String(customText||'').trim()}}
+function cleanIssueList(x){if(Array.isArray(x))return x.map(v=>String(v||'').trim()).filter(Boolean).slice(0,20);return x?[String(x).trim()]:[]}
+function extractResponseText(d){if(!d)return'';if(typeof d.output_text==='string')return d.output_text;let s='';for(const i of(d.output||[]))for(const c of(i.content||[]))if(typeof c.text==='string')s+=c.text;return s.trim()}function stripFences(s){return String(s||'').replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim()}
+async function runGameplayAI(p){const key=String(process.env.OPENAI_API_KEY||'').trim(),model=String(process.env.GAMEPLAY_AI_MODEL||'gpt-5.6-luna').trim();if(!key)return{configured:false,message:'Real gameplay AI is not configured. Add OPENAI_API_KEY in Render Environment Variables to enable vision analysis.'};const frames=Array.isArray(p.frames)?p.frames.slice(0,16):[];if(!frames.length)throw new Error('No gameplay frames were supplied');const prompt=`You are the gameplay-vision analyst for VG MENT4L, a Free Fire MAX sensitivity tool. Analyze the supplied sampled gameplay screenshots and profile context. Do not claim certainty when a screenshot cannot prove something. Do not promise perfect headshots or zero recoil. Analyze visible aim/drag behavior: drag direction/speed, headshot drag, overshoot/under-drag, chest/neck lock, recoil/spray, close/mid/long tracking, crosshair movement, flick behavior, guns, and visible FPS/lag/recording issues. Recommend 0-200 General, Red Dot, 2x, 4x, Sniper and Free Look. Return ONLY valid JSON: {"playerType":"","sensitivityType":"","dragStyle":"","rangePreference":"","focusGuns":[],"mainIssue":"","findings":[],"recommendedSensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"adjustmentReasons":[],"confidence":"low|medium|high"}. PROFILE CONTEXT: ${JSON.stringify(p.context||{})}`;const content=[{type:'input_text',text:prompt},...frames.map(x=>({type:'input_image',image_url:String(x)}))];const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,input:[{role:'user',content}],max_output_tokens:1800})});const raw=await r.text();if(!r.ok)throw new Error('Vision API HTTP '+r.status+': '+raw.slice(0,500));const d=JSON.parse(raw),txt=stripFences(extractResponseText(d));let out;try{out=JSON.parse(txt)}catch{throw new Error('Vision AI returned non-JSON output')}out.recommendedSensitivity=normSens(out.recommendedSensitivity);out.findings=Array.isArray(out.findings)?out.findings.slice(0,20):[];out.adjustmentReasons=Array.isArray(out.adjustmentReasons)?out.adjustmentReasons.slice(0,20):[];out.focusGuns=Array.isArray(out.focusGuns)?out.focusGuns.slice(0,10):[];out.configured=true;out.model=model;return out}
+const routes={'/':['index.html','text/html; charset=utf-8'],'/website1.html':['website1.html','text/html; charset=utf-8'],'/website2.html':['website2.html','text/html; charset=utf-8'],'/website3.html':['website3.html','text/html; charset=utf-8'],'/robots.txt':['robots.txt','text/plain; charset=utf-8'],'/sitemap.xml':['sitemap.xml','application/xml; charset=utf-8']};
+const server=http.createServer(async(req,res)=>{if(!ALLOW.has(req.method))return json(res,405,{error:'Method not allowed'});if(req.method==='OPTIONS')return json(res,204,{});const u=new URL(req.url,`http://${req.headers.host||'localhost'}`);try{
+if(req.method==='GET'&&u.pathname==='/api/config')return json(res,200,{ok:true,latestOb:`OB${LATEST_OB}`,latestObNumber:LATEST_OB,officialSource:OFFICIAL_OB_URLS[`OB${LATEST_OB}`],backend:dbReady,storage:dbReady?'supabase-postgres':'local-fallback',gameplayAI:!!String(process.env.OPENAI_API_KEY||'').trim(),version:'5.0'});
+if(req.method==='GET'&&u.pathname==='/api/health')return json(res,200,{ok:true,service:'VG MENT4L API',version:'5.0',latestOb:`OB${LATEST_OB}`,database:dbReady?'connected':'fallback',databaseError:dbReady?'':dbError,gameplayAI:!!String(process.env.OPENAI_API_KEY||'').trim()});
+if(req.method==='GET'&&u.pathname==='/api/device-research'){const q=u.searchParams.get('device')||'',hit=lookupDevice(q);return json(res,200,{ok:true,device:hit,verified:!!hit,query:q,notice:hit?'Exact/known device profile found.':'Exact device not in the verified catalog; do not invent hardware specs.'})}
+if(req.method==='GET'&&u.pathname==='/api/patch-research'){const ob=safeCode(u.searchParams.get('ob')||'');if(!/^OB\d+$/.test(ob))return json(res,400,{error:'Valid OB required'});if(Number(ob.slice(2))>LATEST_OB)return json(res,409,{error:`${ob} is not officially supported yet`,latestOb:`OB${LATEST_OB}`});const r=await fetchOfficial(ob);if(!r)return json(res,503,{error:'Official Garena patch could not be fetched right now',ob});return json(res,200,{ok:true,...r})}
+if(req.method==='GET'&&u.pathname.startsWith('/api/profiles/')){const c=safeCode(decodeURIComponent(u.pathname.split('/').pop()));if(!validCode(c))return json(res,400,{error:'Invalid Profile ID'});if(dbReady){const p=await dbGetProfile(c);if(p)return json(res,200,{profile:p,source:'backend'})}const p=readJson(fileFor(PROFILES,c));if(!p)return json(res,404,{error:'Profile not found'});return json(res,200,{profile:p,source:'local-fallback'})}
+if((req.method==='POST'||req.method==='PUT')&&u.pathname==='/api/profiles'){const b=await body(req),c=safeCode(b.code);if(!validCode(c))return json(res,400,{error:'Valid Profile ID required'});const p=cleanProfile(b,c);if(!p)return json(res,400,{error:'Invalid profile'});if(dbReady){await dbSaveProfile(p);return json(res,200,{ok:true,code:c,updatedAt:p.updatedAt,source:'backend'})}writeJson(fileFor(PROFILES,c),p);return json(res,200,{ok:true,code:c,updatedAt:p.updatedAt,source:'local-fallback',warning:'Persistent database unavailable'})}
+async function loadProfile(c){let p=null;if(dbReady)p=await dbGetProfile(c);return p||readJson(fileFor(PROFILES,c))}
+async function saveProfile(p){const c=makeNewProfileCode();p=cleanProfile({...p,code:c},c);if(dbReady)await dbSaveProfile(p);else writeJson(fileFor(PROFILES,c),p);return p}
+if(req.method==='POST'&&u.pathname==='/api/profile-fix'){const b=await body(req),oldCode=safeCode(b.code);if(!validCode(oldCode))return json(res,400,{error:'Valid existing Profile ID required'});const old=await loadProfile(oldCode);if(!old)return json(res,404,{error:'Existing profile not found'});const issues=cleanIssueList(b.issues??b.issue),custom=String(b.customText||b.custom||'').trim();if(!issues.length&&!custom)return json(res,400,{error:'Select at least one problem or enter a custom problem'});const fixed=applyIssueList(old.sensitivity,issues,custom),clone=JSON.parse(JSON.stringify(old));clone.sensitivity=fixed.sensitivity;clone.recalibration={...(clone.recalibration||{}),sourceProfileId:oldCode,issues,customText:custom,createdAt:new Date().toISOString()};const p=await saveProfile(clone);return json(res,200,{ok:true,oldProfileId:oldCode,newProfileId:p.code,sensitivity:p.sensitivity,issues,customText:custom,oldProfileUnchanged:true,source:dbReady?'backend':'local-fallback'})}
+if(req.method==='POST'&&u.pathname==='/api/manual-fix'){const b=await body(req),issues=cleanIssueList(b.issues??b.issue),custom=String(b.customText||b.custom||'').trim();if(!issues.length&&!custom)return json(res,400,{error:'Select at least one problem or enter a custom problem'});return json(res,200,{ok:true,...applyIssueList(b.sensitivity,issues,custom)})}
+if(req.method==='POST'&&u.pathname==='/api/gameplay-analyze'){const b=await readBody(req,GAMEPLAY_MAX_BODY);if(!Array.isArray(b.frames)||!b.frames.length)return json(res,400,{error:'Gameplay frames required'});b.frames=b.frames.slice(0,16);for(const f of b.frames){if(typeof f!=='string'||!f.startsWith('data:image/'))return json(res,400,{error:'Invalid gameplay frame'});if(f.length>2500000)return json(res,413,{error:'One gameplay frame is too large'})}const result=await runGameplayAI(b);return json(res,200,{ok:true,temporary:true,videoStored:false,framesReceived:b.frames.length,result})}
+if(req.method==='POST'&&u.pathname==='/api/gameplay-fix'){const b=await body(req),issues=cleanIssueList(b.issues??b.issue),custom=String(b.customText||b.custom||'').trim();if(!issues.length&&!custom)return json(res,400,{error:'Select at least one problem or enter a custom problem'});const fixed=applyIssueList(b.sensitivity,issues,custom),oldCode=safeCode(b.code||'');if(validCode(oldCode)){const old=await loadProfile(oldCode);if(old){const clone=JSON.parse(JSON.stringify(old));clone.sensitivity=fixed.sensitivity;clone.recalibration={...(clone.recalibration||{}),sourceProfileId:oldCode,issues,customText:custom,source:'gameplay-check',createdAt:new Date().toISOString()};const p=await saveProfile(clone);return json(res,200,{ok:true,oldProfileId:oldCode,newProfileId:p.code,sensitivity:p.sensitivity,issues,customText:custom,oldProfileUnchanged:true,source:dbReady?'backend':'local-fallback'})}}return json(res,200,{ok:true,newProfileId:null,sensitivity:fixed.sensitivity,issues,customText:custom,oldProfileUnchanged:true})}
+if(req.method==='POST'&&u.pathname==='/api/updates'){const b=await body(req),c=safeCode(b.code||'');if(c&&!validCode(c))return json(res,400,{error:'Invalid Profile ID'});const item={...b,code:c||null,time:b.time||new Date().toISOString()};if(dbReady){await dbSaveUpdate(item);return json(res,200,{ok:true,source:'backend'})}const f=fileFor(UPDATES,c||'manual'),a=readJson(f)||[];a.unshift(item);writeJson(f,a.slice(0,100));return json(res,200,{ok:true,source:'local-fallback'})}
+if(req.method==='GET'&&u.pathname.startsWith('/api/updates/')){const c=safeCode(decodeURIComponent(u.pathname.split('/').pop()));if(!validCode(c))return json(res,400,{error:'Invalid Profile ID'});if(dbReady)return json(res,200,{updates:await dbGetUpdates(c),source:'backend'});return json(res,200,{updates:readJson(fileFor(UPDATES,c))||[],source:'local-fallback'})}
+const r=routes[u.pathname];if(req.method==='GET'&&r)return sendFile(res,path.join(ROOT,r[0]),r[1]);return json(res,404,{error:'Not found'});
+}catch(e){console.error(e);return json(res,500,{error:'Server error',detail:String(e&&e.message||e)})}});
+server.listen(PORT,async()=>{console.log(`VG MENT4L running on http://localhost:${PORT}`);await initDb()});
