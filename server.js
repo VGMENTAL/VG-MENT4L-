@@ -374,32 +374,63 @@ Return ONLY valid JSON with this shape:
 }
 Sensitivity values must be integers 0-200. Do not promise zero recoil or guaranteed headshots. Prefer measured changes over extreme values.`;
 
-    // Use Gemini's stable multimodal generateContent path for uploaded video files.
-    // The uploaded File API object is reused as file_data; no video is stored in VG MENT4L.
-    const r = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: 'POST',
-      headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { file_data: { mime_type: mime, file_uri: fileInfo.uri } }
-          ]
-        }],
-        generationConfig: {
-          responseMimeType: 'application/json'
+    // Use Gemini's multimodal generateContent path for the uploaded video.
+    // If a model returns a temporary 503/high-demand response, retry briefly and
+    // then fail over to another current video-capable Flash model. This keeps a
+    // temporary Gemini capacity spike from breaking the whole Website 3 analysis.
+    const models = [model, 'gemini-3.7-flash', 'gemini-3.6-flash']
+      .filter((m, i, arr) => m && arr.indexOf(m) === i);
+    let response = null;
+    let usedModel = model;
+    let last503 = null;
+
+    for (const candidate of models) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const r = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent`, {
+          method: 'POST',
+          headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { file_data: { mime_type: mime, file_uri: fileInfo.uri } }
+              ]
+            }],
+            generationConfig: {
+              responseMimeType: 'application/json'
+            }
+          })
+        }, GAMEPLAY_TIMEOUT_MS);
+
+        const responseText = await r.text();
+        if (r.ok) {
+          response = { r, text: responseText };
+          usedModel = candidate;
+          break;
         }
-      })
-    }, GAMEPLAY_TIMEOUT_MS);
-    const text = await r.text();
-    if (!r.ok) throw new Error(`Gemini video analysis HTTP ${r.status}: ${text.slice(0, 1800)}`);
-    const out = parseJsonOutput(extractText(JSON.parse(text)));
+
+        if (r.status === 503) {
+          last503 = responseText.slice(0, 1800);
+          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 1200));
+          continue;
+        }
+
+        throw new Error(`Gemini video analysis HTTP ${r.status}: ${responseText.slice(0, 1800)}`);
+      }
+      if (response) break;
+    }
+
+    if (!response) {
+      throw new Error(`Gemini video analysis HTTP 503: ${last503 || 'Gemini models temporarily unavailable'}`);
+    }
+
+    const out = parseJsonOutput(extractText(JSON.parse(response.text)));
     out.recommendedSensitivity = normSens(out.recommendedSensitivity);
     out.findings = Array.isArray(out.findings) ? out.findings.slice(0, 30) : [];
     out.problemDiagnosis = Array.isArray(out.problemDiagnosis) ? out.problemDiagnosis.slice(0, 20) : [];
     out.adjustmentReasons = Array.isArray(out.adjustmentReasons) ? out.adjustmentReasons.slice(0, 20) : [];
     out.timestampEvidence = Array.isArray(out.timestampEvidence) ? out.timestampEvidence.slice(0, 30) : [];
-    out.model = model;
+    out.model = usedModel;
     out.configured = true;
     out.fullVideo = true;
     return out;
