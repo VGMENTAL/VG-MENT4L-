@@ -105,7 +105,14 @@ function cleanProfile(profile, code) {
 }
 function sendFile(res, file, type) {
   if (!fs.existsSync(file)) { res.writeHead(404); return res.end('Not found'); }
-  res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=300' });
+  const cacheControl = String(type || '').includes('text/html')
+    ? 'no-store, no-cache, must-revalidate, max-age=0'
+    : 'public, max-age=300';
+  res.writeHead(200, {
+    'Content-Type': type,
+    'Cache-Control': cacheControl,
+    'Pragma': String(type || '').includes('text/html') ? 'no-cache' : undefined
+  });
   fs.createReadStream(file).pipe(res);
 }
 function normalizeDevice(s) { return String(s || '').toLowerCase().replace(/[®™]/g, '').replace(/\s+/g, ' ').trim(); }
