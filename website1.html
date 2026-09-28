@@ -357,9 +357,82 @@ function optimizeSensitivityCurve(values,device,style,mode,ram,fingers,hud,guns,
   return out.map(Math.round);
 }
 
+function finalFusionLock(values,device,style,mode,ram,fingers,hud,guns,preset,playerStyle){
+  /*
+    VG MENT4L Universal Fusion v6:
+    Combines the existing device engine, both supplied blueprint frameworks,
+    player/mode/weapon context, screen/touch class, aim issue and HUD evidence.
+    It does not copy one preset; it selects the most coherent final curve.
+  */
+  const target=blueprintFusionTarget(device,style,mode,fingers,guns,preset,playerStyle);
+  const base=values.map(Number);
+  const issue=aimIssueEl?.value||'balanced';
+  const screen=screenClassEl?.value||'normal';
+  const touch=touchClassEl?.value||'normal';
+
+  // Candidate curves: device-aware base, blueprint prior, and controlled
+  // blends. The best candidate is selected by relationship + context fit.
+  const candidates=[];
+  const weights=[0.18,0.32,0.46,0.60,0.72];
+  for(const w of weights){
+    candidates.push(base.map((v,i)=>Math.round(v*(1-w)+target[i]*w)));
+  }
+  candidates.push(target.slice());
+
+  function score(v){
+    let s=100;
+    // Smooth optical curve is more important than any single absolute number.
+    const desired=[
+      [v[0]-v[1],12,1.15],
+      [v[1]-v[2],10,0.85],
+      [v[2]-v[3],20,0.65],
+      [v[3]-v[4],68,0.32]
+    ];
+    for(const [actual,want,k] of desired) s-=Math.min(16,Math.abs(actual-want)*k);
+
+    // Device/blueprint proximity.
+    for(let i=0;i<5;i++) s-=Math.min(7,Math.abs(v[i]-target[i])*0.10);
+
+    // Aim issue: compensation must be visible but bounded.
+    if(issue==='chest') s+=Math.max(0,Math.min(6,(v[1]-target[1])*0.5));
+    if(issue==='overshoot') s+=Math.max(0,Math.min(6,(target[1]-v[1])*0.5));
+
+    // High touch/screen response should not create an unnecessarily extreme
+    // General value; normal screens can tolerate a little more headroom.
+    if(screen==='high' && v[0]>198) s-=4;
+    if(touch==='high' && v[0]>197) s-=3;
+
+    // Keep Free Look independent from combat sensitivity.
+    if(v[5]<115||v[5]>180) s-=5;
+    return s;
+  }
+
+  let best=candidates[0], bestScore=-Infinity;
+  for(const v of candidates){const sc=score(v);if(sc>bestScore){best=v;bestScore=sc;}}
+
+  // Hard relationship lock after HUD AI so its live delta cannot destroy the
+  // final curve. HUD still remains the strongest visual evidence upstream.
+  best[0]=clamp(best[0],175,200);
+  best[1]=clamp(Math.min(best[1],best[0]-5),150,195);
+  best[2]=clamp(Math.min(best[2],best[1]-7),120,185);
+  best[3]=clamp(Math.min(best[3],best[2]-14),90,175);
+  best[4]=clamp(Math.min(best[4],best[3]-50),35,115);
+  best[5]=clamp(best[5],115,180);
+
+  // Re-apply the declared issue as a small final bias, never an extreme jump.
+  if(issue==='chest') best[1]=clamp(best[1]+2,150,195);
+  if(issue==='overshoot') best[1]=clamp(best[1]-2,150,195);
+
+  // Final monotonicity repair.
+  if(best[1]>=best[0]) best[1]=best[0]-5;
+  if(best[2]>=best[1]) best[2]=best[1]-7;
+  if(best[3]>=best[2]) best[3]=best[2]-14;
+  if(best[4]>=best[3]) best[4]=best[3]-50;
+  return best.map(Math.round);
+}
 function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Freestyle'){
   /*
-    VG MENT4L Precision Calibration v4
+    VG MENT4L Universal Fusion Calibration v6
     Philosophy:
     - Device profile is the anchor, not a random number generator.
     - HUD AI is the strongest live visual signal.
@@ -467,6 +540,11 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
     }
   }
 
+  // 7.5) Universal Fusion Lock: re-align the final curve after HUD AI.
+  // This is the step that prevents independent inputs from creating random
+  // high/mid/low/lowest-looking numbers.
+  [g,r,x2,x4,sn,fl]=finalFusionLock([g,r,x2,x4,sn,fl],device,style,mode,ram,fingers,hud,guns,preset,playerStyle);
+
   // 8) Deterministic soft bounds around the device anchor. This protects the
   // result from extreme stacking of many inputs while preserving meaningful
   // differences between profiles.
@@ -475,7 +553,7 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
     const lo=Number(anchor[index])-range, hi=Number(anchor[index])+range;
     return Math.max(lo,Math.min(hi,value));
   };
-  g=soft(g,0,24);r=soft(r,1,24);x2=soft(x2,2,20);x4=soft(x4,3,18);sn=soft(sn,4,14);fl=soft(fl,5,22);
+  g=soft(g,0,32);r=soft(r,1,32);x2=soft(x2,2,28);x4=soft(x4,3,24);sn=soft(sn,4,22);fl=soft(fl,5,26);
 
   // 9) Optical/sensitivity relationships. Keep the scopes controlled relative
   // to General/Red Dot so low-recoil tuning does not create a dead-feeling aim.
