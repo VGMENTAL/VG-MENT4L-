@@ -548,6 +548,85 @@ Keep values 0-200. Make the smallest useful changes supported by the evidence. R
   return out;
 }
 
+async function runGeminiHudAnalysis(payload) {
+  const key=String(process.env.GEMINI_API_KEY||'').trim();
+  const model=String(process.env.GEMINI_MODEL||'gemini-3.8-flash').trim();
+  if(!key) return null;
+  const raw=String(payload.imageData||'');
+  const m=raw.match(/^data:(image\\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
+  if(!m) throw new Error('Valid compressed HUD image is required');
+  const mime=m[1].toLowerCase().replace('image/jpg','image/jpeg');
+  const prompt=`Analyze this Free Fire MAX HUD screenshot specifically for sensitivity calibration.
+
+IMPORTANT:
+- Analyze the actual uploaded HUD layout, not a generic HUD.
+- Inspect fire-button position/size, joystick position, scope/aim controls, crouch/jump/prone/action cluster, spacing, edge distances, control density, portrait/landscape geometry, and likely drag path length.
+- Explain which sensitivity categories should move because of this exact layout.
+- Return JSON only.
+- sensitivityDelta is a RELATIVE adjustment from the normal device/mode/style baseline, not the final 0-200 sensitivity.
+- Keep each delta between -15 and +15. Do not invent exact hardware specifications.
+- If an element is not clearly visible, mark it unknown rather than guessing.
+
+PLAYER CONTEXT:
+${JSON.stringify({
+  device:payload.device||'',
+  playerMode:payload.playerMode||'',
+  playerStyle:payload.playerStyle||'',
+  mode:payload.mode||'',
+  fingers:payload.fingers||'',
+  imageWidth:payload.width||0,
+  imageHeight:payload.height||0
+})}
+
+JSON:
+{
+  "confidence":"low|medium|high",
+  "layoutSummary":"",
+  "fireButton":{"position":"left|center|right|unknown","size":"small|medium|large|unknown","edgeDistance":"near|medium|far|unknown"},
+  "joystick":{"position":"left|center|right|unknown","size":"small|medium|large|unknown"},
+  "scopeCluster":"left|center|right|mixed|unknown",
+  "actionCluster":"left|center|right|mixed|unknown",
+  "controlDensity":"low|medium|high",
+  "dragPath":"short|medium|long|mixed|unknown",
+  "sensitivityDelta":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},
+  "reasons":[""],
+  "warnings":[""]
+}`;
+  const r=await fetchWithTimeout(
+    'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',
+    {
+      method:'POST',
+      headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{role:'user',parts:[
+          {inline_data:{mime_type:mime,data:m[2]}},
+          {text:prompt}
+        ]}],
+        generationConfig:{
+          temperature:0,
+          maxOutputTokens:900,
+          responseMimeType:'application/json'
+        }
+      })
+    },
+    90000
+  );
+  const responseText=await r.text();
+  if(!r.ok) throw new Error('Gemini HUD analysis HTTP '+r.status+': '+responseText.slice(0,1000));
+  const out=parseJsonOutput(extractText(JSON.parse(responseText)));
+  const d=out.sensitivityDelta||{};
+  out.sensitivityDelta={
+    general:clamp(d.general),red_dot:clamp(d.red_dot),scope_2x:clamp(d.scope_2x),
+    scope_4x:clamp(d.scope_4x),sniper:clamp(d.sniper),free_look:clamp(d.free_look)
+  };
+  // Preserve the requested signed range: clamp() is 0-200, so normalize deltas separately.
+  for(const k of Object.keys(out.sensitivityDelta)) out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
+  out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,12):[];
+  out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,8):[];
+  out.model=model;
+  return out;
+}
+
 async function runGeminiTextFix(payload) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   const model = String(process.env.GEMINI_MODEL || 'gemini-3.8-flash').trim();
@@ -636,6 +715,18 @@ const server = http.createServer(async (req, res) => {
       const q = u.searchParams.get('device') || '';
       const hit = lookupDevice(q);
       return json(res, 200, { ok: true, device: hit, verified: !!hit, query: q, notice: hit ? 'Exact/known device profile found.' : 'Exact device not in the verified catalog; do not invent hardware specs.' });
+    }
+    if (req.method === 'POST' && u.pathname === '/api/hud-analyze') {
+      const b=await readBody(req, MAX_BODY);
+      if(!b.imageData) return json(res,400,{error:'HUD image is required'});
+      try {
+        const analysis=await runGeminiHudAnalysis(b);
+        if(!analysis) return json(res,503,{error:'GEMINI_API_KEY is not configured'});
+        return json(res,200,{ok:true,analysis});
+      } catch(e) {
+        console.error('HUD AI analysis failed:',e.message);
+        return json(res,502,{error:e.message||'HUD AI analysis failed'});
+      }
     }
     if (req.method === 'GET' && u.pathname === '/api/patch-research') {
       const ob = safeCode(u.searchParams.get('ob') || '');
