@@ -62,21 +62,13 @@ async function getHUDIdentity(){
   }
 }
 async function getProfileIdentity(){
-  const guns=selectedGuns().slice().sort((a,b)=>a.localeCompare(b));
+  // Profile ID is tied to the DEVICE, not to every option.
+  // Example: iQOO Neo 10 always gets one stable ID; POCO gets another.
+  // Changing Player Mode/Style/Guns/etc. updates the sensitivity saved under
+  // that device ID instead of creating another ID.
   return JSON.stringify({
-    schema:3,
-    device:normalizeProfileText(deviceEl.value),
-    playerMode:normalizeProfileText(styleEl.value),
-    playerStyle:normalizeProfileText(playerStyleEl.value),
-    gameMode:normalizeProfileText(modeEl.value),
-    preset:normalizeProfileText($('#preset').value),
-    obVersion:normalizeProfileText($('#obVersion')?.value||'OB55'),
-    deviceAge:normalizeProfileText(deviceAgeEl?.value||''),
-    ram:normalizeProfileText(ramEl.value),
-    fingers:normalizeProfileText(fingersEl.value),
-    guns,
-    allGuns:!!allGunsEl.checked,
-    hud:await getHUDIdentity()
+    schema:4,
+    device:normalizeProfileText(deviceEl.value)
   });
 }
 async function makeCodeForCurrentProfile(){
@@ -86,7 +78,6 @@ async function makeCodeForCurrentProfile(){
   for(let i=0;i<10;i++) code+=CODE_ALPHABET[parseInt(digest.slice(i*2,i*2+2),16)%CODE_ALPHABET.length];
   return code;
 }
-function makeCode(){let code=''; do{code='#'; for(let i=0;i<10;i++) code+=CODE_ALPHABET[Math.floor(Math.random()*CODE_ALPHABET.length)];}while(localStorage.getItem('vg_ment4l_profile_'+code)); return code;}
 function getPrimarySensitivity(){
   const st=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES)[0]:styleEl.value;
   const ps=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES)[0]:playerStyleEl.value;
@@ -104,9 +95,8 @@ function getProfilePayload(){
   return {version:2,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
-  // Recompute the code from the current profile every time we save.
-  // This makes option changes create a new code automatically, while the
-  // exact same profile entered again resolves to the exact same code.
+  // Generate one stable Profile ID for this device/model.
+  // Option changes do not create another ID; they update this device's profile.
   profileCode=await makeCodeForCurrentProfile();
   const payload=getProfilePayload();
   localStorage.setItem('vg_ment4l_profile_code',profileCode);
@@ -124,7 +114,7 @@ async function saveProfile(){
     return profileCode;
   }catch(e){payload.backendSaved=false;payload.storageSource='offline';localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(payload));return profileCode;}
 }
-function renderCodeBox(){return `<div class="code-box"><div><div class="small">YOUR VG MENT4L PROFILE ID</div><div class="code">${esc(profileCode||'—')}</div><div class="profile-note">Is Profile ID ko save karke rakho. Persistent database connected hone par isi ID se kisi bhi device se profile load hogi. Database unavailable ho to browser-local copy sirf isi device ka backup hai.</div></div><div class="code-actions"><button class="copy" id="copyCode">COPY CODE</button><button class="copy" id="newCode">NEW PROFILE</button></div></div>`;}
+function renderCodeBox(){return `<div class="code-box"><div><div class="small">YOUR VG MENT4L PROFILE ID</div><div class="code">${esc(profileCode||'—')}</div><div class="profile-note">Ye Profile ID mobile/device ke hisaab se automatic banti hai. Jaise iQOO ka ek stable ID aur POCO ka alag ID. Options change karne par naya ID nahi banega; isi mobile ke ID par latest generated sensitivity save/update hogi.</div></div><div class="code-actions"><button class="copy" id="copyCode">COPY CODE</button></div></div>`;}
 async function copyTextReliable(text){
   try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}
@@ -135,16 +125,6 @@ function bindCodeActions(){
     const ok=await copyTextReliable(profileCode);
     c.textContent=ok?'COPIED ✓':'LONG-PRESS TO COPY';
     setTimeout(()=>c.textContent='COPY CODE',1600);
-  };
-  const n=$('#newCode');
-  if(n)n.onclick=async()=>{
-    // "NEW PROFILE" clears the current form so the next generated profile
-    // receives a new identity/code instead of mutating the old profile.
-    profileCode='';
-    sensitivityOverride=null;
-    localStorage.removeItem('vg_ment4l_profile_code');
-    statusEl.innerHTML='<span class="ok">New profile ready. Ab naya data generate karoge to automatic naya Profile ID milega.</span>';
-    resultsEl.classList.add('hidden');
   };
 }
 
