@@ -44,10 +44,21 @@ async function getHUDIdentity(){
   if(!file)return 'no-hud';
   try{
     const buffer=await file.arrayBuffer();
-    const hash=await hashTextSHA256(String.fromCharCode(...new Uint8Array(buffer)));
-    return [file.type||'',file.size||0,file.lastModified||0,hash].join('|');
+    let hash='';
+    if(window.crypto?.subtle){
+      const digest=await window.crypto.subtle.digest('SHA-256',buffer);
+      hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }else{
+      const bytes=new Uint8Array(buffer);
+      let h1=2166136261,h2=16777619;
+      for(let i=0;i<bytes.length;i++){const n=bytes[i];h1=Math.imul(h1^n,16777619);h2=Math.imul(h2^((n+i)&255),2166136261);}
+      hash=(h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
+    }
+    // Do not include filename or lastModified: the same HUD copied to another
+    // phone should still resolve to the same Profile ID.
+    return [file.type||'',file.size||0,hash].join('|');
   }catch(e){
-    return [file.type||'',file.size||0,file.name||''].join('|');
+    return [file.type||'',file.size||0].join('|');
   }
 }
 async function getProfileIdentity(){
