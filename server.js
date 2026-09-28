@@ -455,6 +455,7 @@ JSON:
 Values 0-200 integers. No guaranteed headshots/recoil.`;
 
     let last503 = null;
+    let lastParseError = null;
 
     for (const candidate of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -482,7 +483,7 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
                     },
                     media_processing: 'STATIC'
                   },
-                  { text: prompt }
+                  { text: attempt > 0 ? prompt + '\n\nFINAL FORMAT REQUIREMENT: Return ONLY one valid JSON object. No markdown, no explanation, no code fence, no prose before or after the JSON.' : prompt }
                 ]
               }],
               generationConfig: {
@@ -501,9 +502,10 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
         const elapsedMs = Date.now() - started;
 
         if (r.ok) {
-          const data = JSON.parse(responseText);
-          const out = parseJsonOutput(extractText(data));
-          out.recommendedSensitivity = normSens(out.recommendedSensitivity);
+          try {
+            const data = JSON.parse(responseText);
+            const out = parseJsonOutput(extractText(data));
+            out.recommendedSensitivity = normSens(out.recommendedSensitivity);
           out.findings = Array.isArray(out.findings) ? out.findings.slice(0, 24) : [];
           out.problemDiagnosis = Array.isArray(out.problemDiagnosis) ? out.problemDiagnosis.slice(0, 16) : [];
           out.adjustmentReasons = Array.isArray(out.adjustmentReasons) ? out.adjustmentReasons.slice(0, 16) : [];
@@ -513,8 +515,13 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
           out.fullVideo = true;
           out.processingMode = 'static-fast-minimal';
           out.mediaResolution = 'low';
-          out.aiAnalysisMs = elapsedMs;
-          return out;
+            out.aiAnalysisMs = elapsedMs;
+            return out;
+          } catch (parseError) {
+            lastParseError = new Error(`Gemini returned unusable output from ${candidate}: ${String(parseError?.message || parseError)}`);
+            if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
         }
 
         if (r.status === 503) {
@@ -528,6 +535,7 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
     }
 
     if (last503) throw last503;
+    if (lastParseError) throw lastParseError;
     throw new Error('Gemini video analysis failed');
   } finally {
     await deleteGeminiFile(fileInfo.name, key);
