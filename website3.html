@@ -60,7 +60,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section class="panel">
 <h2>Gameplay Video</h2>
-<p class="mut"><b>Full-video AI:</b> Tumhara <b>poora gameplay video</b> temporary stream ke through AI video analysis ko bheja jaata hai. Analysis ke liye representative screenshots par depend nahi kiya jaata; video Profile/Database mein save nahi hota.</p>
+<p class="mut"><b>Full-gameplay AI:</b> Tumhara <b>poora gameplay video</b> timeline ke across analyse hota hai. Primary path OpenAI Vision ke chronological evidence frames use karta hai; Gemini backup provider hai. Video Profile/Database mein save nahi hota.</p>
 <div class="video">
 <input id="vid" type="file" accept="video/*">
 <div id="vm" class="status">Gameplay video select karo.</div>
@@ -72,7 +72,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section class="panel">
 <h2>Gameplay Analysis</h2>
-<p class="mut">Poore gameplay video + profile/device/current sensitivity ko analyse karke visible problem, player pattern aur updated sensitivity nikalega.</p>
+<p class="mut">Poore gameplay timeline + profile/device/current sensitivity ko analyse karke visible problem, player pattern aur updated sensitivity nikalega. Primary AI path Gemini ke 503 par dependent nahi hai.</p>
 <button id="go" class="btn primary" style="width:100%">ANALYZE GAMEPLAY & CREATE NEW SENSITIVITY</button>
 <div id="out" class="result hidden"></div>
 </section>
@@ -263,7 +263,7 @@ warmBackend();
   setStep('prep');$('prog').style.width='8%';
   meta=await readVideoMeta(file);
   $('prog').style.width='18%';setStep('upload');
-  status(`<b>Stage 1/5 complete.</b> ${esc(file.name)} · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s<br><span class="mut">Ab complete video directly full-video AI analysis ke liye stream hoga. Video Profile/Database mein save nahi hoga.</span>`,'status ok');
+  status(`<b>Stage 1/5 complete.</b> ${esc(file.name)} · ${(file.size/1048576).toFixed(1)} MB · ${meta.w}×${meta.h} · ${meta.duration.toFixed(1)}s<br><span class="mut">Ab complete video directly full-gameplay AI analysis ke liye stream hoga. Video Profile/Database mein save nahi hoga.</span>`,'status ok');
  }catch(e){meta=null;status('<b>Video read failed:</b> '+esc(e.message||e),'status warn');file=null}
 };
 
@@ -286,7 +286,7 @@ function analyzeWithGeminiFullVideo(context){
     $('prog').style.width='82%';
     status('<b>Stage 3/5: Fast AI Vision</b><br><span class="mut">Upload complete. Ab short-video static analysis chal raha hai — agentic navigation nahi.</span>');
   };
-  xhr.onload=()=>{let j={};try{j=JSON.parse(xhr.responseText||'{}')}catch{};if(xhr.status>=200&&xhr.status<300)resolve(j);else reject(new Error((j.error||'Full-video AI analysis failed')+(j.detail?' — '+j.detail:'')))};
+  xhr.onload=()=>{let j={};try{j=JSON.parse(xhr.responseText||'{}')}catch{};if(xhr.status>=200&&xhr.status<300)resolve(j);else reject(new Error((j.error||'Full-gameplay AI analysis failed')+(j.detail?' — '+j.detail:'')))};
   xhr.onerror=()=>reject(new Error('Network error while sending the complete gameplay video to AI'));
   xhr.ontimeout=()=>reject(new Error('Full-video AI analysis timed out.'));
   xhr.timeout=30*60*1000;
@@ -319,12 +319,24 @@ $('go').onclick=async()=>{
    $('timer').textContent=aiStarted?'AI analysis running…':'Preparing AI analysis…';
    $('out').querySelector('[data-timer]')?.replaceChildren(document.createTextNode(aiStarted?'AI analysis running…':'Preparing AI analysis…'));
  },300);
- $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Complete video upload ke baad fast static AI analysis chalega. Short gameplay ke liye latency optimize ki gayi hai.</p>';
+ $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">OpenAI Vision poore gameplay timeline ko chronological evidence ke saath analyse karega; Gemini sirf backup provider rahega.</p>';
  $('prog').style.width='18%';setStep('upload');
  try{
   $('bar').classList.add('aiBusy');setStep('upload');$('prog').style.width='20%';
-  $('out').innerHTML='<b>Stage 2/5: Complete gameplay video AI ko stream ho raha hai...</b><p class="mut" data-timer>AI analysis time: 0.0s</p><p class="mut">Upload ke baad Stage 3 mein fast static full-video analysis hoga. Browser representative frames par depend nahi karega.</p>';
-  const j=await analyzeWithGeminiFullVideo(contextPayload());
+  $('out').innerHTML='<b>Stage 2/5: Complete gameplay timeline prepare ho raha hai...</b><p class="mut" data-timer>AI analysis time: 0.0s</p><p class="mut">Video ko browser mein poore timeline se chronological evidence frames mein read kiya ja raha hai. Gemini 503 ab primary path ko block nahi karega.</p>';
+  let j;
+  try {
+    setStep('vision');
+    status('<b>Stage 3/5: OpenAI Vision — Full Timeline</b><br><span class="mut">Poore video se chronological frames analyse ho rahe hain. Koi single screenshot par depend nahi hai.</span>');
+    const frames = await extractTimelineFrames(file, meta);
+    j = await analyzeWithOpenAI(contextPayload(), frames);
+  } catch (openAiError) {
+    // OpenAI path is primary because it avoids the recurring Gemini full-video 503.
+    // Gemini remains a secondary fallback so the workflow still has another provider.
+    status('<b>Stage 3/5: Backup AI Vision</b><br><span class="mut">Primary vision provider unavailable. Complete video Gemini backup pipeline ko diya ja raha hai.</span>','status warn');
+    j = await analyzeWithGeminiFullVideo(contextPayload());
+    if (j && j.result) j.result.providerFallback = 'gemini';
+  }
   $('bar').classList.remove('aiBusy');setStep('diagnosis');
   $('bar').classList.remove('aiBusy');$('timer').textContent=lastResult?.aiAnalysisMs?('AI server time: '+(lastResult.aiAnalysisMs/1000).toFixed(1)+'s'):'AI analysis complete';$('prog').style.width='92%';setStep('diagnosis');
   if(!j.ok)throw new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:''));
@@ -339,7 +351,7 @@ $('go').onclick=async()=>{
   setStep('final');$('prog').style.width='100%';
   const s=getSensFromProfile(lastResult.recommendedSensitivity);
   $('out').innerHTML=`<h3>✓ Full Gameplay Analysis Complete</h3>
-  <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'Gemini')} · <b>Mode:</b> Fast Static · <b>Full Video:</b> Yes · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
+  <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'Gemini')} · <b>Mode:</b> Timeline Vision · <b>Full Video:</b> Yes · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
   <p class="mut"><b>Gemini server analysis:</b> ${lastResult.aiAnalysisMs?((lastResult.aiAnalysisMs/1000).toFixed(1)+'s'):'—'} · network/upload/fallback time is shown separately only while processing.</p>
   <div class="infoGrid"><div class="infoBox"><span class="mut">Player Type</span><b>${esc(lastResult.playerType||'—')}</b></div><div class="infoBox"><span class="mut">Drag Style</span><b>${esc(lastResult.dragStyle||'—')}</b></div><div class="infoBox"><span class="mut">Range</span><b>${esc(lastResult.rangePreference||'—')}</b></div><div class="infoBox"><span class="mut">Main Issue</span><b>${esc(lastResult.mainIssue||'—')}</b></div></div>
   <h4>1. Tumhari current sensitivity mein kya problem thi?</h4><ul>${list(lastResult.problemDiagnosis,'Reliable diagnosis nahi mila.')}</ul>
