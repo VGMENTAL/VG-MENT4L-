@@ -542,6 +542,25 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
     }
   }
 
+  // 7.2) Optional gameplay evidence: chronological AI analysis is a bounded nudge.
+  if(gameplayAIAnalysis?.recommendedSensitivity){
+    const ga=gameplayAIAnalysis;
+    const conf=String(ga.confidence||'medium').toLowerCase();
+    const w=conf==='high'?0.18:(conf==='low'?0.06:0.11);
+    const rec=ga.recommendedSensitivity;
+    const blend=(v,k)=>Number(v)+(Number(rec?.[k]??v)-Number(v))*w;
+    g=blend(g,'general'); r=blend(r,'red_dot'); x2=blend(x2,'scope_2x');
+    x4=blend(x4,'scope_4x'); sn=blend(sn,'sniper'); fl=blend(fl,'free_look');
+    const ev=[ga.mainIssue||'',ga.dragStyle||'',ga.rangePreference||'',
+      ...(Array.isArray(ga.findings)?ga.findings:[]),
+      ...(Array.isArray(ga.problemDiagnosis)?ga.problemDiagnosis:[])].join(' ').toLowerCase();
+    if(/overshoot|fly over|too high|over.?drag/.test(ev)){g-=1.2;r-=1.4;x2-=0.8}
+    if(/chest|under.?drag|stuck low|too low/.test(ev)){g+=0.8;r+=1.2}
+    if(/recoil|spray|shake|shaky/.test(ev)){x2-=0.8;x4-=1.1}
+    if(/tracking|target switch|follow/.test(ev)){g+=0.6;r+=0.5}
+    if(/slow drag|heavy drag/.test(ev)){g+=0.8;r+=0.8}
+  }
+
   // 7.5) Universal Fusion Lock: re-align the final curve after HUD AI.
   // This is the step that prevents independent inputs from creating random
   // high/mid/low/lowest-looking numbers.
