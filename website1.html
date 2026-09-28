@@ -966,11 +966,16 @@ async function analyzeGameplayForWebsite1(){
       obVersion:String($('#obVersion')?.value||'OB55')
     };
 
-    // Gemini timeline-frame analysis is the primary path. It avoids long full-video
-    // upload/processing waits while still sampling the complete gameplay timeline.
+    // Build the timeline once, then reuse the SAME plain frame array for both providers.
+    // IMPORTANT: keep "frames" in function scope. A block-scoped const named frames would
+    // fall through to window.frames in the browser catch block, causing the exact
+    // "Converting circular structure to JSON ... Window" error seen in production.
     if(status)status.textContent='Stage 1/2: Timeline evidence — poore gameplay se frames prepare ho rahe hain…';
+    let frames=[];
+    let geminiError=null;
     try{
-      const frames=await extractGameplayEvidenceFrames(file);
+      frames=await extractGameplayEvidenceFrames(file);
+      if(!frames.length) throw new Error('No gameplay timeline frames could be prepared.');
       if(status)status.textContent='Stage 2/2: Gemini Vision — '+frames.length+' chronological frames analyse ho rahe hain…';
       const payload={frames:frames.map(f=>({t:String(f.t||''),data:String(f.data||'')})),context};
       const gemResp=await fetch('/api/gameplay-analyze-gemini-frames',{
@@ -985,11 +990,14 @@ async function analyzeGameplayForWebsite1(){
       }
       throw new Error(String(gj.detail||gj.error||gemText||'Gemini gameplay analysis failed'));
     }catch(gemError){
+      geminiError=gemError;
+      if(!frames.length) throw gemError;
       if(status)status.innerHTML='<span class="warn">Gemini gameplay AI unavailable — OpenAI Vision backup try ho raha hai…</span>';
-      const openaiResp=await fetch('/api/gameplay-analyze-openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frames,context})});
+      const openaiPayload={frames:frames.map(f=>({t:String(f.t||''),data:String(f.data||'')})),context};
+      const openaiResp=await fetch('/api/gameplay-analyze-openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(openaiPayload)});
       const openaiText=await openaiResp.text();let oj={};try{oj=JSON.parse(openaiText)}catch{}
       if(!openaiResp.ok||!oj.ok||oj.result?.configured===false){
-        throw new Error('Gemini backup failed: '+String(gemError.message||gemError)+' | OpenAI backup: '+String(oj.detail||oj.error||openaiText||'unavailable'));
+        throw new Error('Gemini backup failed: '+String(geminiError.message||geminiError)+' | OpenAI backup: '+String(oj.detail||oj.error||openaiText||'unavailable'));
       }
       gameplayAIAnalysis=oj.result;
       if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — OpenAI timeline backup • '+(oj.result.framesAnalyzed||frames.length)+' frames.</span>';
