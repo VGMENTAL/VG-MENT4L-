@@ -488,7 +488,6 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
               generationConfig: {
                 temperature: 0,
                 seed: 42,
-                thinkingConfig: { thinkingLevel: 'minimal' },
                 maxOutputTokens: 1200,
                 responseMimeType: 'application/json',
                 mediaResolution: 'MEDIA_RESOLUTION_LOW'
