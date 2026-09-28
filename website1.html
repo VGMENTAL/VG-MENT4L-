@@ -13,10 +13,12 @@
 .code-box{margin-top:14px;padding:16px;border:1px solid rgba(91,210,255,.35);background:linear-gradient(135deg,rgba(30,90,160,.18),rgba(120,60,220,.12));border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.code-box .code{font-size:25px;font-weight:900;letter-spacing:4px;color:#e8fbff}.code-box .small{margin-top:4px}.code-actions{display:flex;gap:8px}.code-actions button{width:auto!important;margin:0!important;padding:9px 12px!important;font-size:12px}.profile-note{font-size:11px;color:#9fb2d3;margin-top:8px}
 
 .fix-panel{margin-top:16px;padding:16px;border:1px solid rgba(91,210,255,.28);background:linear-gradient(135deg,rgba(16,31,65,.72),rgba(73,25,104,.38));border-radius:16px}.fix-panel h3{margin:0 0 6px;color:#eafaff}.fix-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.fix-panel textarea{width:100%;min-height:82px;border:1px solid rgba(91,210,255,.3);background:rgba(2,7,18,.8);color:#fff;border-radius:12px;padding:12px;resize:vertical}.fix-panel button{margin-top:12px!important}.fix-result{margin-top:12px;padding:12px;border-radius:12px;background:rgba(3,8,18,.72);border:1px solid rgba(91,210,255,.22);line-height:1.55}.fix-values{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}.fix-value{padding:8px;border-radius:9px;background:rgba(0,0,0,.28);text-align:center}.fix-value b{display:block;font-size:18px}.fix-value span{font-size:9px;opacity:.8}@media(max-width:700px){.fix-grid{grid-template-columns:1fr}.fix-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
-</style></style></head><body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script><main class="wrap"><div class="brand">VG MENT4L</div><div class="tag">DEVICE ANALYSIS • VERIFIED INPUTS • FREE FIRE MAX</div><section class="panel"><div class="grid"><div><label>Device name *</label><input id="device" placeholder="iQOO Neo 10 / iPhone 15 Pro Max / Galaxy S25 Ultra / POCO X6 Pro"/></div><div><label>Player style</label><select id="style"><option>All Styles</option><option>Balanced</option><option>One-Tap / Drag Headshot</option><option>Aggressive Drag</option><option>Tracking / Close Range</option><option>Spray / Recoil Control</option></select><div class="field-help">All Styles select karoge to har style ki alag sensitivity milegi.</div></div><div><label>Game mode</label><select id="mode"><option>All Modes</option><option>BR + CS</option><option>Battle Royale</option><option>Clash Squad</option></select><div class="field-help">All Modes select karoge to har mode ki alag sensitivity milegi.</div></div><div><label>Game Sensitivity</label><select id="preset"><option>Default</option><option>High</option></select><div class="field-help">Free Fire ke sensitivity preset ke according tuning.</div></div><div><label>Current Game OB</label><input id="obVersion" value="OB55" maxlength="8" placeholder="OB55"/><div class="field-help">Current/live OB dalo. Future OB ko claim nahi kiya jayega.</div></div><div><label>Device kitna purana hai?</label><input id="deviceAge" placeholder="Example: 1 year 6 months / 8 months / 3 years"/><div class="field-help">Khud se approximate age likho. Ye verified hardware age nahi hai; performance/thermal stability context ke liye use hoga.</div></div></div><div class="extra-grid"><div><label>RAM</label><select id="ram"><option>Not specified</option><option>2 GB</option><option>3 GB</option><option>4 GB</option><option>6 GB</option><option>8 GB</option><option>12 GB</option><option>16 GB</option><option>18 GB+</option></select><div class="field-help">RAM direct sensitivity multiplier nahi hai; stability/performance context ke liye use hoga.</div></div><div><label>Kitne finger player?</label><select id="fingers"><option>2 Finger</option><option>3 Finger</option><option>4 Finger</option><option>5 Finger</option><option>6 Finger</option></select><div class="field-help">Finger count HUD movement, drag length aur control style ko affect karega.</div></div></div><div class="extra-grid"><div class="hud-box"><label>HUD Screenshot — IMPORTANT</label><input accept="image/*" id="hud" type="file"/><div class="field-help">Apna current HUD screenshot upload karo. Isko sensitivity recommendation aur adjustment guide mein highest-priority input maana jayega.</div><div class="hud-preview-wrap"><img alt="Uploaded HUD screenshot preview" class="hud-preview" id="hudPreview"/><div class="hud-meta" id="hudMeta"><span>Preview: waiting</span></div></div><div class="field-help" id="hudStatus">Screenshot upload karte hi yahin preview dikhega.</div></div><div class="gun-wrap"><label>Focus Guns</label><div class="gun-choice"><label class="all-gun-choice"><input checked="" id="allGuns" type="checkbox"/><span>All Guns Sensitivity</span></label><div class="gun-slots"><select id="gun1"><option value="">Select Gun 1</option></select><select id="gun2"><option value="">Select Gun 2</option></select><select id="gun3"><option value="">Select Gun 3</option></select></div></div><div class="selected-guns" id="selectedGuns">All Guns selected</div><div class="field-help">Either All Guns rakho, ya maximum 3 guns manually select karo. Dono ek saath nahi.</div></div></div><div class="generate-wrap"><button id="go">RESEARCH DEVICE + GENERATE SENSITIVITY</button><div class="generate-progress" id="generateProgress" aria-live="polite"><div class="progress-top"><span id="progressStage"><span class="generate-spin"></span>Preparing...</span><span class="progress-pct" id="progressPct">0%</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="progress-steps"><span>Validate</span><span>HUD</span><span>Device</span><span>Tune</span><span>Finalize</span></div></div></div><div class="status" id="status">Device name डालकर button दबाओ. Selected player style के हिसाब से अलग sensitivity बनेगी.</div></section><section id="deviceEvidence" class="notice hidden"></section><section class="results hidden" id="results"></section></main><script>
+</style></style></head><body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script><main class="wrap"><div class="brand">VG MENT4L</div><div class="tag">DEVICE ANALYSIS • VERIFIED INPUTS • FREE FIRE MAX</div><section class="panel"><div class="grid"><div><label>Device name *</label><input id="device" placeholder="iQOO Neo 10 / iPhone 15 Pro Max / Galaxy S25 Ultra / POCO X6 Pro"/></div><div><label>Player Mode</label><select id="style"><option>All Styles</option><option>Balanced</option><option>One-Tap / Drag Headshot</option><option>Aggressive Drag</option><option>Tracking / Close Range</option><option>Spray / Recoil Control</option></select><div class="field-help">Player Mode device/control ke hisaab se base tuning decide karega.</div></div><div><label>Player Style</label><select id="playerStyle"><option>All Styles</option><option>Freestyle</option><option>Jump Shot</option><option>Situp Shot</option><option>Noob Work</option></select><div class="field-help">Style ke hisaab se alag sensitivity profile milegi.</div></div><div><label>Game mode</label><select id="mode"><option>All Modes</option><option>BR + CS</option><option>Battle Royale</option><option>Clash Squad</option></select><div class="field-help">All Modes select karoge to har mode ki alag sensitivity milegi.</div></div><div><label>Game Sensitivity</label><select id="preset"><option>Default</option><option>High</option></select><div class="field-help">Free Fire ke sensitivity preset ke according tuning.</div></div><div><label>Current Game OB</label><input id="obVersion" value="OB55" maxlength="8" placeholder="OB55"/><div class="field-help">Current/live OB dalo. Future OB ko claim nahi kiya jayega.</div></div><div><label>Device kitna purana hai?</label><input id="deviceAge" placeholder="Example: 1 year 6 months / 8 months / 3 years"/><div class="field-help">Khud se approximate age likho. Ye verified hardware age nahi hai; performance/thermal stability context ke liye use hoga.</div></div></div><div class="extra-grid"><div><label>RAM</label><select id="ram"><option>Not specified</option><option>2 GB</option><option>3 GB</option><option>4 GB</option><option>6 GB</option><option>8 GB</option><option>12 GB</option><option>16 GB</option><option>18 GB+</option></select><div class="field-help">RAM direct sensitivity multiplier nahi hai; stability/performance context ke liye use hoga.</div></div><div><label>Kitne finger player?</label><select id="fingers"><option>2 Finger</option><option>3 Finger</option><option>4 Finger</option><option>5 Finger</option><option>6 Finger</option></select><div class="field-help">Finger count HUD movement, drag length aur control style ko affect karega.</div></div></div><div class="extra-grid"><div class="hud-box"><label>HUD Screenshot — IMPORTANT</label><input accept="image/*" id="hud" type="file"/><div class="field-help">Apna current HUD screenshot upload karo. Isko sensitivity recommendation aur adjustment guide mein highest-priority input maana jayega.</div><div class="hud-preview-wrap"><img alt="Uploaded HUD screenshot preview" class="hud-preview" id="hudPreview"/><div class="hud-meta" id="hudMeta"><span>Preview: waiting</span></div></div><div class="field-help" id="hudStatus">Screenshot upload karte hi yahin preview dikhega.</div></div><div class="gun-wrap"><label>Focus Guns</label><div class="gun-choice"><label class="all-gun-choice"><input checked="" id="allGuns" type="checkbox"/><span>All Guns Sensitivity</span></label><div class="gun-slots"><select id="gun1"><option value="">Select Gun 1</option></select><select id="gun2"><option value="">Select Gun 2</option></select><select id="gun3"><option value="">Select Gun 3</option></select></div></div><div class="selected-guns" id="selectedGuns">All Guns selected</div><div class="field-help">Either All Guns rakho, ya maximum 3 guns manually select karo. Dono ek saath nahi.</div></div></div><div class="generate-wrap"><button id="go">RESEARCH DEVICE + GENERATE SENSITIVITY</button><div class="generate-progress" id="generateProgress" aria-live="polite"><div class="progress-top"><span id="progressStage"><span class="generate-spin"></span>Preparing...</span><span class="progress-pct" id="progressPct">0%</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="progress-steps"><span>Validate</span><span>HUD</span><span>Device</span><span>Tune</span><span>Finalize</span></div></div></div><div class="status" id="status">Device name डालकर button दबाओ. Selected player style के हिसाब से अलग sensitivity बनेगी.</div></section><section id="deviceEvidence" class="notice hidden"></section><section class="results hidden" id="results"></section></main><script>
 const $=s=>document.querySelector(s);
-const deviceEl=$('#device'), styleEl=$('#style'), modeEl=$('#mode'), ramEl=$('#ram'), fingersEl=$('#fingers'), deviceAgeEl=$('#deviceAge'), hudEl=$('#hud'), hudPreview=$('#hudPreview'), hudStatus=$('#hudStatus'), selectedGunsEl=$('#selectedGuns'), statusEl=$('#status'), resultsEl=$('#results'), btn=$('#go'), progressBox=$('#generateProgress'), progressBar=$('#progressBar'), progressPct=$('#progressPct'), progressStage=$('#progressStage');
+const deviceEl=$('#device'), styleEl=$('#style'), playerStyleEl=$('#playerStyle'), modeEl=$('#mode'), ramEl=$('#ram'), fingersEl=$('#fingers'), deviceAgeEl=$('#deviceAge'), hudEl=$('#hud'), hudPreview=$('#hudPreview'), hudStatus=$('#hudStatus'), selectedGunsEl=$('#selectedGuns'), statusEl=$('#status'), resultsEl=$('#results'), btn=$('#go'), progressBox=$('#generateProgress'), progressBar=$('#progressBar'), progressPct=$('#progressPct'), progressStage=$('#progressStage');
 let generating=false;
+let hudAIAnalysis=null;
+let hudAnalysisPromise=null;
 let profileCode=localStorage.getItem('vg_ment4l_profile_code')||'';
 let sensitivityOverride=null;
 const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -24,17 +26,19 @@ const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function makeCode(){let code=''; do{code='#'; for(let i=0;i<10;i++) code+=CODE_ALPHABET[Math.floor(Math.random()*CODE_ALPHABET.length)];}while(localStorage.getItem('vg_ment4l_profile_'+code)); return code;}
 function getPrimarySensitivity(){
   const st=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES)[0]:styleEl.value;
+  const ps=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES)[0]:playerStyleEl.value;
   const md=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad'][0]:modeEl.value;
-  return calculate(deviceEl.value.trim(),st,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
+  return calculate(deviceEl.value.trim(),st,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps);
 }
 function getProfilePayload(){
   const ob=String($('#obVersion')?.value||'OB55').trim().toUpperCase().replace(/\s+/g,'');
   const primary=sensitivityOverride||getPrimarySensitivity();
   const profiles={};
-  const styles=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES):[styleEl.value];
+  const playerModes=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES):[styleEl.value];
+  const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
   const modes=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad']:[modeEl.value];
-  styles.forEach(st=>modes.forEach(md=>{profiles[st+' | '+md]=calculate(deviceEl.value.trim(),st,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value)}));
-  return {version:2,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
+  playerModes.forEach(pm=>playerStyles.forEach(ps=>modes.forEach(md=>{profiles[pm+' | '+ps+' | '+md]=calculate(deviceEl.value.trim(),pm,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps)})));
+  return {version:2,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
   if(!profileCode) profileCode=makeCode();
@@ -72,7 +76,10 @@ function syncGunUI(){const gs=selectedGuns(); if(gs.length){allGunsEl.checked=fa
 allGunsEl.addEventListener('change',()=>{if(allGunsEl.checked){gunSlots.forEach(x=>{x.value='';x.disabled=true});selectedGunsEl.textContent='All Guns selected'}else{gunSlots.forEach(x=>x.disabled=false);selectedGunsEl.textContent='Select up to 3 guns'}});
 gunSlots.forEach(sel=>sel.addEventListener('change',()=>{const vals=gunSlots.map(x=>x.value).filter(Boolean); if(new Set(vals).size<vals.length){sel.value='';return} allGunsEl.checked=vals.length===0;gunSlots.forEach(x=>x.disabled=vals.length===0);selectedGunsEl.textContent=vals.length?`${vals.length}/3 selected — ${vals.join(', ')}`:'All Guns selected'}));
 
-function hudProfile(){const f=hudEl.files?.[0]; if(!f) return {uploaded:false,desc:'No HUD screenshot uploaded.'}; const w=hudPreview.naturalWidth||0,h=hudPreview.naturalHeight||0; let desc='HUD screenshot uploaded; layout-based tuning enabled.'; if(w&&h){if(h>w) desc+=' Portrait layout detected; vertical drag/spacing will be emphasized.'; else desc+=' Landscape layout detected; horizontal tracking/spacing will be emphasized.'} return {uploaded:true,width:w,height:h,desc};}
+function hudProfile(){const f=hudEl.files?.[0]; if(!f) return {uploaded:false,desc:'No HUD screenshot uploaded.',ai:null}; const w=hudPreview.naturalWidth||0,h=hudPreview.naturalHeight||0; let desc='HUD screenshot uploaded; AI layout analysis enabled.'; if(w&&h){if(h>w) desc+=' Portrait layout detected; vertical drag/spacing will be emphasized.'; else desc+=' Landscape layout detected; horizontal tracking/spacing will be emphasized.'} return {uploaded:true,width:w,height:h,desc,ai:hudAIAnalysis};}
+function resizeHudForAI(file,maxSide=1280){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);canvas.toBlob(blob=>{if(!blob)return reject(new Error('HUD image compression failed'));const fr=new FileReader();fr.onload=()=>resolve({dataUrl:String(fr.result||''),width:w,height:h});fr.onerror=reject;fr.readAsDataURL(blob);},'image/jpeg',0.84)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read'))};img.src=url;});}
+async function analyzeHUDWithAI(file){const packed=await resizeHudForAI(file,1280);const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});const j=await r.json().catch(()=>({}));if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');return j.analysis||null;}
+async function startHUDAnalysis(file){if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{hudAIAnalysis=a;hudStatus.innerHTML='<span class="ok">✓ HUD AI analysis complete. Fire/joystick/scope layout, control density and drag geometry are now being used heavily.</span>';return a;}).catch(e=>{hudAIAnalysis=null;hudStatus.innerHTML='<span class="warning">⚠ HUD image visible, but AI analysis could not finish. Basic HUD geometry will still be used.</span>';return null;});return hudAnalysisPromise;}
 
 const STYLE_PROFILES={
   "Balanced": {g:0,r:0,x2:0,x4:0,sn:0,fl:0,desc:"Balanced drag, tracking and recoil control. Best starting point when you are not sure which style fits you."},
@@ -80,6 +87,13 @@ const STYLE_PROFILES={
   "Aggressive Drag": {g:16,r:18,x2:14,x4:10,sn:3,fl:12,desc:"Fast camera movement and strong upward drag response. More responsive, but requires a lighter finger."},
   "Tracking / Close Range": {g:7,r:6,x2:5,x4:1,sn:-2,fl:10,desc:"Prioritizes close-range tracking and smooth target following instead of very fast flicks."},
   "Spray / Recoil Control": {g:-8,r:-6,x2:-8,x4:-10,sn:-5,fl:0,desc:"Lower scoped sensitivity to reduce over-correction during sustained sprays and longer-range recoil control."}
+};
+
+const PLAYER_STYLES={
+  "Freestyle": {g:2,r:1,x2:0,x4:0,sn:0,fl:2,desc:"Free movement style: responsive General and Free Look for flexible aim and tracking."},
+  "Jump Shot": {g:7,r:6,x2:2,x4:1,sn:0,fl:3,desc:"Jump-shot style: extra General/Red Dot response for upward movement and quick correction."},
+  "Situp Shot": {g:4,r:5,x2:2,x4:1,sn:1,fl:1,desc:"Situp-shot style: controlled upward drag with slightly steadier scoped values."},
+  "Noob Work": {g:-3,r:-3,x2:-2,x4:-2,sn:-1,fl:-1,desc:"Noob Work style: more forgiving, stable sensitivity for easier control and less overshoot."}
 };
 
 function deviceClass(name){
@@ -113,19 +127,28 @@ async function verifyDeviceForProfile(device){
   }catch(e){return null;}
 }
 
-function calculate(device,style,mode,ram,fingers,hud,guns,preset){
-  const cls=deviceClass(device), p=STYLE_PROFILES[style]||STYLE_PROFILES["Balanced"];
+function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Freestyle'){
+  const cls=deviceClass(device), p=STYLE_PROFILES[style]||STYLE_PROFILES["Balanced"], ps=PLAYER_STYLES[playerStyle]||{g:0,r:0,x2:0,x4:0,sn:0,fl:0};
   let [g,r,x2,x4,sn,fl]=cls.base;
   const modeOffsets={"BR + CS":{g:0,r:0,x2:0,x4:0,sn:0,fl:0},"Battle Royale":{g:-4,r:-3,x2:-2,x4:-2,sn:1,fl:4},"Clash Squad":{g:6,r:7,x2:4,x4:2,sn:-1,fl:1}};
   const mo=modeOffsets[mode]||modeOffsets["BR + CS"]; g+=mo.g;r+=mo.r;x2+=mo.x2;x4+=mo.x4;sn+=mo.sn;fl+=mo.fl;
   g+=p.g;r+=p.r;x2+=p.x2;x4+=p.x4;sn+=p.sn;fl+=p.fl;
+  g+=ps.g;r+=ps.r;x2+=ps.x2;x4+=ps.x4;sn+=ps.sn;fl+=ps.fl;
   const fingerAdj={"2 Finger":{g:2,r:2,x2:1,x4:0,sn:0,fl:1},"3 Finger":{g:1,r:1,x2:0,x4:0,sn:0,fl:1},"4 Finger":{g:-1,r:-1,x2:-1,x4:-1,sn:-1,fl:0},"5 Finger":{g:-2,r:-2,x2:-2,x4:-1,sn:-1,fl:0},"6 Finger":{g:-3,r:-3,x2:-2,x4:-2,sn:-1,fl:-1}};
   const fa=fingerAdj[fingers]||fingerAdj["2 Finger"]; g+=fa.g;r+=fa.r;x2+=fa.x2;x4+=fa.x4;sn+=fa.sn;fl+=fa.fl;
   // RAM is context, not a direct sensitivity multiplier; only a small stability adjustment is applied.
   if(/2 GB|3 GB|4 GB/.test(ram)){g-=2;r-=2;x2-=1;x4-=1}
   if(/12 GB|16 GB|18 GB/.test(ram)){g+=1;r+=1}
-  // HUD has highest priority in this direct-open version.
-  if(hud.uploaded){g+=1;r+=2;x2+=1;x4+=1; if(hud.height>hud.width){fl+=1}}
+  // HUD is the highest-priority tuning input. AI deltas are applied strongly; geometry remains as fallback.
+  if(hud.uploaded){
+    const ha=hud.ai;
+    if(ha&&ha.sensitivityDelta){
+      const weight=0.85;
+      g+=Number(ha.sensitivityDelta.general||0)*weight;r+=Number(ha.sensitivityDelta.red_dot||0)*weight;
+      x2+=Number(ha.sensitivityDelta.scope_2x||0)*weight;x4+=Number(ha.sensitivityDelta.scope_4x||0)*weight;
+      sn+=Number(ha.sensitivityDelta.sniper||0)*weight;fl+=Number(ha.sensitivityDelta.free_look||0)*weight;
+    } else {g+=1;r+=2;x2+=1;x4+=1;if(hud.height>hud.width)fl+=1;}
+  }
   // Game sensitivity preset: High is intentionally more responsive than Default.
   if(preset==='High'){g+=5;r+=5;x2+=3;x4+=2;fl+=3} else {g-=1;r-=1}
   const ageAdj=deviceAgeAdjustment(deviceAgeEl?.value||''); g+=ageAdj.g;r+=ageAdj.r;x2+=ageAdj.x2;x4+=ageAdj.x4;sn+=ageAdj.sn;fl+=ageAdj.fl;
@@ -163,8 +186,8 @@ function adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns){
   <div class="section"><h3>Device-specific adjustment</h3><div class="small">${esc(cls.guide)}</div><div class="hud-analysis"><b>HUD priority:</b> ${esc(hud.desc)} ${hud.uploaded?"Use the uploaded HUD as the first reference before changing values." : "Upload your HUD screenshot for more targeted tuning."}</div><div class="small"><b>Finger:</b> ${esc(fingers)} • <b>RAM:</b> ${esc(ram)} • <b>Focus guns:</b> ${guns.length?esc(guns.join(", ")):"All guns / none selected"}</div></div>`;
 }
 
-function renderSingle(device,style,mode,ram,fingers,hud,guns,preset,showCode=false){
-  const s=calculate(device,style,mode,ram,fingers,hud,guns,preset), cls=deviceClass(device), p=STYLE_PROFILES[style];
+function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,showCode=false){
+  const s=calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle), cls=deviceClass(device), p=STYLE_PROFILES[style], ps=PLAYER_STYLES[playerStyle];
   const platform=/iphone|ipad/i.test(device)?"iPhone / iPad":(/android|samsung|galaxy|pixel|oneplus|iqoo|poco|redmi|vivo|oppo|realme|xiaomi|motorola|moto|tecno|infinix|asus|rog|redmagic/i.test(device)?"Android":"Android / unknown");
   const labels=[["General",s.general],["Red Dot",s.red_dot],["2× Scope",s.scope_2x],["4× Scope",s.scope_4x],["Sniper Scope",s.sniper],["Free Look",s.free_look]];
   const focus=guns.length?guns:GUNS;
@@ -227,9 +250,10 @@ function bindIssueFix(){
 }
 function render(device,style,mode,ram,fingers,hud,guns,preset){
   const styles=style==='All Styles'?Object.keys(STYLE_PROFILES):[style];
+  const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
   const modes=mode==='All Modes'?["BR + CS","Battle Royale","Clash Squad"]:[mode];
   let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(style)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)} • Device age ${esc(deviceAgeEl?.value.trim()||'Not specified')} • OB ${esc($('#obVersion')?.value||'OB55')} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
-  let firstProfile=true; styles.forEach(st=>modes.forEach(md=>{html+=renderSingle(device,st,md,ram,fingers,hud,guns,preset,firstProfile); firstProfile=false;}));
+  let firstProfile=true; styles.forEach(st=>playerStyles.forEach(ps=>modes.forEach(md=>{html+=renderSingle(device,st,ps,md,ram,fingers,hud,guns,preset,firstProfile); firstProfile=false;})));
   html+=issuePanelHTML();
   resultsEl.classList.remove('hidden'); resultsEl.innerHTML=html; window.__profileSavePromise=saveProfile(); bindCodeActions(); bindIssueFix();
   const evidence=$('#deviceEvidence'); if(evidence){evidence.classList.remove('hidden'); evidence.textContent='Checking exact device evidence…';}
@@ -317,11 +341,12 @@ async function runGenerateProgress(device){
     progressStage.innerHTML=pct===100?'<span class="generate-done">✓ '+msg+'</span>':'<span class="generate-spin"></span>'+msg;
   }
   render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
+  if(hudAnalysisPromise){ progressStage.innerHTML='<span class="generate-spin"></span>Finalizing HUD AI analysis…'; await hudAnalysisPromise; }
   progressStage.innerHTML='<span class="generate-spin"></span>Saving Profile ID + syncing backend…';
   await (window.__profileSavePromise||Promise.resolve());
   progressBar.style.width='100%'; progressPct.textContent='100%';
   progressStage.innerHTML='<span class="generate-done">✓ Generation complete — Profile saved</span>';
-  statusEl.innerHTML='<span class="ok">✓ 100% generated. HUD preview/analysis, device profile, style, mode, preset, fingers, RAM, guns and Profile ID were processed.</span>';
+  statusEl.innerHTML='<span class="ok">✓ 100% generated. HUD AI analysis, device profile, Player Mode, Player Style, Game Mode, preset, fingers, RAM, guns and Profile ID were processed.</span>';
   setTimeout(()=>{progressBox.classList.remove('show');},900);
   btn.disabled=false;
   generating=false;
@@ -337,7 +362,8 @@ btn.addEventListener('click',async()=>{
   await runGenerateProgress(device);
 });
 $('#obVersion').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/\s+/g,''); autoRecalculate('OB changed')});
-styleEl.addEventListener('change',()=>autoRecalculate('Player Style changed'));
+styleEl.addEventListener('change',()=>autoRecalculate('Player Mode changed'));
+playerStyleEl.addEventListener('change',()=>autoRecalculate('Player Style changed'));
 modeEl.addEventListener('change',()=>autoRecalculate('Game Mode changed'));
 $('#preset').addEventListener('change',()=>autoRecalculate('Game Sensitivity changed'));
 ramEl.addEventListener('change',()=>autoRecalculate('RAM changed'));
@@ -359,8 +385,8 @@ hudEl.addEventListener('change',()=>{
       const orientation=h>w?'Portrait':'Landscape';
       hudPreview.classList.add('show');
       if(meta) meta.innerHTML=`<span>✓ Preview visible</span><span>${w} × ${h}px</span><span>${orientation}</span><span>${esc(file.name).slice(0,42)}</span>`;
-      hudStatus.innerHTML='<span class="ok">✓ HUD screenshot visible. Generator is using its dimensions/orientation as a high-priority tuning signal.</span>';
-      autoRecalculate('HUD Screenshot changed');
+      hudStatus.innerHTML='<span class="ok">✓ HUD screenshot visible. AI analysis start ho raha hai; layout will be used as the highest-priority tuning signal.</span>';
+      startHUDAnalysis(file).finally(()=>autoRecalculate('HUD Screenshot analyzed'));
     };
     hudPreview.onerror=()=>{hudStatus.textContent='HUD screenshot preview load nahi ho saka.';hudPreview.classList.remove('show');};
     hudPreview.src=url;
