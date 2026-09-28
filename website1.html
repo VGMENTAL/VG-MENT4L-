@@ -19,6 +19,7 @@ const deviceEl=$('#device'), styleEl=$('#style'), playerStyleEl=$('#playerStyle'
 let generating=false;
 let hudAIAnalysis=null;
 let hudAnalysisPromise=null;
+let hudIdentityKey=null;
 let profileCode=localStorage.getItem('vg_ment4l_profile_code')||'';
 let sensitivityOverride=null;
 const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -39,28 +40,47 @@ async function hashTextSHA256(text){
   for(let i=0;i<text.length;i++){const n=text.charCodeAt(i);h1=Math.imul(h1^n,16777619);h2=Math.imul(h2^((n+i)&255),2166136261);}
   return (h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
 }
-async function getHUDIdentity(){
+async function getCanonicalHUDIdentity(){
   const file=hudEl.files?.[0];
   if(!file)return 'no-hud';
   try{
-    const buffer=await file.arrayBuffer();
+    const img=await new Promise((resolve,reject)=>{
+      const i=new Image(),url=URL.createObjectURL(file);
+      i.onload=()=>{URL.revokeObjectURL(url);resolve(i)};
+      i.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read'))};
+      i.src=url;
+    });
+    // Normalize the HUD to a tiny fixed canvas so the same screenshot still
+    // resolves to the same identity when another phone stores it at a
+    // different resolution/compression (for example 2800x1260 vs 1400x630).
+    const W=96,H=54,canvas=document.createElement('canvas');
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+    const scale=Math.min(W/img.naturalWidth,H/img.naturalHeight);
+    const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+    ctx.drawImage(img,Math.round((W-w)/2),Math.round((H-h)/2),w,h);
+    const src=ctx.getImageData(0,0,W,H).data;
+    const q=new Uint8Array(W*H);
+    for(let i=0,j=0;i<src.length;i+=4,j++){
+      const gray=Math.round(src[i]*0.299+src[i+1]*0.587+src[i+2]*0.114);
+      q[j]=gray>>4;
+    }
     let hash='';
     if(window.crypto?.subtle){
-      const digest=await window.crypto.subtle.digest('SHA-256',buffer);
+      const digest=await window.crypto.subtle.digest('SHA-256',q);
       hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
     }else{
-      const bytes=new Uint8Array(buffer);
       let h1=2166136261,h2=16777619;
-      for(let i=0;i<bytes.length;i++){const n=bytes[i];h1=Math.imul(h1^n,16777619);h2=Math.imul(h2^((n+i)&255),2166136261);}
+      for(let i=0;i<q.length;i++){const n=q[i];h1=Math.imul(h1^n,16777619);h2=Math.imul(h2^((n+i)&255),2166136261);}
       hash=(h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
     }
-    // Do not include filename or lastModified: the same HUD copied to another
-    // phone should still resolve to the same Profile ID.
-    return [file.type||'',file.size||0,hash].join('|');
+    return 'hud-v2|'+hash;
   }catch(e){
-    return [file.type||'',file.size||0].join('|');
+    return 'hud-v2|unreadable';
   }
 }
+async function getHUDIdentity(){return getCanonicalHUDIdentity();}
 async function getProfileIdentity(){
   // A Profile ID represents one complete submitted information set.
   // Different submitted information automatically gets a different ID.
@@ -103,7 +123,7 @@ function getProfilePayload(){
   const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
   const modes=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad']:[modeEl.value];
   playerModes.forEach(pm=>playerStyles.forEach(ps=>modes.forEach(md=>{profiles[pm+' | '+ps+' | '+md]=calculate(deviceEl.value.trim(),pm,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps)})));
-  return {version:2,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
+  return {version:3,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudIdentity:hudIdentityKey||null,hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
   // Automatically resolve the Profile ID from the complete submitted
@@ -152,7 +172,15 @@ gunSlots.forEach(sel=>sel.addEventListener('change',()=>{const vals=gunSlots.map
 
 function hudProfile(){const f=hudEl.files?.[0]; if(!f) return {uploaded:false,desc:'No HUD screenshot uploaded.',ai:null}; const w=hudPreview.naturalWidth||0,h=hudPreview.naturalHeight||0; let desc='HUD screenshot uploaded; AI layout analysis enabled.'; if(w&&h){if(h>w) desc+=' Portrait layout detected; vertical drag/spacing will be emphasized.'; else desc+=' Landscape layout detected; horizontal tracking/spacing will be emphasized.'} return {uploaded:true,width:w,height:h,desc,ai:hudAIAnalysis};}
 function resizeHudForAI(file,maxSide=1280){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);canvas.toBlob(blob=>{if(!blob)return reject(new Error('HUD image compression failed'));const fr=new FileReader();fr.onload=()=>resolve({dataUrl:String(fr.result||''),width:w,height:h});fr.onerror=reject;fr.readAsDataURL(blob);},'image/jpeg',0.84)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read'))};img.src=url;});}
-async function analyzeHUDWithAI(file){const packed=await resizeHudForAI(file,1280);const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});const j=await r.json().catch(()=>({}));if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');return j.analysis||null;}
+async function analyzeHUDWithAI(file){
+  const packed=await resizeHudForAI(file,1280);
+  const hudKey=await getCanonicalHUDIdentity();
+  const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');
+  hudIdentityKey=hudKey;
+  return j.analysis||null;
+}
 async function startHUDAnalysis(file){if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}hudStatus.innerHTML='<span class="warning"><span class="generate-spin"></span> HUD AI server analysis chal raha hai…</span>';hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{hudAIAnalysis=a;hudStatus.innerHTML='<span class="ok">✓ HUD AI analysis complete. Fire/joystick/scope layout, control density and drag geometry are now being used heavily.</span>';return a;}).catch(e=>{hudAIAnalysis=null;hudStatus.innerHTML='<span class="warning">⚠ HUD AI response time par complete nahi hua. Safe HUD geometry fallback use kiya jayega.</span>';return null;});return hudAnalysisPromise;}
 
 const STYLE_PROFILES={
@@ -415,12 +443,14 @@ async function runGenerateProgress(device){
     progressBar.style.width=safePct+'%'; progressPct.textContent=safePct+'%';
     progressStage.innerHTML='<span class="generate-spin"></span>'+msg.replace('Generation complete ✓','Preparing final HUD AI verification…');
   }
-  render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
   if(hudAnalysisPromise){
     progressBar.style.width='96%'; progressPct.textContent='96%';
     progressStage.innerHTML='<span class="generate-spin"></span>Finalizing HUD AI analysis…';
     await hudAnalysisPromise;
   }
+  // Render only after HUD AI is finished, so the displayed sensitivity and
+  // saved profile use the exact same final HUD analysis.
+  render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
   progressStage.innerHTML='<span class="generate-spin"></span>Saving Profile ID + syncing backend…';
   await (window.__profileSavePromise||Promise.resolve());
   progressBar.style.width='100%'; progressPct.textContent='100%';
