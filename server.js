@@ -587,57 +587,62 @@ JSON:
   "warnings":[""]
 }`;
 
-  const models=['gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.7-flash',configuredModel]
+  // Prefer the currently configured stable model first. If it is slow/unavailable,
+  // fall through quickly to the low-latency Flash-Lite model instead of leaving the
+  // browser stuck at 100% while one model request hangs.
+  const models=[configuredModel,'gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.7-flash']
     .filter((m,i,a)=>m&&a.indexOf(m)===i);
-  let last503=null;
+  let lastError=null;
 
   for(const candidate of models){
     for(let attempt=0;attempt<2;attempt++){
-      const r=await fetchWithTimeout(
-        'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(candidate)+':generateContent',
-        {
-          method:'POST',
-          headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
-          body:JSON.stringify({
-            contents:[{role:'user',parts:[
-              {inline_data:{mime_type:mime,data:m[2]}},
-              {text:prompt}
-            ]}],
-            generationConfig:{
-              temperature:0,
-              seed:42,
-              thinkingConfig:{thinkingLevel:'minimal'},
-              maxOutputTokens:900,
-              responseMimeType:'application/json'
-            }
-          })
-        },
-        60000
-      );
-      const responseText=await r.text();
-      if(r.ok){
-        const out=parseJsonOutput(extractText(JSON.parse(responseText)));
-        const d=out.sensitivityDelta||{};
-        out.sensitivityDelta={};
-        for(const k of ['general','red_dot','scope_2x','scope_4x','sniper','free_look']){
-          out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
+      try{
+        const r=await fetchWithTimeout(
+          'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(candidate)+':generateContent',
+          {
+            method:'POST',
+            headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
+            body:JSON.stringify({
+              contents:[{role:'user',parts:[
+                {inline_data:{mime_type:mime,data:m[2]}},
+                {text:prompt}
+              ]}],
+              generationConfig:{
+                temperature:0,
+                seed:42,
+                thinkingConfig:{thinkingLevel:'minimal'},
+                maxOutputTokens:700,
+                responseMimeType:'application/json'
+              }
+            })
+          },
+          25000
+        );
+        const responseText=await r.text();
+        if(r.ok){
+          const out=parseJsonOutput(extractText(JSON.parse(responseText)));
+          const d=out.sensitivityDelta||{};
+          out.sensitivityDelta={};
+          for(const k of ['general','red_dot','scope_2x','scope_4x','sniper','free_look']){
+            out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
+          }
+          out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,12):[];
+          out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,8):[];
+          out.model=candidate;
+          out.configured=true;
+          return out;
         }
-        out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,12):[];
-        out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,8):[];
-        out.model=candidate;
-        out.configured=true;
-        return out;
+        lastError=new Error('Gemini HUD analysis HTTP '+r.status+': '+responseText.slice(0,1200));
+        if(r.status===503 && attempt===0) await new Promise(resolve=>setTimeout(resolve,500));
+        else break;
+      }catch(e){
+        lastError=e;
+        // A timeout/AbortError on one model should not block the next fallback model.
+        break;
       }
-      if(r.status===503){
-        last503=new Error('Gemini HUD analysis HTTP 503: '+responseText.slice(0,1200));
-        if(attempt===0) await new Promise(resolve=>setTimeout(resolve,700));
-        continue;
-      }
-      throw new Error('Gemini HUD analysis HTTP '+r.status+': '+responseText.slice(0,1200));
     }
   }
-  if(last503) throw last503;
-  throw new Error('Gemini HUD analysis failed');
+  throw lastError || new Error('Gemini HUD analysis failed');
 }
 
 
