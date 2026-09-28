@@ -125,7 +125,7 @@ async function saveProfile(){
     return profileCode;
   }catch(e){payload.backendSaved=false;payload.storageSource='offline';localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(payload));return profileCode;}
 }
-function renderCodeBox(){return `<div class="code-box"><div><div class="small">YOUR VG MENT4L PROFILE ID</div><div class="code">${esc(profileCode||'—')}</div><div class="profile-note">Ye Profile ID mobile/device ke hisaab se automatic banti hai. Jaise iQOO ka ek stable ID aur POCO ka alag ID. Options change karne par naya ID nahi banega; isi mobile ke ID par latest generated sensitivity save/update hogi.</div></div><div class="code-actions"><button class="copy" id="copyCode">COPY CODE</button></div></div>`;}
+function renderCodeBox(){return `<div class="code-box"><div><div class="small">YOUR VG MENT4L PROFILE ID</div><div class="code">${esc(profileCode||'—')}</div><div class="profile-note">Ye Profile ID aapke poore submitted information/profile se automatic banti hai. Alag information submit karoge to naya ID automatically aayega; same information dobara doge to wahi purana ID automatically verify hokar aa jayega. NEW PROFILE tap karne ki zarurat nahi hai.</div></div><div class="code-actions"><button class="copy" id="copyCode">COPY CODE</button></div></div>`;}
 async function copyTextReliable(text){
   try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}
