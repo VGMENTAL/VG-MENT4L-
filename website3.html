@@ -114,7 +114,7 @@ warmBackend();
 setInterval(()=>{ if(document.visibilityState==='visible') warmBackend(); }, 4*60*1000);
 
 const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
-let mode='p',profile=null,file=null,meta=null,lastResult=null,working=false;
+let mode='p',profile=null,file=null,meta=null,lastResult=null,working=false,updatedProfileId='';
 
 const issues=[
 'Aim head se upar ja raha hai','Aim chest pe lock ho raha hai','Aim neck pe lock ho raha hai',
@@ -186,6 +186,24 @@ videoDuration: meta?.duration || 0,
 videoName: meta?.name || '',
 videoSizeBytes: meta?.size || 0,
 meta};
+}
+
+ 
+// Save the AI-generated gameplay sensitivity into the existing Profile ID.
+// Website 3 follows Website 2's behavior: the code stays the same and only
+// the sensitivity values are replaced; all other profile information is preserved.
+async function applyGameplaySensitivityToProfile(sensitivity){
+ if(!profile?.code) return {ok:false,skipped:true};
+ const r=await fetch(api('/api/gameplay-apply'),{
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({code:profile.code,sensitivity:getSensFromProfile(sensitivity)})
+ });
+ let j={};try{j=await r.json()}catch{}
+ if(!r.ok||!j.ok) throw new Error(j.detail||j.error||'Profile sensitivity update failed');
+ updatedProfileId=String(j.profileId||profile.code);
+ profile.sensitivity=j.sensitivity||getSensFromProfile(sensitivity);
+ return j;
 }
 
 /* OpenAI Vision path: the browser walks the ENTIRE video timeline and sends chronological frames. */
@@ -312,6 +330,12 @@ $('go').onclick=async()=>{
   if(!j.ok)throw new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:''));
   lastResult=j.result||j.analysis||{};
   if(lastResult.configured===false){$('out').innerHTML=`<h3>OpenAI AI unavailable</h3><div class="status warn">${esc(lastResult.message||'OPENAI_API_KEY configure karo.')}</div>`;return}
+  // Persist the first AI-generated sensitivity into the same Profile ID.
+  let profileUpdateWarning='';
+  if(profile?.code && lastResult.recommendedSensitivity){
+   try{ await applyGameplaySensitivityToProfile(lastResult.recommendedSensitivity); }
+   catch(e){ profileUpdateWarning=String(e?.message||e); updatedProfileId=profile.code; }
+  }
   setStep('final');$('prog').style.width='100%';
   const s=getSensFromProfile(lastResult.recommendedSensitivity);
   $('out').innerHTML=`<h3>✓ Full Gameplay Analysis Complete</h3>
@@ -321,10 +345,13 @@ $('go').onclick=async()=>{
   <h4>1. Tumhari current sensitivity mein kya problem thi?</h4><ul>${list(lastResult.problemDiagnosis,'Reliable diagnosis nahi mila.')}</ul>
   <h4>2. Poore gameplay se kya observe hua?</h4><ul>${list(lastResult.findings,'No reliable finding returned.')}</ul>
   <h4>3. Automatic new sensitivity</h4>${boxes(s)}
+  ${updatedProfileId?`<div class="status ok" style="margin-top:10px"><b>✓ Profile ID updated</b><br><span class="codeNew">${esc(updatedProfileId)}</span><br><span class="mut">Isi Profile ID mein sirf new sensitivity update hui hai. Device, player style, game mode, OB, RAM, fingers, guns aur baaki profile information same rakhi gayi hai.</span><br><button class="btn" id="copyGameplayCode" style="margin-top:8px">COPY UPDATED CODE</button></div>`:""}
+  ${profileUpdateWarning?`<div class="status warn" style="margin-top:10px"><b>Profile save warning:</b> ${esc(profileUpdateWarning)}</div>`:""}
   <h4>4. Kyon change kiya?</h4><ul>${list(lastResult.adjustmentReasons,'Evidence-based adjustment.')}</ul>
   ${lastResult.timestampEvidence?.length?`<h4>5. Timeline evidence</h4><ul>${list(lastResult.timestampEvidence)}</ul>`:''}
   ${lastResult.evidenceSummary?`<p class="mut"><b>Evidence:</b> ${esc(lastResult.evidenceSummary)}</p>`:''}
   <div class="status warn">Ye gameplay-based optimized starting configuration hai. Actual result FPS, touch latency, ping aur player input se vary ho sakta hai.</div>`;
+  if(updatedProfileId && $('copyGameplayCode')) $('copyGameplayCode').onclick=()=>navigator.clipboard?.writeText(updatedProfileId);
   $('fixPanel').classList.remove('hidden');
  }catch(e){
   $('bar').classList.remove('aiBusy');$('prog').style.width='45%';setStep('vision');$('out').className='result';
@@ -357,11 +384,11 @@ $('fix').onclick=async()=>{
   $('fixOut').innerHTML=`<b>✓ Better sensitivity ready</b>${boxes(s)}
   ${j.diagnosis?`<p><b>AI diagnosis:</b> ${esc(j.diagnosis)}</p>`:''}
   ${j.changes?.length?`<h4>Changes made</h4><ul>${list(j.changes)}</ul>`:''}
-  <p><b>New Profile ID:</b> <span class="codeNew">${esc(j.newProfileId||'—')}</span></p>
-  ${j.newProfileId?'<button class="btn" id="copyNew">COPY NEW CODE</button>':''}
-  <p class="mut">Original Profile ID aur original sensitivity untouched hai. New code updated sensitivity ke saath save hua hai.</p>
+  <p><b>Updated Profile ID:</b> <span class="codeNew">${esc(j.profileId||j.newProfileId||'—')}</span></p>
+  ${(j.profileId||j.newProfileId)?'<button class="btn" id="copyNew">COPY UPDATED CODE</button>':''}
+  <p class="mut">Same Profile ID rakha gaya hai. Is code ke andar sirf sensitivity update hui hai; baaki profile information same hai.</p>
   ${j.warning?`<div class="status warn">AI refinement warning: ${esc(j.warning)}</div>`:''}`;
-  if(j.newProfileId)$('copyNew').onclick=()=>navigator.clipboard?.writeText(j.newProfileId);
+  if(j.profileId||j.newProfileId)$('copyNew').onclick=()=>navigator.clipboard?.writeText(j.profileId||j.newProfileId);
  }catch(e){$('fixOut').className='status warn';$('fixOut').textContent='Fix failed: '+String(e.message||e)}
  finally{working=false;$('fix').disabled=false;$('go').disabled=false}
 };
