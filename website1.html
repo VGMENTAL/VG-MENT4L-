@@ -706,7 +706,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   return `<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • Mode: ${esc(style)} • Style: ${esc(playerStyle)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
-  <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">${esc(style)}</div><div class="pill">${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="small note">${esc(p.desc)}</div></div>
+  <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">${esc(style)}</div><div class="pill">${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
   <div class="section"><h3>🇧🇷 Brazilian Control Calibration</h3><div class="pill">Fast drag / headshot prior</div><div class="pill">Controlled 2× / 4×</div><div class="pill">HUD-aware</div><div class="pill">Anti-Fly / Anti-Chest</div><div class="small note">Brazilian-style public guides commonly high General/Red Dot aur comparatively controlled scopes describe karte hain. VG MENT4L is prior ko tumhare device, mode, style, fingers, guns aur HUD ke saath blend karta hai. Ye kisi ek player ka copied setting nahi hai.</div></div>
   ${renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle)}
   <div class="section"><h3>🎯 Focus Guns — weapon-specific tuning</h3><div class="small">${guns.length?`You selected ${guns.length}/3 guns. Each selected weapon gets its own tuned starting values.`:'All Guns selected. Every listed weapon gets a weapon-specific starting profile.'}</div><div class="weapon-table">${weaponRows}</div></div>
@@ -853,6 +853,7 @@ RAM: ${ram}
 Fingers: ${fingers}
 Focus guns: ${guns.length?guns.join(', '):'All Guns'}
 HUD screenshot: ${hud.uploaded?'Uploaded':'Not uploaded'}
+Gameplay evidence: ${gameplayAIAnalysis?'Analysed':'Not uploaded'}
 Device age: ${deviceAgeEl?.value.trim()||'Not specified'}
 OB: ${$('#obVersion')?.value||'OB55'}
 
