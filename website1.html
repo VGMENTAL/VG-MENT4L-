@@ -390,6 +390,50 @@ function weaponProfile(gun, base, style, mode){
   return Object.fromEntries(Object.entries(a).map(([k,v])=>[k,clamp(v)]));
 }
 
+function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
+  const ratio2=Math.max(0,Math.min(1,(s.general-s.scope_2x)/55));
+  const ratio4=Math.max(0,Math.min(1,(s.general-s.scope_4x)/70));
+  const ratioSn=Math.max(0,Math.min(1,(s.scope_4x-s.sniper)/55));
+  let base=58 + ratio2*14 + ratio4*16 + ratioSn*8;
+  if(/spray|recoil/i.test(style)) base+=8;
+  const evidence=[
+    hud?.ai?.mainIssue||'',
+    hud?.ai?.evidenceSummary||'',
+    ...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),
+    ...(Array.isArray(hud?.ai?.problemDiagnosis)?hud.ai.problemDiagnosis:[])
+  ].join(' ').toLowerCase();
+  if(/recoil|spray|shaky|shake/.test(evidence)) base+=6;
+  if(/overshoot|too fast|high sensitivity/.test(evidence)) base+=3;
+  if(/slow|under.?drag|heavy/.test(evidence)) base-=3;
+  const score=Math.round(Math.max(0,Math.min(98,base)));
+  const level=score>=88?'Very High':score>=78?'High':score>=66?'Medium-High':score>=52?'Medium':'Needs tuning';
+  const overshoot=Math.round(Math.max(0,Math.min(95,100-(s.general+s.red_dot)/4)));
+  const close=Math.round(Math.max(0,Math.min(98,52+(s.general-160)*0.45+(s.red_dot-150)*0.35)));
+  const mid=Math.round(Math.max(0,Math.min(98,58+(s.scope_2x-125)*0.55)));
+  const long=Math.round(Math.max(0,Math.min(98,60+(s.scope_4x-105)*0.65)));
+  const confidence=hud?.ai?.confidence||'medium';
+  return {score,level,overshoot,close,mid,long,confidence};
+}
+function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
+  const a=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
+  const note=a.score>=78
+    ? 'Scoped values controlled hain; profile recoil stability ko prioritize karta hai. Actual gameplay test ke bina ise measured recoil result nahi maana jayega.'
+    : 'Ye starting calibration hai. Actual spray/drag video test se recoil behaviour ko aur accurately tune kiya ja sakta hai.';
+  return `<div class="section recoil-analysis">
+    <h3>🎯 Recoil Control Analysis</h3>
+    <div class="small">Sensitivity numbers se calculated calibration estimate — actual gameplay measurement nahi.</div>
+    <div class="recoil-grid">
+      <div><b>${a.score}%</b><span>Recoil Stability</span></div>
+      <div><b>${a.close}%</b><span>Close Range</span></div>
+      <div><b>${a.mid}%</b><span>Mid Range</span></div>
+      <div><b>${a.long}%</b><span>Long Range</span></div>
+      <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
+    </div>
+    <div class="notice ${a.score>=78?'ok':'warn'}"><b>Calibration level: ${esc(a.level)}</b><br>${esc(note)}</div>
+    <div class="small"><b>Why:</b> General/Red Dot responsiveness ko scoped sensitivity ke saath balance kiya gaya hai; 2×/4× recoil stability ke liye comparatively controlled rakhe gaye hain. HUD AI confidence: ${esc(a.confidence)}.</div>
+  </div>`;
+}
+
 function adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns){
   const cls=deviceClass(device);
   return `
@@ -414,6 +458,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
   <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">${esc(style)}</div><div class="pill">${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="small note">${esc(p.desc)}</div></div>
+  ${renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle)}
   <div class="section"><h3>🎯 Focus Guns — weapon-specific tuning</h3><div class="small">${guns.length?`You selected ${guns.length}/3 guns. Each selected weapon gets its own tuned starting values.`:'All Guns selected. Every listed weapon gets a weapon-specific starting profile.'}</div><div class="weapon-table">${weaponRows}</div></div>
   <div class="section"><h3>🖼️ HUD Screenshot — highest priority</h3><div class="hud-analysis">${hud.uploaded?`HUD screenshot loaded (${hud.width||'?'} × ${hud.height||'?'}). The recommendation uses your HUD upload as the first adjustment reference. ${esc(hud.desc)}`:'No HUD screenshot uploaded. Upload your current HUD for the most targeted tuning.'}</div></div>
   <div class="section"><h3>How to adjust — ${esc(style)} / ${esc(mode)} / ${esc(preset)}</h3>${adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns)}</div>
