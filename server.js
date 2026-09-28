@@ -550,7 +550,7 @@ Keep values 0-200. Make the smallest useful changes supported by the evidence. R
 
 async function runGeminiHudAnalysis(payload) {
   const key=String(process.env.GEMINI_API_KEY||'').trim();
-  const model=String(process.env.GEMINI_MODEL||'gemini-3.8-flash').trim();
+  const configuredModel=String(process.env.GEMINI_MODEL||'gemini-3.8-flash').trim();
   if(!key) return null;
   const raw=String(payload.imageData||'');
   const m=raw.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
@@ -561,7 +561,6 @@ async function runGeminiHudAnalysis(payload) {
 IMPORTANT:
 - Analyze the actual uploaded HUD layout, not a generic HUD.
 - Inspect fire-button position/size, joystick position, scope/aim controls, crouch/jump/prone/action cluster, spacing, edge distances, control density, portrait/landscape geometry, and likely drag path length.
-- Explain which sensitivity categories should move because of this exact layout.
 - Return JSON only.
 - sensitivityDelta is a RELATIVE adjustment from the normal device/mode/style baseline, not the final 0-200 sensitivity.
 - Keep each delta between -15 and +15. Do not invent exact hardware specifications.
@@ -569,13 +568,8 @@ IMPORTANT:
 
 PLAYER CONTEXT:
 ${JSON.stringify({
-  device:payload.device||'',
-  playerMode:payload.playerMode||'',
-  playerStyle:payload.playerStyle||'',
-  mode:payload.mode||'',
-  fingers:payload.fingers||'',
-  imageWidth:payload.width||0,
-  imageHeight:payload.height||0
+  device:payload.device||'', playerMode:payload.playerMode||'', playerStyle:payload.playerStyle||'',
+  mode:payload.mode||'', fingers:payload.fingers||'', imageWidth:payload.width||0, imageHeight:payload.height||0
 })}
 
 JSON:
@@ -592,40 +586,60 @@ JSON:
   "reasons":[""],
   "warnings":[""]
 }`;
-  const r=await fetchWithTimeout(
-    'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',
-    {
-      method:'POST',
-      headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
-      body:JSON.stringify({
-        contents:[{role:'user',parts:[
-          {inline_data:{mime_type:mime,data:m[2]}},
-          {text:prompt}
-        ]}],
-        generationConfig:{
-          temperature:0,
-          maxOutputTokens:900,
-          responseMimeType:'application/json'
+
+  const models=['gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.7-flash',configuredModel]
+    .filter((m,i,a)=>m&&a.indexOf(m)===i);
+  let last503=null;
+
+  for(const candidate of models){
+    for(let attempt=0;attempt<2;attempt++){
+      const r=await fetchWithTimeout(
+        'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(candidate)+':generateContent',
+        {
+          method:'POST',
+          headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            contents:[{role:'user',parts:[
+              {inline_data:{mime_type:mime,data:m[2]}},
+              {text:prompt}
+            ]}],
+            generationConfig:{
+              temperature:0,
+              seed:42,
+              thinkingConfig:{thinkingLevel:'minimal'},
+              maxOutputTokens:900,
+              responseMimeType:'application/json'
+            }
+          })
+        },
+        60000
+      );
+      const responseText=await r.text();
+      if(r.ok){
+        const out=parseJsonOutput(extractText(JSON.parse(responseText)));
+        const d=out.sensitivityDelta||{};
+        out.sensitivityDelta={};
+        for(const k of ['general','red_dot','scope_2x','scope_4x','sniper','free_look']){
+          out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
         }
-      })
-    },
-    90000
-  );
-  const responseText=await r.text();
-  if(!r.ok) throw new Error('Gemini HUD analysis HTTP '+r.status+': '+responseText.slice(0,1000));
-  const out=parseJsonOutput(extractText(JSON.parse(responseText)));
-  const d=out.sensitivityDelta||{};
-  out.sensitivityDelta={
-    general:clamp(d.general),red_dot:clamp(d.red_dot),scope_2x:clamp(d.scope_2x),
-    scope_4x:clamp(d.scope_4x),sniper:clamp(d.sniper),free_look:clamp(d.free_look)
-  };
-  // Preserve the requested signed range: clamp() is 0-200, so normalize deltas separately.
-  for(const k of Object.keys(out.sensitivityDelta)) out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
-  out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,12):[];
-  out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,8):[];
-  out.model=model;
-  return out;
+        out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,12):[];
+        out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,8):[];
+        out.model=candidate;
+        out.configured=true;
+        return out;
+      }
+      if(r.status===503){
+        last503=new Error('Gemini HUD analysis HTTP 503: '+responseText.slice(0,1200));
+        if(attempt===0) await new Promise(resolve=>setTimeout(resolve,700));
+        continue;
+      }
+      throw new Error('Gemini HUD analysis HTTP '+r.status+': '+responseText.slice(0,1200));
+    }
+  }
+  if(last503) throw last503;
+  throw new Error('Gemini HUD analysis failed');
 }
+
 
 async function runGeminiTextFix(payload) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
