@@ -553,7 +553,7 @@ async function runGeminiHudAnalysis(payload) {
   const model=String(process.env.GEMINI_MODEL||'gemini-3.8-flash').trim();
   if(!key) return null;
   const raw=String(payload.imageData||'');
-  const m=raw.match(/^data:(image\\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
+  const m=raw.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
   if(!m) throw new Error('Valid compressed HUD image is required');
   const mime=m[1].toLowerCase().replace('image/jpg','image/jpeg');
   const prompt=`Analyze this Free Fire MAX HUD screenshot specifically for sensitivity calibration.
