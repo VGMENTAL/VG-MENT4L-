@@ -153,7 +153,7 @@ gunSlots.forEach(sel=>sel.addEventListener('change',()=>{const vals=gunSlots.map
 function hudProfile(){const f=hudEl.files?.[0]; if(!f) return {uploaded:false,desc:'No HUD screenshot uploaded.',ai:null}; const w=hudPreview.naturalWidth||0,h=hudPreview.naturalHeight||0; let desc='HUD screenshot uploaded; AI layout analysis enabled.'; if(w&&h){if(h>w) desc+=' Portrait layout detected; vertical drag/spacing will be emphasized.'; else desc+=' Landscape layout detected; horizontal tracking/spacing will be emphasized.'} return {uploaded:true,width:w,height:h,desc,ai:hudAIAnalysis};}
 function resizeHudForAI(file,maxSide=1280){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);canvas.toBlob(blob=>{if(!blob)return reject(new Error('HUD image compression failed'));const fr=new FileReader();fr.onload=()=>resolve({dataUrl:String(fr.result||''),width:w,height:h});fr.onerror=reject;fr.readAsDataURL(blob);},'image/jpeg',0.84)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read'))};img.src=url;});}
 async function analyzeHUDWithAI(file){const packed=await resizeHudForAI(file,1280);const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});const j=await r.json().catch(()=>({}));if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');return j.analysis||null;}
-async function startHUDAnalysis(file){if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{hudAIAnalysis=a;hudStatus.innerHTML='<span class="ok">✓ HUD AI analysis complete. Fire/joystick/scope layout, control density and drag geometry are now being used heavily.</span>';return a;}).catch(e=>{hudAIAnalysis=null;hudStatus.innerHTML='<span class="warning">⚠ HUD image visible, but AI analysis could not finish. Basic HUD geometry will still be used.</span>';return null;});return hudAnalysisPromise;}
+async function startHUDAnalysis(file){if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}hudStatus.innerHTML='<span class="warning"><span class="generate-spin"></span> HUD AI server analysis chal raha hai…</span>';hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{hudAIAnalysis=a;hudStatus.innerHTML='<span class="ok">✓ HUD AI analysis complete. Fire/joystick/scope layout, control density and drag geometry are now being used heavily.</span>';return a;}).catch(e=>{hudAIAnalysis=null;hudStatus.innerHTML='<span class="warning">⚠ HUD AI response time par complete nahi hua. Safe HUD geometry fallback use kiya jayega.</span>';return null;});return hudAnalysisPromise;}
 
 const STYLE_PROFILES={
   "Balanced": {g:0,r:0,x2:0,x4:0,sn:0,fl:0,desc:"Balanced drag, tracking and recoil control. Best starting point when you are not sure which style fits you."},
@@ -409,13 +409,18 @@ async function runGenerateProgress(device){
   ];
   progressBar.style.width='0%'; progressPct.textContent='0%';
   for(const [pct,msg] of stages){
-    const delay=pct===100?420:(pct<30?320:460);
+    const safePct=pct===100?94:pct;
+    const delay=pct===100?220:(pct<30?320:460);
     await new Promise(r=>setTimeout(r,delay));
-    progressBar.style.width=pct+'%'; progressPct.textContent=pct+'%';
-    progressStage.innerHTML=pct===100?'<span class="generate-done">✓ '+msg+'</span>':'<span class="generate-spin"></span>'+msg;
+    progressBar.style.width=safePct+'%'; progressPct.textContent=safePct+'%';
+    progressStage.innerHTML='<span class="generate-spin"></span>'+msg.replace('Generation complete ✓','Preparing final HUD AI verification…');
   }
   render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
-  if(hudAnalysisPromise){ progressStage.innerHTML='<span class="generate-spin"></span>Finalizing HUD AI analysis…'; await hudAnalysisPromise; }
+  if(hudAnalysisPromise){
+    progressBar.style.width='96%'; progressPct.textContent='96%';
+    progressStage.innerHTML='<span class="generate-spin"></span>Finalizing HUD AI analysis…';
+    await hudAnalysisPromise;
+  }
   progressStage.innerHTML='<span class="generate-spin"></span>Saving Profile ID + syncing backend…';
   await (window.__profileSavePromise||Promise.resolve());
   progressBar.style.width='100%'; progressPct.textContent='100%';
