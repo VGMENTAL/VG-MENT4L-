@@ -9,8 +9,10 @@ const ROOT = __dirname;
 const DATA = path.join(ROOT, 'data');
 const PROFILES = path.join(DATA, 'profiles');
 const UPDATES = path.join(DATA, 'updates');
+const HUD_CACHE = path.join(DATA, 'hud-analysis');
 fs.mkdirSync(PROFILES, { recursive: true });
 fs.mkdirSync(UPDATES, { recursive: true });
+fs.mkdirSync(HUD_CACHE, { recursive: true });
 
 const MAX_BODY = 3 * 1024 * 1024;
 const GAMEPLAY_MAX_BODY = 2 * 1024 * 1024 * 1024; // 2 GB
@@ -147,6 +149,7 @@ async function initDb() {
     await pool.query('CREATE TABLE IF NOT EXISTS vg_profiles (code TEXT PRIMARY KEY, profile JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     await pool.query('CREATE TABLE IF NOT EXISTS vg_updates (id BIGSERIAL PRIMARY KEY, code TEXT NULL, item JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     await pool.query('CREATE INDEX IF NOT EXISTS vg_updates_code_idx ON vg_updates(code)');
+    await pool.query('CREATE TABLE IF NOT EXISTS vg_hud_analysis (hud_key TEXT PRIMARY KEY, analysis JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     dbReady = true;
     dbError = '';
     console.log('VG MENT4L persistent database connected.');
@@ -180,6 +183,30 @@ async function dbGetUpdates(code) {
   if (!dbReady || !pool) return null;
   const r = await pool.query('SELECT item FROM vg_updates WHERE code=$1 ORDER BY created_at DESC LIMIT 100', [code]);
   return r.rows.map(x => x.item);
+}
+async function dbGetHudAnalysis(hudKey) {
+  if (!dbReady || !pool || !hudKey) return null;
+  const r = await pool.query('SELECT analysis FROM vg_hud_analysis WHERE hud_key=$1 LIMIT 1', [hudKey]);
+  return r.rows[0]?.analysis || null;
+}
+async function dbSaveHudAnalysis(hudKey, analysis) {
+  if (!dbReady || !pool || !hudKey || !analysis) return false;
+  await pool.query(
+    'INSERT INTO vg_hud_analysis(hud_key,analysis,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(hud_key) DO UPDATE SET analysis=EXCLUDED.analysis,updated_at=NOW()',
+    [hudKey, JSON.stringify(analysis)]
+  );
+  return true;
+}
+function hudCacheFile(hudKey) {
+  return path.join(HUD_CACHE, encodeURIComponent(String(hudKey)) + '.json');
+}
+function localGetHudAnalysis(hudKey) {
+  if (!hudKey) return null;
+  return readJson(hudCacheFile(hudKey));
+}
+function localSaveHudAnalysis(hudKey, analysis) {
+  if (!hudKey || !analysis) return;
+  try { writeJson(hudCacheFile(hudKey), analysis); } catch {}
 }
 
 function makeNewProfileCode() {
@@ -738,15 +765,26 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && u.pathname === '/api/hud-analyze') {
       const b=await readBody(req, MAX_BODY);
       if(!b.imageData) return json(res,400,{error:'HUD image is required'});
+      const hudKey=String(b.hudKey||'').trim();
       try {
+        // Same normalized HUD = same AI analysis across phones.
+        if(hudKey){
+          const cached=dbReady ? await dbGetHudAnalysis(hudKey) : localGetHudAnalysis(hudKey);
+          if(cached) return json(res,200,{ok:true,analysis:cached,cached:true});
+        }
         const analysis=await runGeminiHudAnalysis(b);
         if(!analysis) return json(res,503,{error:'GEMINI_API_KEY is not configured'});
-        return json(res,200,{ok:true,analysis});
+        if(hudKey){
+          if(dbReady) await dbSaveHudAnalysis(hudKey,analysis);
+          else localSaveHudAnalysis(hudKey,analysis);
+        }
+        return json(res,200,{ok:true,analysis,cached:false});
       } catch(e) {
         console.error('HUD AI analysis failed:',e.message);
         return json(res,502,{error:e.message||'HUD AI analysis failed'});
       }
     }
+
     if (req.method === 'GET' && u.pathname === '/api/patch-research') {
       const ob = safeCode(u.searchParams.get('ob') || '');
       if (!/^OB\d+$/.test(ob)) return json(res, 400, { error: 'Valid OB required' });
