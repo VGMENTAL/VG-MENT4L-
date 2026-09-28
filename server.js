@@ -429,7 +429,9 @@ async function runGeminiVideo(stream, mime, size, context) {
 
   // FAST MODE: short gameplay clips use static processing because it avoids the
   // extra agentic navigation/tool round-trips that can increase latency.
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', configuredModel]
+  // Try the configured production model first, then fall back to alternate
+  // Gemini models. A temporary 503 should not abort the whole analysis.
+  const models = [configuredModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']
     .filter((m, i, arr) => m && arr.indexOf(m) === i);
 
   // Keep the complete-video upload path, but analyze the uploaded video directly
@@ -458,7 +460,7 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
     let lastParseError = null;
 
     for (const candidate of models) {
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
         const started = Date.now();
         const r = await fetchWithTimeout(
           'https://generativelanguage.googleapis.com/v1beta/models/' +
@@ -526,7 +528,12 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
 
         if (r.status === 503) {
           last503 = new Error(`Gemini video analysis HTTP 503: ${responseText.slice(0, 1200)}`);
-          if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 700));
+          // 503 means temporary provider/model capacity pressure. Retry with
+          // increasing delays, then move to the next model.
+          if (attempt < 2) {
+            const waitMs = 1200 * Math.pow(2, attempt);
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+          }
           continue;
         }
 
