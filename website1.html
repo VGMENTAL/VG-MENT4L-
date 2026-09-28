@@ -50,10 +50,10 @@ async function getCanonicalHUDIdentity(){
       i.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read'))};
       i.src=url;
     });
-    // Normalize the HUD to a tiny fixed canvas so the same screenshot still
-    // resolves to the same identity when another phone stores it at a
-    // different resolution/compression (for example 2800x1260 vs 1400x630).
-    const W=96,H=54,canvas=document.createElement('canvas');
+    // Cross-device visual identity: normalize every HUD to the same tiny
+    // 32x18 grayscale grid and use only 2-bit luminance. This intentionally
+    // ignores filename, file size, resolution and most JPEG/compression noise.
+    const W=32,H=18,canvas=document.createElement('canvas');
     canvas.width=W;canvas.height=H;
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
     ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
@@ -64,7 +64,7 @@ async function getCanonicalHUDIdentity(){
     const q=new Uint8Array(W*H);
     for(let i=0,j=0;i<src.length;i+=4,j++){
       const gray=Math.round(src[i]*0.299+src[i+1]*0.587+src[i+2]*0.114);
-      q[j]=gray>>4;
+      q[j]=gray>>6;
     }
     let hash='';
     if(window.crypto?.subtle){
@@ -75,9 +75,9 @@ async function getCanonicalHUDIdentity(){
       for(let i=0;i<q.length;i++){const n=q[i];h1=Math.imul(h1^n,16777619);h2=Math.imul(h2^((n+i)&255),2166136261);}
       hash=(h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
     }
-    return 'hud-v2|'+hash;
+    return 'hud-v3|'+hash;
   }catch(e){
-    return 'hud-v2|unreadable';
+    return 'hud-v3|unreadable';
   }
 }
 async function getHUDIdentity(){return getCanonicalHUDIdentity();}
@@ -99,7 +99,7 @@ async function getProfileIdentity(){
     fingers:normalizeProfileText(fingersEl.value),
     guns,
     allGuns:!!allGunsEl.checked,
-    hud:await getHUDIdentity()
+    hud:hudIdentityKey||await getHUDIdentity()
   });
 }
 async function makeCodeForCurrentProfile(){
@@ -482,6 +482,8 @@ deviceEl.addEventListener('input',()=>{ if(deviceEl.value.trim()) autoRecalculat
 allGunsEl.addEventListener('change',()=>autoRecalculate('Focus Guns changed'));
 gunSlots.forEach(sel=>sel.addEventListener('change',()=>autoRecalculate('Focus Gun changed')));
 hudEl.addEventListener('change',()=>{
+  hudIdentityKey=null;
+  hudAIAnalysis=null;
   const file=hudEl.files?.[0];
   const meta=$('#hudMeta');
   if(file){
