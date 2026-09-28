@@ -253,7 +253,7 @@ async function extractTimelineFrames(f, meta){
  });
 }
 $('vid').onchange=async()=>{
- file=$('vid').files[0]||null;meta=null;lastResult=null;$('fixPanel').classList.add('hidden');
+ file=$('vid').files[0]||null;meta=null;lastResult=null;updatedProfileId='';$('fixPanel').classList.add('hidden');
 // Start waking the backend as soon as the user chooses a video.
 warmBackend();
  if(!file)return;
@@ -372,14 +372,16 @@ $('fix').onclick=async()=>{
  const selected=selectedIssues(),custom=$('custom').value.trim();
  if(!selected.length&&!custom){$('fixOut').className='status warn';$('fixOut').textContent='Kam se kam ek problem select karo ya custom problem likho.';return}
  working=true;$('fix').disabled=true;$('go').disabled=true;
- $('fixOut').className='status';$('fixOut').textContent='Tumhari selected + custom problem ko AI ke saath analyse karke better sensitivity aur new Profile ID banaya ja raha hai...';
+ $('fixOut').className='status';$('fixOut').textContent='Tumhari selected + custom problem ko AI ke saath analyse karke better sensitivity banayi ja rahi hai aur same Profile ID mein sirf sensitivity update hogi...';
  const payload={sensitivity:getSensFromProfile(lastResult.recommendedSensitivity),issues:selected,customText:custom,code:profile?.code||'',context:contextPayload()};
  try{
   const r=await fetch(api('/api/gameplay-fix'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   let j={};try{j=await r.json()}catch{}
   if(!r.ok)throw new Error((j.error||'Fix failed')+(j.detail?' — '+j.detail:''));
   const s=getSensFromProfile(j.sensitivity);
-  if(j.newProfileId){try{localStorage.setItem('vg_ment4l_profile_'+j.newProfileId,JSON.stringify({...profile,code:j.newProfileId,sensitivity:j.sensitivity,derivedFromCode:profile?.code||null}))}catch(e){}}
+  lastResult.recommendedSensitivity=s;
+  if(profile && (j.profileId||j.newProfileId)) profile.sensitivity=s;
+  if(j.profileId||j.newProfileId){try{localStorage.setItem('vg_ment4l_profile_'+(j.profileId||j.newProfileId),JSON.stringify({...profile,code:(j.profileId||j.newProfileId),sensitivity:s}))}catch(e){}}
   $('fixOut').className='status ok';
   $('fixOut').innerHTML=`<b>✓ Better sensitivity ready</b>${boxes(s)}
   ${j.diagnosis?`<p><b>AI diagnosis:</b> ${esc(j.diagnosis)}</p>`:''}
