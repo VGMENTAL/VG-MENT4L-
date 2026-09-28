@@ -761,6 +761,65 @@ function bindIssueFix(){
     saveProfile();
   };
 }
+async function hashGameplayFile(file){
+  if(!file)return 'no-gameplay';
+  try{
+    const buf=await file.arrayBuffer(),d=await crypto.subtle.digest('SHA-256',buf);
+    return 'gameplay-v1|'+Array.from(new Uint8Array(d)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){return 'gameplay-v1|'+file.name+'|'+file.size+'|'+file.lastModified}
+}
+async function extractGameplayEvidenceFrames(file){
+  const meta=await new Promise((resolve,reject)=>{
+    const v=document.createElement('video');v.preload='metadata';v.muted=true;
+    const u=URL.createObjectURL(file);
+    v.onloadedmetadata=()=>{const x={duration:v.duration,w:v.videoWidth,h:v.videoHeight};URL.revokeObjectURL(u);resolve(x)};
+    v.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Gameplay video read failed. MP4/H.264 video try karo.'))};
+    v.src=u;
+  });
+  const v=document.createElement('video');v.preload='auto';v.muted=true;v.playsInline=true;
+  const u=URL.createObjectURL(file),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{alpha:false});
+  try{
+    await new Promise((resolve,reject)=>{v.onloadedmetadata=resolve;v.onerror=()=>reject(new Error('Gameplay video decode failed.'));v.src=u});
+    const duration=Math.max(.2,meta.duration||v.duration||0);
+    const count=Math.max(12,Math.min(28,Math.ceil(duration/2.5))),step=duration/count;
+    const W=Math.min(768,v.videoWidth||768),H=Math.max(1,Math.round(W*(v.videoHeight||432)/(v.videoWidth||432)));
+    canvas.width=W;canvas.height=H;const frames=[];
+    for(let i=0;i<count;i++){
+      const t=Math.min(duration-.04,Math.max(0,i*step));
+      await new Promise((resolve,reject)=>{
+        let timer=setTimeout(()=>{cleanup();reject(new Error('Frame seek timeout'))},10000);
+        const cleanup=()=>{clearTimeout(timer);v.removeEventListener('seeked',ok);v.removeEventListener('error',bad)};
+        const ok=()=>{cleanup();resolve()},bad=()=>{cleanup();reject(new Error('Frame decode failed'))};
+        v.addEventListener('seeked',ok,{once:true});v.addEventListener('error',bad,{once:true});v.currentTime=t;
+      });
+      ctx.drawImage(v,0,0,W,H);
+      frames.push({t:t.toFixed(1)+'s',data:canvas.toDataURL('image/jpeg',.55)});
+      const s=$('#gameplayStatus');if(s)s.textContent='Timeline evidence '+(i+1)+'/'+count+' frames prepare ho rahe hain…';
+    }
+    return frames;
+  }finally{URL.revokeObjectURL(u)}
+}
+async function analyzeGameplayForWebsite1(){
+  const file=$('#gameplayVideo')?.files?.[0];if(!file)return null;
+  const status=$('#gameplayStatus');
+  try{
+    if(status)status.textContent='Gameplay video read ho raha hai…';
+    const frames=await extractGameplayEvidenceFrames(file);
+    if(status)status.textContent='OpenAI Vision poore gameplay timeline ko analyse kar raha hai…';
+    const context={device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,gameMode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,screenClass:screenClassEl.value,touchClass:touchClassEl.value,aimIssue:aimIssueEl.value,guns:selectedGuns(),obVersion:$('#obVersion')?.value||'OB55'};
+    const resp=await fetch('/api/gameplay-analyze-openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frames,context})});
+    const j=await resp.json();
+    if(!resp.ok||!j.ok)throw new Error(j.detail||j.error||'Gameplay AI analysis failed');
+    if(j.result?.configured===false)throw new Error(j.result.message||'OpenAI API not configured');
+    gameplayAIAnalysis=j.result;
+    if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — '+(j.result.framesAnalyzed||frames.length)+' timeline frames used.</span>';
+    return j.result;
+  }catch(e){
+    gameplayAIAnalysis=null;
+    if(status)status.innerHTML='<span class="danger">Gameplay analysis skipped: '+esc(e.message||e)+'</span><br><span class="small">Baaki engine normal inputs + HUD se continue karega.</span>';
+    return null;
+  }
+}
 function render(device,style,mode,ram,fingers,hud,guns,preset){
   const styles=style==='All Styles'?Object.keys(STYLE_PROFILES):[style];
   const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
@@ -893,6 +952,14 @@ deviceAgeEl.addEventListener('input',()=>{ if(resultsEl && !resultsEl.classList.
 deviceEl.addEventListener('input',()=>{ if(deviceEl.value.trim()) autoRecalculate('Device changed'); });
 allGunsEl.addEventListener('change',()=>autoRecalculate('Focus Guns changed'));
 gunSlots.forEach(sel=>sel.addEventListener('change',()=>autoRecalculate('Focus Gun changed')));
+$('#gameplayVideo').addEventListener('change',async()=>{
+  gameplayAIAnalysis=null;gameplayIdentityKey=null;gameplayAnalysisPromise=null;
+  const f=$('#gameplayVideo').files?.[0];
+  if(!f){autoRecalculate('Gameplay video removed');return}
+  gameplayAnalysisPromise=(async()=>{gameplayIdentityKey=await hashGameplayFile(f);return analyzeGameplayForWebsite1()})();
+  await gameplayAnalysisPromise;
+  autoRecalculate('Gameplay evidence ready');
+});
 hudEl.addEventListener('change',()=>{
   hudIdentityKey=null;
   hudAIAnalysis=null;
