@@ -22,7 +22,59 @@ let hudAnalysisPromise=null;
 let profileCode=localStorage.getItem('vg_ment4l_profile_code')||'';
 let sensitivityOverride=null;
 const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-// Profile ID: # + 10 alphanumeric characters. The ID points to the complete saved profile; it is not meant to literally contain every field.
+// Profile ID rule:
+// 1) Every genuinely different profile gets a different code automatically.
+// 2) Re-entering the exact same profile (including the same HUD file) recreates the same code.
+// 3) Code stays # + 10 characters so Website 2 can continue using the same format.
+function normalizeProfileText(v){return String(v??'').trim().replace(/\\s+/g,' ').toLowerCase();}
+async function hashTextSHA256(text){
+  try{
+    if(window.crypto?.subtle){
+      const buffer=await window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  // Deterministic fallback for browsers where Web Crypto is unavailable.
+  let h1=2166136261,h2=16777619;
+  for(let i=0;i<text.length;i++){const n=text.charCodeAt(i);h1=Math.imul(h1^n,16777619);h2=Math.imul(h2^((n+i)&255),2166136261);}
+  return (h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
+}
+async function getHUDIdentity(){
+  const file=hudEl.files?.[0];
+  if(!file)return 'no-hud';
+  try{
+    const buffer=await file.arrayBuffer();
+    const hash=await hashTextSHA256(String.fromCharCode(...new Uint8Array(buffer)));
+    return [file.type||'',file.size||0,file.lastModified||0,hash].join('|');
+  }catch(e){
+    return [file.type||'',file.size||0,file.name||''].join('|');
+  }
+}
+async function getProfileIdentity(){
+  const guns=selectedGuns().slice().sort((a,b)=>a.localeCompare(b));
+  return JSON.stringify({
+    schema:3,
+    device:normalizeProfileText(deviceEl.value),
+    playerMode:normalizeProfileText(styleEl.value),
+    playerStyle:normalizeProfileText(playerStyleEl.value),
+    gameMode:normalizeProfileText(modeEl.value),
+    preset:normalizeProfileText($('#preset').value),
+    obVersion:normalizeProfileText($('#obVersion')?.value||'OB55'),
+    deviceAge:normalizeProfileText(deviceAgeEl?.value||''),
+    ram:normalizeProfileText(ramEl.value),
+    fingers:normalizeProfileText(fingersEl.value),
+    guns,
+    allGuns:!!allGunsEl.checked,
+    hud:await getHUDIdentity()
+  });
+}
+async function makeCodeForCurrentProfile(){
+  const identity=await getProfileIdentity();
+  const digest=await hashTextSHA256(identity);
+  let code='#';
+  for(let i=0;i<10;i++) code+=CODE_ALPHABET[parseInt(digest.slice(i*2,i*2+2),16)%CODE_ALPHABET.length];
+  return code;
+}
 function makeCode(){let code=''; do{code='#'; for(let i=0;i<10;i++) code+=CODE_ALPHABET[Math.floor(Math.random()*CODE_ALPHABET.length)];}while(localStorage.getItem('vg_ment4l_profile_'+code)); return code;}
 function getPrimarySensitivity(){
   const st=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES)[0]:styleEl.value;
@@ -41,7 +93,10 @@ function getProfilePayload(){
   return {version:2,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
-  if(!profileCode) profileCode=makeCode();
+  // Recompute the code from the current profile every time we save.
+  // This makes option changes create a new code automatically, while the
+  // exact same profile entered again resolves to the exact same code.
+  profileCode=await makeCodeForCurrentProfile();
   const payload=getProfilePayload();
   localStorage.setItem('vg_ment4l_profile_code',profileCode);
   localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(payload));
@@ -63,7 +118,24 @@ async function copyTextReliable(text){
   try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}
 }
-function bindCodeActions(){const c=$('#copyCode'); if(c)c.onclick=async()=>{const ok=await copyTextReliable(profileCode);c.textContent=ok?'COPIED ✓':'LONG-PRESS TO COPY';setTimeout(()=>c.textContent='COPY CODE',1600)}; const n=$('#newCode'); if(n)n.onclick=()=>{profileCode=makeCode();sensitivityOverride=null;saveProfile();render(deviceEl.value.trim(),styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);};}
+function bindCodeActions(){
+  const c=$('#copyCode');
+  if(c)c.onclick=async()=>{
+    const ok=await copyTextReliable(profileCode);
+    c.textContent=ok?'COPIED ✓':'LONG-PRESS TO COPY';
+    setTimeout(()=>c.textContent='COPY CODE',1600);
+  };
+  const n=$('#newCode');
+  if(n)n.onclick=async()=>{
+    // "NEW PROFILE" clears the current form so the next generated profile
+    // receives a new identity/code instead of mutating the old profile.
+    profileCode='';
+    sensitivityOverride=null;
+    localStorage.removeItem('vg_ment4l_profile_code');
+    statusEl.innerHTML='<span class="ok">New profile ready. Ab naya data generate karoge to automatic naya Profile ID milega.</span>';
+    resultsEl.classList.add('hidden');
+  };
+}
 
 function clamp(n){return Math.max(0,Math.min(200,Math.round(Number(n)||0)))}
 function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
