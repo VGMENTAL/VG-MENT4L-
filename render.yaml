@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: vg-ment4l
+    name: VG-MENT4L-
     runtime: node
     plan: free
     buildCommand: npm install
