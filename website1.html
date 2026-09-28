@@ -806,20 +806,20 @@ async function analyzeGameplayForWebsite1(){
     if(status)status.textContent='Gameplay video read ho raha hai…';
     const context={device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,gameMode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,screenClass:screenClassEl.value,touchClass:touchClassEl.value,aimIssue:aimIssueEl.value,guns:selectedGuns(),obVersion:$('#obVersion')?.value||'OB55'};
 
-    // Website 1 gameplay evidence uses Gemini full-video first so the feature
-    // does not depend on an OpenAI credit balance. OpenAI remains a fallback.
-    if(status)status.textContent='Stage 1/2: Gemini full-gameplay AI — poora video analyse ho raha hai…';
+    // Gemini timeline-frame analysis is the primary path. It avoids long full-video
+    // upload/processing waits while still sampling the complete gameplay timeline.
+    if(status)status.textContent='Stage 1/2: Timeline evidence — poore gameplay se frames prepare ho rahe hain…';
     try{
-      const ctx64=btoa(unescape(encodeURIComponent(JSON.stringify(context))));
-      const gemResp=await fetch('/api/gameplay-analyze',{
-        method:'POST',
-        headers:{'Content-Type':String(file.type||'video/mp4'),'X-VG-Context':ctx64},
-        body:file
+      const frames=await extractGameplayEvidenceFrames(file);
+      if(status)status.textContent='Stage 2/2: Gemini Vision — '+frames.length+' chronological frames analyse ho rahe hain…';
+      const gemResp=await fetch('/api/gameplay-analyze-gemini-frames',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({frames,context})
       });
       const gemText=await gemResp.text();let gj={};try{gj=JSON.parse(gemText)}catch{}
       if(gemResp.ok&&gj.ok&&gj.result){
         gameplayAIAnalysis=gj.result;
-        if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — Gemini full-video AI • '+(gj.result.framesAnalyzed||'full video')+'.</span>';
+        if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — Gemini Vision • '+(gj.result.framesAnalyzed||frames.length)+' timeline frames.</span>';
         return gj.result;
       }
       throw new Error(String(gj.detail||gj.error||gemText||'Gemini gameplay analysis failed'));
