@@ -81,6 +81,22 @@ async function getCanonicalHUDIdentity(){
   }
 }
 async function getHUDIdentity(){return getCanonicalHUDIdentity();}
+function getHUDFingerprint(){
+  const img=hudPreview;
+  if(!img||!img.naturalWidth||!img.naturalHeight)return [];
+  const W=24,H=14,canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const scale=Math.min(W/img.naturalWidth,H/img.naturalHeight);
+  const dw=Math.max(1,Math.round(img.naturalWidth*scale)),dh=Math.max(1,Math.round(img.naturalHeight*scale));
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  ctx.drawImage(img,Math.round((W-dw)/2),Math.round((H-dh)/2),dw,dh);
+  const p=ctx.getImageData(0,0,W,H).data, out=[];
+  for(let i=0;i<p.length;i+=4){
+    const y=Math.round((p[i]*0.299+p[i+1]*0.587+p[i+2]*0.114)/16);
+    out.push(Math.max(0,Math.min(15,y)));
+  }
+  return out;
+}
 async function getProfileIdentity(){
   // A Profile ID represents one complete submitted information set.
   // Different submitted information automatically gets a different ID.
@@ -175,10 +191,11 @@ function resizeHudForAI(file,maxSide=1280){return new Promise((resolve,reject)=>
 async function analyzeHUDWithAI(file){
   const packed=await resizeHudForAI(file,1280);
   const hudKey=await getCanonicalHUDIdentity();
-  const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});
+  const fingerprint=getHUDFingerprint();
+  const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,fingerprint,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});
   const j=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');
-  hudIdentityKey=hudKey;
+  hudIdentityKey=String(j.hudKey||hudKey);
   return j.analysis||null;
 }
 async function startHUDAnalysis(file){if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}hudStatus.innerHTML='<span class="warning"><span class="generate-spin"></span> HUD AI server analysis chal raha hai…</span>';hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{hudAIAnalysis=a;hudStatus.innerHTML='<span class="ok">✓ HUD AI analysis complete. Fire/joystick/scope layout, control density and drag geometry are now being used heavily.</span>';return a;}).catch(e=>{hudAIAnalysis=null;hudStatus.innerHTML='<span class="warning">⚠ HUD AI response time par complete nahi hua. Safe HUD geometry fallback use kiya jayega.</span>';return null;});return hudAnalysisPromise;}
