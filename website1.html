@@ -246,31 +246,107 @@ async function verifyDeviceForProfile(device){
   }catch(e){return null;}
 }
 
-function brazilianControlPrior(device,style,mode,fingers,guns,preset,playerStyle){
+function blueprintFusionTarget(device,style,mode,fingers,guns,preset,playerStyle){
+  /*
+    VG MENT4L Blueprint Fusion Engine v5
+    User blueprint is treated as a relationship framework, NOT as a copied
+    universal setting. The important part is the curve between General,
+    Red Dot, 2x, 4x and Sniper. Free Look stays on its own camera axis.
+    Free Fire currently supports values up to 200, so the blueprint's
+    0-100 reference is mapped to the game's 0-200 scale.
+  */
   const cls=deviceClass(device);
   const tier=cls.tier;
-  const target=tier==='high'?[188,181,161,141,84,138]:tier==='mid'?[181,175,157,138,80,134]:tier==='unknown'?[184,178,159,140,82,136]:[186,179,158,139,82,136];
-  const modeAdj={"BR + CS":[0,0,0,0,0,0],"Battle Royale":[-2,-2,-1,-2,1,1],"Clash Squad":[3,3,2,1,-1,2]}[mode]||[0,0,0,0,0,0];
-  const styleAdj={"Balanced":[-3,-2,-2,-1,0,0],"One-Tap / Drag Headshot":[3,4,2,1,0,2],"Aggressive Drag":[5,5,3,2,0,3],"Tracking / Close Range":[2,2,1,0,0,2],"Spray / Recoil Control":[-4,-4,-4,-5,-3,-1]}[style]||[0,0,0,0,0,0];
-  const psAdj={"Freestyle":[3,2,1,0,0,2],"Jump Shot":[4,4,2,1,0,3],"Situp Shot":[1,2,1,1,0,1],"Noob Work":[-5,-5,-3,-3,-2,-2]}[playerStyle]||[0,0,0,0,0,0];
-  const fingerAdj={"2 Finger":[2,2,1,0,0,1],"3 Finger":[0,0,0,0,0,0],"4 Finger":[-2,-2,-1,-1,-1,0],"5 Finger":[-3,-3,-2,-1,-1,0],"6 Finger":[-4,-4,-2,-2,-1,-1]}[fingers]||[0,0,0,0,0,0];
+  // Blueprint reference converted from 0-100 -> 0-200.
+  const low=[200,192,173,153,85,140];
+  const mid=[196,184,173,153,85,140];
+  const high=[192,176,173,153,85,140];
+  const base=tier==='high'?high:(tier==='mid'?mid:(tier==='low'?low:[196,184,173,153,85,140]));
+  const out=base.slice();
+
+  // Context changes are deliberately coupled so one input cannot break the
+  // whole sensitivity curve.
+  const modeAdj={
+    "BR + CS":[0,0,0,0,0,0],
+    "Battle Royale":[-3,-2,-2,-2,1,1],
+    "Clash Squad":[2,2,1,1,-1,1]
+  }[mode]||[0,0,0,0,0,0];
+
+  const styleAdj={
+    "Balanced":[-2,-1,-1,-1,0,0],
+    "One-Tap / Drag Headshot":[2,3,2,1,0,2],
+    "Aggressive Drag":[4,4,3,2,0,3],
+    "Tracking / Close Range":[2,2,1,0,0,2],
+    "Spray / Recoil Control":[-3,-3,-2,-3,-2,-1]
+  }[style]||[0,0,0,0,0,0];
+
+  const psAdj={
+    "Freestyle":[2,1,1,0,0,2],
+    "Jump Shot":[3,3,2,1,0,3],
+    "Situp Shot":[1,2,1,1,0,1],
+    "Noob Work":[-4,-4,-3,-2,-2,-2]
+  }[playerStyle]||[0,0,0,0,0,0];
+
+  const fingerAdj={
+    "2 Finger":[2,2,1,0,0,1],
+    "3 Finger":[0,0,0,0,0,0],
+    "4 Finger":[-2,-2,-1,-1,-1,0],
+    "5 Finger":[-3,-3,-2,-1,-1,0],
+    "6 Finger":[-4,-4,-2,-2,-1,-1]
+  }[fingers]||[0,0,0,0,0,0];
+
   const gunAdj=[0,0,0,0,0,0];
   const names=(guns||[]).map(x=>String(x).toLowerCase()).join(' ');
   if(/m1887|m1014|mag-7|charge buster/.test(names)){gunAdj[0]+=2;gunAdj[1]+=2;gunAdj[2]+=1}
   if(/desert eagle|woodpecker|sks|svd|ac80/.test(names)){gunAdj[1]+=1;gunAdj[2]-=1;gunAdj[3]-=1}
-  if(/mp40|vector|mac10|p90|ump|thompson/.test(names)){gunAdj[0]+=1;gunAdj[1]+=1}
-  if(/awm|kar98|m82b|m24/.test(names)){gunAdj[3]-=2;gunAdj[4]-=2}
-  if(/ak47|groza|m4a1|scar|xm8|famas|an94|g36|parafal|m60|m249|kord|aug/.test(names)){gunAdj[2]-=1;gunAdj[3]-=2}
-  const high=preset==='High'?[2,2,1,1,0,2]:[0,0,0,0,0,0];
-  return target.map((v,i)=>v+modeAdj[i]+styleAdj[i]+psAdj[i]+fingerAdj[i]+gunAdj[i]+high[i]);
-}
-function applyBrazilianCalibration(values,device,style,mode,ram,fingers,hud,guns,preset,playerStyle){
-  const target=brazilianControlPrior(device,style,mode,fingers,guns,preset,playerStyle);
-  const out=values.map((v,i)=>Math.round(Number(v)*0.38+Number(target[i])*0.62));
+  if(/mp40|vector|mac10|p90|ump|thompson/.test(names)){gunAdj[0]+=1;gunAdj[1]+=1;gunAdj[2]+=1}
+  if(/awm|kar98|m82b|m24/.test(names)){gunAdj[3]-=1;gunAdj[4]-=2}
+  if(/ak47|groza|m4a1|scar|xm8|famas|an94|g36|parafal|m60|m249|kord|aug/.test(names)){gunAdj[2]-=1;gunAdj[3]-=1}
+
+  const presetAdj=preset==='High'?[2,2,1,1,0,2]:[-1,-1,0,0,0,0];
+  for(let i=0;i<6;i++) out[i]+=modeAdj[i]+styleAdj[i]+psAdj[i]+fingerAdj[i]+gunAdj[i]+presetAdj[i];
+
+  // Device age is only a small stability context, never a raw RAM/age
+  // multiplier.
   const age=deviceAgeAdjustment(deviceAgeEl?.value||'');
   out[0]+=age.g;out[1]+=age.r;out[2]+=age.x2;out[3]+=age.x4;out[4]+=age.sn;out[5]+=age.fl;
-  return out;
+
+  return out.map((v,i)=>i===5?clamp(v,110,180):clamp(v,0,200));
 }
+
+function optimizeSensitivityCurve(values,device,style,mode,ram,fingers,hud,guns,preset,playerStyle){
+  const target=blueprintFusionTarget(device,style,mode,fingers,guns,preset,playerStyle);
+
+  // Device/base calculation remains an input, but the blueprint curve has
+  // enough weight to stop unrelated sliders from producing random-looking
+  // values. HUD is applied afterwards as the live visual signal.
+  const weights=[0.54,0.58,0.62,0.66,0.70,0.48];
+  let out=values.map((v,i)=>Math.round(Number(v)* (1-weights[i]) + target[i]*weights[i]));
+
+  // Relationship constraints: preserve a coherent control curve instead of
+  // treating each sensitivity slider as an independent number.
+  const minGap={red:5,two:7,four:14,sn:55};
+  out[1]=clamp(Math.min(out[1],out[0]-minGap.red),120,200);
+  out[2]=clamp(Math.min(out[2],out[1]-minGap.two),105,195);
+  out[3]=clamp(Math.min(out[3],out[2]-minGap.four),85,185);
+  out[4]=clamp(Math.min(out[4],out[3]-minGap.sn),35,120);
+
+  // Avoid the old "high / mid / low / lowest" staircase. The final curve is
+  // allowed to sit in the optimized bands while keeping smooth transitions.
+  const curve=[out[0],out[1],out[2],out[3],out[4]];
+  for(let i=1;i<curve.length;i++){
+    if(curve[i]>=curve[i-1]) curve[i]=curve[i-1]-Math.max(4,i===4?50:8);
+  }
+  out[0]=clamp(curve[0],150,200);
+  out[1]=clamp(curve[1],130,195);
+  out[2]=clamp(curve[2],110,185);
+  out[3]=clamp(curve[3],80,175);
+  out[4]=clamp(curve[4],35,120);
+  out[5]=clamp(out[5],110,180);
+
+  return out.map(Math.round);
+}
+
 function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Freestyle'){
   /*
     VG MENT4L Precision Calibration v4
@@ -343,7 +419,7 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   if(hasAR && !hasShotgun){x2-=1;x4-=1}
 
   // 6.5) Strong deterministic Brazilian-style control prior.
-  [g,r,x2,x4,sn,fl]=applyBrazilianCalibration([g,r,x2,x4,sn,fl],device,style,mode,ram,fingers,hud,guns,preset,playerStyle);
+  [g,r,x2,x4,sn,fl]=optimizeSensitivityCurve([g,r,x2,x4,sn,fl],device,style,mode,ram,fingers,hud,guns,preset,playerStyle);
 
   // 7) HUD AI = highest-priority live signal. Use confidence-aware weighting
   // and hard-cap the AI delta so one noisy interpretation cannot destroy the
@@ -419,26 +495,59 @@ function weaponProfile(gun, base, style, mode){
 }
 
 function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
-  const ratio2=Math.max(0,Math.min(1,(s.general-s.scope_2x)/55));
-  const ratio4=Math.max(0,Math.min(1,(s.general-s.scope_4x)/70));
-  const ratioSn=Math.max(0,Math.min(1,(s.scope_4x-s.sniper)/55));
-  let base=58 + ratio2*14 + ratio4*16 + ratioSn*8;
-  if(/spray|recoil/i.test(style)) base+=8;
+  /*
+    This is a calibration-fit estimate, not a measured recoil percentage.
+    It scores how closely the final six-value curve matches the engine's
+    coupled control relationships, then adds only bounded HUD evidence.
+  */
+  const ideal=[
+    {k:'general',lo:180,hi:200},
+    {k:'red_dot',lo:165,hi:190},
+    {k:'scope_2x',lo:150,hi:180},
+    {k:'scope_4x',lo:130,hi:165},
+    {k:'sniper',lo:65,hi:105},
+    {k:'free_look',lo:125,hi:155}
+  ];
+  let penalty=0;
+  ideal.forEach(x=>{
+    const v=s[x.k];
+    if(v<x.lo) penalty+=Math.min(12,(x.lo-v)*0.22);
+    if(v>x.hi) penalty+=Math.min(12,(v-x.hi)*0.22);
+  });
+
+  // Relationship penalties: these matter more than absolute values.
+  const gaps=[
+    Math.abs((s.general-s.red_dot)-12),
+    Math.abs((s.red_dot-s.scope_2x)-10),
+    Math.abs((s.scope_2x-s.scope_4x)-20),
+    Math.abs((s.scope_4x-s.sniper)-68)
+  ];
+  penalty+=Math.min(18,gaps.reduce((a,b)=>a+b,0)*0.08);
+
   const evidence=[
     hud?.ai?.mainIssue||'',
     hud?.ai?.evidenceSummary||'',
     ...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),
     ...(Array.isArray(hud?.ai?.problemDiagnosis)?hud.ai.problemDiagnosis:[])
   ].join(' ').toLowerCase();
-  if(/recoil|spray|shaky|shake/.test(evidence)) base+=6;
-  if(/overshoot|too fast|high sensitivity/.test(evidence)) base+=3;
-  if(/slow|under.?drag|heavy/.test(evidence)) base-=3;
-  const score=Math.round(Math.max(0,Math.min(98,base)));
-  const level=score>=88?'Very High':score>=78?'High':score>=66?'Medium-High':score>=52?'Medium':'Needs tuning';
-  const overshoot=Math.round(Math.max(0,Math.min(95,100-(s.general+s.red_dot)/4)));
-  const close=Math.round(Math.max(0,Math.min(98,52+(s.general-160)*0.45+(s.red_dot-150)*0.35)));
-  const mid=Math.round(Math.max(0,Math.min(98,58+(s.scope_2x-125)*0.55)));
-  const long=Math.round(Math.max(0,Math.min(98,60+(s.scope_4x-105)*0.65)));
+
+  let evidenceAdj=0;
+  if(/recoil|spray|shaky|shake/.test(evidence)) evidenceAdj+=3;
+  if(/overshoot|too fast|high sensitivity/.test(evidence)) evidenceAdj-=2;
+  if(/slow|under.?drag|heavy/.test(evidence)) evidenceAdj-=1;
+  if(String(hud?.ai?.confidence||'').toLowerCase()==='high') evidenceAdj+=2;
+
+  const score=Math.round(clamp(96-penalty+evidenceAdj,0,98));
+  const level=score>=90?'Ultra-High':score>=82?'Very High':score>=72?'High':score>=60?'Medium-High':'Needs tuning';
+
+  const overshoot=Math.round(clamp(92
+    -Math.abs((s.general-s.red_dot)-12)*1.8
+    -Math.abs((s.red_dot-s.scope_2x)-10)*0.8
+    -Math.max(0,s.general-198)*2,0,98));
+
+  const close=Math.round(clamp(78+(s.general-185)*0.45+(s.red_dot-175)*0.30,0,98));
+  const mid=Math.round(clamp(80+(s.scope_2x-155)*0.38,0,98));
+  const long=Math.round(clamp(82+(s.scope_4x-140)*0.42,0,98));
   const confidence=hud?.ai?.confidence||'medium';
   return {score,level,overshoot,close,mid,long,confidence};
 }
