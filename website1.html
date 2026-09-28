@@ -192,7 +192,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   const labels=[["General",s.general],["Red Dot",s.red_dot],["2× Scope",s.scope_2x],["4× Scope",s.scope_4x],["Sniper Scope",s.sniper],["Free Look",s.free_look]];
   const focus=guns.length?guns:GUNS;
   const weaponRows=focus.map(g=>{const w=weaponProfile(g,s,style,mode);return `<div class="weapon-row"><b>${esc(g)}</b><span>Gen ${w.g}</span><span>Red ${w.r}</span><span>2× ${w.x2}</span><span>4× ${w.x4}</span><span>Sniper ${w.sn}</span></div>`}).join('');
-  return `<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(style)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
+  return `<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • Mode: ${esc(style)} • Style: ${esc(playerStyle)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
   <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">${esc(style)}</div><div class="pill">${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="small note">${esc(p.desc)}</div></div>
