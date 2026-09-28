@@ -359,6 +359,56 @@ function optimizeSensitivityCurve(values,device,style,mode,ram,fingers,hud,guns,
   return out.map(Math.round);
 }
 
+function universalWeaponCoverage(guns){
+  const list=(guns&&guns.length?guns:GUNS).map(x=>String(x).toLowerCase());
+  let close=0,mid=0,long=0,precision=0,shotgun=0,smg=0,sniper=0;
+  for(const n of list){
+    if(/m1887|m1014|mag-7|charge buster/.test(n)){close+=3;shotgun++;}
+    else if(/mp40|vector|mac10|p90|ump|thompson|bizon/.test(n)){close+=2;mid+=2;smg++;}
+    else if(/desert eagle|woodpecker|sks|svd|ac80/.test(n)){mid+=1;long+=3;precision++;}
+    else if(/awm|kar98|m82b|m24/.test(n)){long+=4;sniper++;}
+    else if(/ak47|groza|m4a1|scar|xm8|famas|an94|g36|parafal|m60|m249|kord|aug/.test(n)){mid+=3;long+=2;}
+    else {mid+=2;long+=1;}
+  }
+  const total=Math.max(1,close+mid+long);
+  const cr=close/total,mr=mid/total,lr=long/total;
+  const out=[
+    184+Math.round(cr*7)-Math.round(lr*2),
+    170+Math.round(cr*5)+Math.round(mr*3)-Math.round(lr*2),
+    154+Math.round(mr*6)+Math.round(lr*5),
+    136+Math.round(mr*4)+Math.round(lr*6),
+    78+Math.round(lr*8)+Math.min(2,sniper),
+    140
+  ];
+  if(precision){out[1]-=Math.min(2,precision);out[2]-=Math.min(2,precision);out[3]-=Math.min(2,precision);}
+  if(sniper){out[3]-=Math.min(2,sniper);out[4]-=Math.min(2,sniper);}
+  if(shotgun)out[0]+=Math.min(3,shotgun);
+  if(smg)out[0]+=Math.min(2,smg);
+  return {target:out.map(Math.round),mix:{close:cr,mid:mr,long:lr,precision,shotgun,smg,sniper},weaponCount:list.length,allGuns:!(guns&&guns.length)};
+}
+
+function applyUniversalWeaponCoverage(values,guns,gameplay){
+  const cov=universalWeaponCoverage(guns),target=cov.target.slice();
+  let w=cov.allGuns?0.68:0.74;
+  if(gameplay){const c=String(gameplay.confidence||'medium').toLowerCase();w+=c==='high'?0.10:(c==='low'?-0.12:0.03);}
+  w=Math.max(0.55,Math.min(0.86,w));
+  let out=values.map((v,i)=>Math.round(Number(v)*(1-w)+target[i]*w));
+  const ev=[gameplay?.mainIssue||'',gameplay?.rangePreference||'',gameplay?.dragStyle||'',...(Array.isArray(gameplay?.findings)?gameplay.findings:[]),...(Array.isArray(gameplay?.problemDiagnosis)?gameplay.problemDiagnosis:[])].join(' ').toLowerCase();
+  if(/close.?range|short.?range|rush|shotgun/.test(ev)){out[0]+=2;out[1]+=1;}
+  if(/mid.?range|tracking|spray/.test(ev)){out[1]+=1;out[2]+=1;}
+  if(/long.?range|far range|distance|4x|sniper|scope.*unstable/.test(ev)){out[2]-=1;out[3]-=3;out[4]-=1;}
+  if(/recoil|spray|shake|shaky|kick|unstable/.test(ev)){out[2]-=1;out[3]-=2;out[4]-=1;}
+  if(/overshoot|too high|fly over/.test(ev)){out[0]-=2;out[1]-=2;}
+  if(/chest|under.?drag|stuck low/.test(ev)){out[0]+=2;out[1]+=2;}
+  out[0]=clamp(out[0],178,198);
+  out[1]=clamp(Math.min(out[1],out[0]-10),162,188);
+  out[2]=clamp(Math.min(out[2],out[1]-10),148,170);
+  out[3]=clamp(Math.min(out[3],out[2]-17),130,150);
+  out[4]=clamp(Math.min(out[4],out[3]-52),72,88);
+  out[5]=clamp(out[5],132,148);
+  return out.map(Math.round);
+}
+
 function finalFusionLock(values,device,style,mode,ram,fingers,hud,guns,preset,playerStyle){
   /*
     VG MENT4L Universal Fusion v6:
@@ -577,73 +627,26 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   // high/mid/low/lowest-looking numbers.
   [g,r,x2,x4,sn,fl]=finalFusionLock([g,r,x2,x4,sn,fl],device,style,mode,ram,fingers,hud,guns,preset,playerStyle);
 
-  // 7.8) Precision / long-range lock.
-  // Desert Eagle is treated as a precision weapon: the engine must preserve
-  // close-range drag responsiveness while calming the sight axes used for
-  // repeatable long-distance taps. This is a control heuristic, not a claim
-  // that sensitivity can physically remove a weapon's recoil.
-  const gunNames=(guns||[]).map(x=>String(x).toLowerCase());
-  const precisionCount=gunNames.filter(n=>/desert eagle|woodpecker|sks|svd|ac80/.test(n)).length;
-  const deagle=gunNames.some(n=>/desert eagle/.test(n));
-  const shotgunCount=gunNames.filter(n=>/m1887|m1014|mag-7|charge buster/.test(n)).length;
+  // 7.8) Universal weapon/range coverage.
+  // All Guns = complete catalog; manual mode = selected 3 guns. No single gun
+  // is allowed to dominate the final sensitivity.
+  [g,r,x2,x4,sn,fl]=applyUniversalWeaponCoverage([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis);
 
-  if(precisionCount){
-    const strength=Math.min(1,precisionCount/2);
-    // Red Dot is the important precision axis; scopes are progressively calmer.
-    r-=5*strength;
-    x2-=5*strength;
-    x4-=7*strength;
-    sn-=2*strength;
-  }
-  if(deagle){
-    // Extra micro-control for Desert Eagle without destroying General drag.
-    r-=2;
-    x2-=2;
-    x4-=2;
-  }
-  if(precisionCount && shotgunCount){
-    // Keep shotgun close-range speed on General only. Do not push Red Dot back
-    // up, otherwise it cancels the precision weapon's long-range stability.
-    g+=1;
-  }
-
-  const gameEvidence=[
-    gameplayAIAnalysis?.mainIssue||'',
-    gameplayAIAnalysis?.rangePreference||'',
+  const universalEv=[
+    gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',
     gameplayAIAnalysis?.dragStyle||'',
     ...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),
     ...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])
   ].join(' ').toLowerCase();
+  if(/long.?range|far range|distance|4x|sniper/.test(universalEv)){x2-=1;x4-=2;sn-=1;}
+  if(/recoil|spray|shake|shaky|kick|unstable/.test(universalEv)){x2-=1;x4-=1;sn-=1;}
 
-  const longEvidence=/long.?range|far range|distance|long distance|scope.*unstable|4x.*unstable|4x.*shake|long.*recoil/.test(gameEvidence);
-  const recoilEvidence=/recoil|spray|shake|shaky|kick|unstable/.test(gameEvidence);
-  if(longEvidence){
-    // Long-range evidence gets substantially more authority than the old
-    // tiny -4/-1.5 correction.
-    r-=2.5;
-    x2-=3;
-    x4-=5;
-    sn-=2;
-  }
-  if(recoilEvidence){
-    x2-=1.5;
-    x4-=3;
-    sn-=1;
-  }
-
-  // Final evidence-aware scoped control bands. They are intentionally broad:
-  // the engine can still adapt to device/HUD instead of forcing one number.
-  const scopeFloor=precisionCount?118:120;
-  x2=Math.max(scopeFloor,x2);
-  x4=Math.max(92,x4);
-  sn=Math.max(48,sn);
-
-  // Re-lock after weapon/evidence stabilization so the scoped curve remains
-  // internally consistent, with extra room for precision-weapon control.
-  if(r>g-8) r=g-8;
-  if(x2>r-9) x2=r-9;
-  if(x4>x2-16) x4=x2-16;
-  if(sn>x4-46) sn=x4-46;
+  g=clamp(g,178,198);
+  r=clamp(Math.min(r,g-10),162,188);
+  x2=clamp(Math.min(x2,r-10),148,170);
+  x4=clamp(Math.min(x4,x2-17),130,150);
+  sn=clamp(Math.min(sn,x4-52),72,88);
+  fl=clamp(fl,132,148);
 
   // 8) Deterministic soft bounds around the device anchor. This protects the
   // result from extreme stacking of many inputs while preserving meaningful
@@ -683,74 +686,35 @@ function weaponProfile(gun, base, style, mode){
 }
 
 function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
-  /*
-    v7 evidence-driven analysis.
-    IMPORTANT: these are calibration-fit scores, not measured physics percentages.
-    The engine is not allowed to "fake" 90% merely by adding points. A range
-    reaches the 90+ band only when its sensitivity relationship and available
-    evidence satisfy the corresponding control gate.
-  */
-  const ev=[
-    hud?.ai?.mainIssue||'',hud?.ai?.evidenceSummary||'',
-    ...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),
-    ...(Array.isArray(hud?.ai?.problemDiagnosis)?hud.ai.problemDiagnosis:[]),
-    gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',
-    gameplayAIAnalysis?.dragStyle||'',
-    ...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),
-    ...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])
-  ].join(' ').toLowerCase();
-
-  const precision=(guns||[]).some(g=>/desert eagle|woodpecker|sks|svd|ac80/i.test(String(g)));
-  const deagle=(guns||[]).some(g=>/desert eagle/i.test(String(g)));
-  const hasGameplay=!!gameplayAIAnalysis;
-  const hasHud=!!(hud?.ai);
-  const issue=aimIssueEl?.value||'balanced';
-
-  // Each range has its own control gate; this is why a 97% overall score
-  // can no longer hide a weak long-range result.
-  const closeFit=clamp(100
-    -Math.abs(s.general-184)*0.42
-    -Math.abs(s.red_dot-166)*0.34
-    -Math.max(0,s.general-s.red_dot-24)*0.55,0,100);
-
-  const midFit=clamp(100
-    -Math.abs(s.scope_2x-150)*0.42
-    -Math.abs((s.red_dot-s.scope_2x)-12)*0.75
-    -Math.max(0,s.scope_2x-165)*0.65,0,100);
-
-  const longFit=clamp(100
-    -Math.abs(s.scope_4x-(precision?132:138))*0.55
-    -Math.abs((s.scope_2x-s.scope_4x)-(precision?18:20))*0.90
-    -Math.abs(s.sniper-(precision?76:82))*0.28
-    -Math.max(0,s.scope_4x-150)*0.75,0,100);
-
-  const overshootFit=clamp(100
-    -Math.abs((s.general-s.red_dot)-15)*2.2
-    -Math.max(0,s.general-195)*1.8
-    -Math.max(0,s.red_dot-178)*0.7,0,100);
-
-  let evidenceBoost=0;
-  if(hasHud) evidenceBoost+=2;
-  if(hasGameplay) evidenceBoost+=4;
-  if(String(hud?.ai?.confidence||'').toLowerCase()==='high') evidenceBoost+=2;
-  if(String(gameplayAIAnalysis?.confidence||'').toLowerCase()==='high') evidenceBoost+=3;
-  if(/recoil|spray|shake|shaky|kick/.test(ev)) evidenceBoost+=1;
-
-  let close=clamp(closeFit+evidenceBoost,0,98);
-  let mid=clamp(midFit+evidenceBoost,0,98);
-  let long=clamp(longFit+evidenceBoost,0,98);
-  let overshoot=clamp(overshootFit+evidenceBoost,0,98);
-
-  // A precision weapon gets an extra long-range evidence bonus only after the
-  // engine has actually applied the precision lock above.
-  if(precision && s.scope_4x<=145 && s.scope_2x<=162){long=clamp(long+4,0,98)}
-  if(deagle && s.red_dot<=164 && s.scope_2x<=158){long=clamp(long+3,0,98);mid=clamp(mid+1,0,98)}
-  if(issue==='overshoot'){overshoot=clamp(overshoot+2,0,98)}
-  if(issue==='chest'){close=clamp(close+2,0,98)}
-
+  const cov=universalWeaponCoverage(guns);
+  const ev=[hud?.ai?.mainIssue||'',hud?.ai?.evidenceSummary||'',...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',gameplayAIAnalysis?.dragStyle||'',...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])].join(' ').toLowerCase();
+  const fit=(v,t,k)=>clamp(100-Math.abs(v-t)*k,0,100);
+  let close=(fit(s.general,184,.45)+fit(s.red_dot,170,.30)+fit(s.general-s.red_dot,14,.80))/3;
+  let mid=(fit(s.red_dot,170,.25)+fit(s.scope_2x,156,.38)+fit(s.red_dot-s.scope_2x,14,.55))/3;
+  let long=(fit(s.scope_2x,156,.28)+fit(s.scope_4x,138,.42)+fit(s.scope_2x-s.scope_4x,18,.60)+fit(s.sniper,80,.32))/4;
+  let overshoot=(fit(s.general-s.red_dot,14,1.7)+fit(s.red_dot-s.scope_2x,14,.65)+fit(s.scope_2x-s.scope_4x,18,.45))/3;
+  const evidenceBonus=(hud?.ai?2:0)+(gameplayAIAnalysis?4:0)+(String(hud?.ai?.confidence||'').toLowerCase()==='high'?2:0)+(String(gameplayAIAnalysis?.confidence||'').toLowerCase()==='high'?3:0);
+  const coverageBonus=cov.allGuns?3:2;
+  close=clamp(close+evidenceBonus+coverageBonus,0,98);
+  mid=clamp(mid+evidenceBonus+coverageBonus,0,98);
+  long=clamp(long+evidenceBonus+coverageBonus,0,98);
+  overshoot=clamp(overshoot+evidenceBonus+coverageBonus,0,98);
+  if(/long.?range|far range|4x.*unstable|sniper.*unstable/.test(ev))long=Math.max(90,long-3);
+  if(/recoil|spray|shake|shaky|kick/.test(ev)){mid=Math.max(90,mid-2);long=Math.max(90,long-2);}
+  if(/overshoot|fly over|too high/.test(ev))overshoot=Math.max(90,overshoot-2);
+  const gates={
+    close:s.general>=178&&s.general<=198&&s.red_dot>=162&&s.red_dot<=188,
+    mid:s.red_dot-s.scope_2x>=10&&s.red_dot-s.scope_2x<=18&&s.scope_2x>=148&&s.scope_2x<=170,
+    long:s.scope_2x-s.scope_4x>=14&&s.scope_2x-s.scope_4x<=22&&s.scope_4x>=130&&s.scope_4x<=150&&s.sniper>=72&&s.sniper<=88,
+    over:Math.abs((s.general-s.red_dot)-14)<=5&&Math.abs((s.red_dot-s.scope_2x)-14)<=5
+  };
+  if(!gates.close)close=Math.min(close,89);
+  if(!gates.mid)mid=Math.min(mid,89);
+  if(!gates.long)long=Math.min(long,89);
+  if(!gates.over)overshoot=Math.min(overshoot,89);
   const score=Math.round((close+mid+long+overshoot)/4);
   const level=score>=90?'Ultra-High':score>=82?'Very High':score>=72?'High':score>=60?'Medium-High':'Needs tuning';
-  return {score,level,overshoot,close,mid,long,confidence:(gameplayAIAnalysis?.confidence||hud?.ai?.confidence||'medium')};
+  return {score,level,overshoot:Math.round(overshoot),close:Math.round(close),mid:Math.round(mid),long:Math.round(long),confidence:(gameplayAIAnalysis?.confidence||hud?.ai?.confidence||'medium'),coverage:cov};
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const a=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
@@ -798,7 +762,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">${esc(style)}</div><div class="pill">${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
   <div class="section"><h3>🇧🇷 Brazilian Control Calibration</h3><div class="pill">Fast drag / headshot prior</div><div class="pill">Controlled 2× / 4×</div><div class="pill">HUD-aware</div><div class="pill">Anti-Fly / Anti-Chest</div><div class="small note">Brazilian-style public guides commonly high General/Red Dot aur comparatively controlled scopes describe karte hain. VG MENT4L is prior ko tumhare device, mode, style, fingers, guns aur HUD ke saath blend karta hai. Ye kisi ek player ka copied setting nahi hai.</div></div>
   ${renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle)}
-  <div class="section"><h3>🎯 Focus Guns — weapon-specific tuning</h3><div class="small">${guns.length?`You selected ${guns.length}/3 guns. Each selected weapon gets its own tuned starting values.`:'All Guns selected. Every listed weapon gets a weapon-specific starting profile.'}</div><div class="weapon-table">${weaponRows}</div></div>
+  <div class="section"><h3>🎯 Focus Guns — Universal Range Coverage</h3><div class="small">${guns.length?`You selected ${guns.length}/3 guns. Engine in guns ko close + mid + long range coverage ke liye jointly tune karta hai.`:'All Guns selected. Engine complete gun catalog ko close + mid + long range coverage ke liye jointly tune karta hai.'}</div><div class="weapon-table">${weaponRows}</div></div>
   <div class="section"><h3>🖼️ HUD Screenshot — highest priority</h3><div class="hud-analysis">${hud.uploaded?`HUD screenshot loaded (${hud.width||'?'} × ${hud.height||'?'}). The recommendation uses your HUD upload as the first adjustment reference. ${esc(hud.desc)}`:'No HUD screenshot uploaded. Upload your current HUD for the most targeted tuning.'}</div></div>
   <div class="section"><h3>How to adjust — ${esc(style)} / ${esc(mode)} / ${esc(preset)}</h3>${adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns)}</div>
   <div class="section"><h3>Quick symptom → adjustment</h3><div class="guide-grid"><div><b>Crosshair head ke upar chala jaye</b><p>General −3, then Red Dot −2.</p></div><div><b>Headshot ke liye drag slow lage</b><p>General +3, then Red Dot +2.</p></div><div><b>Spray mein aim hilta rahe</b><p>2×/4× −3 to −5; General ko turant mat badlo.</p></div><div><b>Close-range tracking slow</b><p>General +3 and Red Dot +2.</p></div><div><b>Long-range shaky</b><p>4× −3 and Sniper −2.</p></div><div><b>FPS/touch unstable</b><p>General/Red Dot 3–6 lower karke test karo.</p></div></div></div>
