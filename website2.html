@@ -611,13 +611,39 @@ function bindIssueFixers(){
   const restore=$('#manualRestoreSensitivity'); if(restore) restore.onclick=()=>{ if(!manualImportedBaseline) captureManualBaseline(); writeManualSensitivity(manualImportedBaseline); $('#manualIssueResult').classList.add('hidden'); };
 }
 async function persistUpdatedProfile(profile,newVals,oldOb,target){
+  // Website 2 is an updater, not a destructive editor:
+  // keep Website 1's original sensitivity/profile as the permanent baseline
+  // and store each fresh OB conversion separately.
   const history=Array.isArray(profile.sensitivityHistory)?profile.sensitivityHistory.slice():[];
-  history.unshift({time:new Date().toISOString(),from:oldOb,to:target,sensitivity:newVals});
-  const next={...profile,sensitivity:newVals,obVersion:target,sensitivityHistory:history.slice(0,25),lastUpdate:{time:new Date().toISOString(),from:oldOb,to:target},updatedAt:new Date().toISOString()};
+  const entry={
+    time:new Date().toISOString(),
+    from:oldOb,
+    to:target,
+    sourceSensitivity:baseSensitivity(profile),
+    sensitivity:{...newVals}
+  };
+  history.unshift(entry);
+  const next={
+    ...profile,
+    sensitivity:baseSensitivity(profile),
+    sensitivityHistory:history.slice(0,25),
+    lastUpdate:{...entry},
+    latestUpdatedSensitivity:{...newVals},
+    latestUpdatedOb:target,
+    updatedAt:new Date().toISOString()
+  };
   delete next.__source;
   localStorage.setItem('vg_ment4l_profile_'+(next.code||''),JSON.stringify(next));
-  try{const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(next)}); if(r.ok) BACKEND_AVAILABLE=true;}catch(e){BACKEND_AVAILABLE=false;}
-  currentProfile=next;
+  try{
+    const r=await fetch('/api/profiles',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(next)
+    });
+    if(r.ok) BACKEND_AVAILABLE=true;
+  }catch(e){BACKEND_AVAILABLE=false;}
+  // Keep the loaded source profile baseline intact in memory too.
+  currentProfile={...next,sensitivity:baseSensitivity(profile)};
   return next;
 }
 
@@ -740,7 +766,7 @@ $('#loadCode').onclick=async()=>{
   $('#profileTitle').textContent=`Profile ${code}`;
   $('#profileChips').innerHTML=chips(p);
   const ageNote=$('#profileAgeNote'); if(ageNote) ageNote.textContent=p.deviceAge?`Device age: ${p.deviceAge} — self-reported; used as performance/thermal context.`:'Device age was not saved in this profile.';
-  $('#loadedOldOb').value=$('#oldObCode').value.trim() || p.ob || p.oldOb || 'OB55';
+  $('#loadedOldOb').value=$('#oldObCode').value.trim() || p.obVersion || p.ob || p.oldOb || 'OB55';
   fillObSelect($('#targetOb'),LATEST_OB);
   fillObSelect($('#profileIssueTargetOb'),LATEST_OB);
   $('#profileIssueOldOb').value=$('#loadedOldOb').value;
