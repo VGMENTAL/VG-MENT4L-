@@ -26,9 +26,16 @@ const clamp = n => Math.max(0, Math.min(200, Math.round(Number(n) || 0)));
 const LATEST_OB = 55;
 
 const OFFICIAL_OB_URLS = {
-  OB55: 'https://ff.garena.com/en/article/1712/',
-  OB54: 'https://ff.garena.com/en/news/',
-  OB53: 'https://ff.garena.com/en/article/1640/'
+  // Keep every supported historical OB available so OB52 → OB55
+  // researches each intermediate official patch instead of behaving
+  // like a hard-coded OB54 → OB55 conversion.
+  OB49: 'https://www.freefiremobile.com/en/article/1473/',
+  OB50: 'https://www.freefiremobile.com/en/article/1511/',
+  OB51: 'https://www.freefiremobile.com/en/news/20/',
+  OB52: 'https://www.freefiremobile.com/en/article/1595/',
+  OB53: 'https://ff.garena.com/en/article/1640/',
+  OB54: 'https://ff.garena.com/en/article/1673/',
+  OB55: 'https://ff.garena.com/en/article/1712/'
 };
 
 const VERIFIED_DEVICES = {
