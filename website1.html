@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta name="description" content="VG MENT4L device-aware Free Fire MAX sensitivity calculator with HUD, style, mode and weapon tuning."><meta name="robots" content="index,follow"><link rel="canonical" href="/website1.html"><title>VG MENT4L — Free Fire MAX Sensitivity Calculator</title><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#eef6ff;background:#050713;min-height:100vh}body:before{content:"";position:fixed;inset:0;background:linear-gradient(rgba(4,7,20,.70),rgba(4,7,20,.86)),url('/bg1.webp') center/cover fixed no-repeat;z-index:-2}body:after{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 10%,rgba(0,210,255,.12),transparent 35%),linear-gradient(90deg,rgba(8,12,35,.25),rgba(23,5,44,.22));z-index:-1;pointer-events:none}.wrap{max-width:1100px;margin:auto;padding:28px 16px 60px}.brand{font-size:clamp(36px,8vw,72px);font-weight:1000;letter-spacing:.04em;text-align:center;background:linear-gradient(90deg,#7efcff,#7d8cff,#df5dff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 32px rgba(73,205,255,.25)}.tag{text-align:center;color:#b8c6e4;margin-top:-8px}.panel{margin-top:24px;background:rgba(8,12,30,.72);border:1px solid rgba(104,205,255,.28);box-shadow:0 20px 70px rgba(0,0,0,.45),0 0 30px rgba(66,120,255,.08);backdrop-filter:blur(16px);border-radius:24px;padding:22px}.grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}@media(max-width:780px){.grid{grid-template-columns:1fr}}label{font-size:12px;color:#aebbd7;text-transform:uppercase;letter-spacing:.1em;font-weight:800}input,select{width:100%;margin-top:7px;border:1px solid rgba(150,190,255,.25);background:rgba(3,7,18,.78);color:#fff;border-radius:14px;padding:14px;font-size:15px;outline:none}input:focus,select:focus{border-color:#6cecff;box-shadow:0 0 0 3px rgba(74,221,255,.10)}button{width:100%;margin-top:16px;padding:16px;border:0;border-radius:15px;font-weight:1000;letter-spacing:.06em;color:#06111c;background:linear-gradient(90deg,#58f2ff,#8e9cff,#e66aff);cursor:pointer;box-shadow:0 12px 30px rgba(86,190,255,.2)}button:disabled{opacity:.55;cursor:wait}.small{font-size:12px;color:#95a5c5;line-height:1.5}.status{margin-top:14px;padding:12px;border-radius:12px;background:rgba(0,0,0,.25);color:#c9d6f3}.hidden{display:none}.results{margin-top:20px}.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}}.card{padding:14px;border-radius:16px;background:rgba(6,12,28,.82);border:1px solid rgba(125,203,255,.22);text-align:center}.v{font-size:32px;font-weight:1000;color:#8ff4ff}.k{font-size:11px;color:#9eadd0;margin-top:3px}.section{margin-top:14px;padding:16px;border-radius:16px;background:rgba(5,9,22,.72);border:1px solid rgba(150,190,255,.14)}.section h3{margin:0 0 9px}.pill{display:inline-block;margin:4px;padding:6px 9px;border-radius:999px;background:rgba(99,177,255,.10);border:1px solid rgba(99,177,255,.2);font-size:12px;color:#cfe9ff}.source a{color:#7deaff}.danger{color:#ffd3d3}.ok{color:#9fffc5}pre{white-space:pre-wrap;word-break:break-word;font-size:12px;color:#cfe1ff}.keyrow{margin-top:14px}.copy{width:auto;padding:10px 14px;margin:0;font-size:12px}.note{margin-top:10px}</style>
-<style>.aim-issue-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;max-height:250px;overflow:auto;padding:8px;border:1px solid rgba(100,190,255,.18);border-radius:12px;background:rgba(2,7,20,.45)}.aim-issue-option{display:flex!important;align-items:center;gap:8px!important;padding:9px 10px;border:1px solid rgba(100,190,255,.13);border-radius:10px;background:rgba(10,20,42,.55);color:#d9eaff!important;font-size:12px!important;text-transform:none!important;letter-spacing:0!important}.aim-issue-option input{width:auto;margin:0;accent-color:#5deaff}.aim-issue-count{margin-top:8px;color:#7deaff;font-size:12px}.aim-issue-note{margin-top:6px;font-size:11px;color:#93a9cb}@media(max-width:720px){.aim-issue-grid{grid-template-columns:1fr}}.blueprint-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}.blueprint-grid>div{min-width:0}.blueprint-grid select{width:100%}.extra-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.field-help{font-size:12px;color:#a9c5e8;margin-top:6px}.hud-box{border:1px dashed #4fdcff;border-radius:14px;padding:14px;background:rgba(5,12,30,.6)}.hud-preview{display:none;margin-top:12px;width:100%;max-width:100%;max-height:420px;object-fit:contain;border-radius:16px;border:1px solid rgba(90,220,255,.45);background:rgba(0,0,0,.35);box-shadow:0 12px 35px rgba(0,0,0,.35)}.hud-preview.show{display:block}.hud-preview-wrap{margin-top:12px;padding:10px;border-radius:16px;background:linear-gradient(135deg,rgba(35,130,180,.10),rgba(140,50,220,.10));border:1px solid rgba(91,210,255,.18)}.hud-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}.hud-meta span{padding:5px 8px;border-radius:999px;font-size:11px;background:rgba(100,200,255,.08);border:1px solid rgba(100,200,255,.16);color:#cfeaff}.generate-wrap{position:relative;margin-top:16px}.generate-progress{display:none;margin-top:12px;padding:14px;border-radius:16px;background:rgba(3,8,20,.9);border:1px solid rgba(91,210,255,.28);box-shadow:0 10px 35px rgba(0,0,0,.3)}.generate-progress.show{display:block}.progress-top{display:flex;justify-content:space-between;gap:10px;font-weight:800;color:#dffaff;font-size:13px}.progress-track{height:12px;margin-top:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,255,255,.08)}.progress-bar{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#27e7ff,#7c8cff,#e75dff);box-shadow:0 0 18px rgba(73,218,255,.45);transition:width .22s ease}.progress-steps{display:flex;justify-content:space-between;gap:5px;margin-top:8px;font-size:9px;color:#8296bb}.progress-pct{color:#79f2ff;font-size:18px}.generate-done{color:#9fffc5;font-weight:800}.generate-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:vgspin .75s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes vgspin{to{transform:rotate(360deg)}}.gun-wrap{margin-top:14px}.gun-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:210px;overflow:auto;padding:8px;border:1px solid #233b61;border-radius:12px;background:rgba(2,7,20,.55)}.gun-list label{display:flex;gap:7px;align-items:center;padding:8px;border-radius:9px;background:rgba(15,28,55,.55);font-size:12px}.selected-guns{margin-top:8px;color:#8fe7ff;font-size:12px}.warning{color:#ffd36e}.hud-analysis{border-left:3px solid #48ddff;padding-left:12px}.@media(max-width:720px){.extra-grid{grid-template-columns:1fr}.gun-list{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
+<style>.aim-issue-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:9px;max-height:330px;overflow:auto;padding:8px;border:1px solid rgba(100,190,255,.18);border-radius:12px;background:rgba(2,7,20,.45)}.aim-issue-option{display:flex!important;align-items:center;gap:8px!important;padding:9px 10px;border:1px solid rgba(100,190,255,.13);border-radius:10px;background:rgba(10,20,42,.55);color:#d9eaff!important;font-size:12px!important;text-transform:none!important;letter-spacing:0!important}.aim-issue-option input{width:auto;margin:0;accent-color:#5deaff}.aim-issue-count{margin-top:8px;color:#7deaff;font-size:12px}.aim-issue-note{margin-top:6px;font-size:11px;color:#93a9cb}@media(max-width:720px){.blueprint-grid{grid-template-columns:1fr}.blueprint-grid>div:nth-child(3){grid-column:auto}.aim-issue-grid{grid-template-columns:1fr;max-height:360px}.aim-issue-option{min-height:44px;font-size:13px!important}}.blueprint-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.blueprint-grid>div:nth-child(3){grid-column:1/-1}.blueprint-grid>div{min-width:0}.blueprint-grid select{width:100%}.extra-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.field-help{font-size:12px;color:#a9c5e8;margin-top:6px}.hud-box{border:1px dashed #4fdcff;border-radius:14px;padding:14px;background:rgba(5,12,30,.6)}.hud-preview{display:none;margin-top:12px;width:100%;max-width:100%;max-height:420px;object-fit:contain;border-radius:16px;border:1px solid rgba(90,220,255,.45);background:rgba(0,0,0,.35);box-shadow:0 12px 35px rgba(0,0,0,.35)}.hud-preview.show{display:block}.hud-preview-wrap{margin-top:12px;padding:10px;border-radius:16px;background:linear-gradient(135deg,rgba(35,130,180,.10),rgba(140,50,220,.10));border:1px solid rgba(91,210,255,.18)}.hud-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}.hud-meta span{padding:5px 8px;border-radius:999px;font-size:11px;background:rgba(100,200,255,.08);border:1px solid rgba(100,200,255,.16);color:#cfeaff}.generate-wrap{position:relative;margin-top:16px}.generate-progress{display:none;margin-top:12px;padding:14px;border-radius:16px;background:rgba(3,8,20,.9);border:1px solid rgba(91,210,255,.28);box-shadow:0 10px 35px rgba(0,0,0,.3)}.generate-progress.show{display:block}.progress-top{display:flex;justify-content:space-between;gap:10px;font-weight:800;color:#dffaff;font-size:13px}.progress-track{height:12px;margin-top:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,255,255,.08)}.progress-bar{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#27e7ff,#7c8cff,#e75dff);box-shadow:0 0 18px rgba(73,218,255,.45);transition:width .22s ease}.progress-steps{display:flex;justify-content:space-between;gap:5px;margin-top:8px;font-size:9px;color:#8296bb}.progress-pct{color:#79f2ff;font-size:18px}.generate-done{color:#9fffc5;font-weight:800}.generate-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:vgspin .75s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes vgspin{to{transform:rotate(360deg)}}.gun-wrap{margin-top:14px}.gun-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:210px;overflow:auto;padding:8px;border:1px solid #233b61;border-radius:12px;background:rgba(2,7,20,.55)}.gun-list label{display:flex;gap:7px;align-items:center;padding:8px;border-radius:9px;background:rgba(15,28,55,.55);font-size:12px}.selected-guns{margin-top:8px;color:#8fe7ff;font-size:12px}.warning{color:#ffd36e}.hud-analysis{border-left:3px solid #48ddff;padding-left:12px}.@media(max-width:720px){.extra-grid{grid-template-columns:1fr}.gun-list{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
 <style>
 .recoil-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0}.recoil-grid>div{padding:12px 8px;text-align:center;border:1px solid rgba(72,221,255,.18);background:rgba(8,14,31,.6);border-radius:12px}.recoil-grid b{display:block;font-size:22px;color:#62eaff}.recoil-grid span{display:block;margin-top:4px;color:#aebbd7;font-size:11px}.recoil-analysis .notice{margin-top:10px}.recoil-analysis .notice.ok{border-color:rgba(72,255,180,.35)}.recoil-analysis .notice.warn{border-color:rgba(255,211,110,.35)}@media(max-width:720px){.recoil-grid{grid-template-columns:repeat(2,1fr)}}.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
 .guide-grid>div{padding:12px;border:1px solid rgba(125,203,255,.14);background:rgba(8,14,31,.55);border-radius:13px}
@@ -451,7 +451,7 @@ function applyUniversalWeaponCoverage(values,guns,gameplay){
 
 function finalFusionLock(values,device,style,mode,ram,fingers,hud,guns,preset,playerStyle){
   /*
-    VG MENT4L Universal Fusion v6:
+    VG MENT4L Universal Fusion v7:
     Combines the existing device engine, both supplied blueprint frameworks,
     player/mode/weapon context, screen/touch class, aim issue and HUD evidence.
     It does not copy one preset; it selects the most coherent final curve.
@@ -525,9 +525,57 @@ function finalFusionLock(values,device,style,mode,ram,fingers,hud,guns,preset,pl
   if(best[4]>=best[3]) best[4]=best[3]-50;
   return best.map(Math.round);
 }
+function precisionRecoilOptimizer(values,guns,gameplay){
+  /*
+    VG MENT4L Precision Recoil + Headshot Optimizer v7
+    Goal: reduce unnecessary over-flick and scoped recoil while preserving
+    close-range drag speed. It is a calibration target, NOT a guarantee of
+    a specific headshot percentage or zero weapon recoil.
+  */
+  let [g,r,x2,x4,sn,fl]=values.map(Number);
+  const issues=getAimIssues();
+  const screen=screenClassEl?.value||'normal';
+  const touch=touchClassEl?.value||'normal';
+  const cov=universalWeaponCoverage(guns);
+  const ev=[gameplay?.mainIssue||'',gameplay?.rangePreference||'',gameplay?.dragStyle||'',...(Array.isArray(gameplay?.findings)?gameplay.findings:[]),...(Array.isArray(gameplay?.problemDiagnosis)?gameplay.problemDiagnosis:[])].join(' ').toLowerCase();
+
+  // Current community reference ranges are used only as a starting prior;
+  // device/HUD/weapon evidence remains dominant.
+  const target=screen==='high'?[190,179,158,138,82,141]:[192,181,160,140,84,140];
+  if(touch==='high'){target[0]-=2;target[1]-=1;target[2]+=1;}
+  if(cov.mix.long>cov.mix.close){target[3]-=2;target[4]-=1;}
+  if(cov.mix.close>cov.mix.long){target[0]+=1;target[1]+=1;}
+
+  if(issues.includes('chest')||issues.includes('dragSlow')||issues.includes('tracking')){target[0]+=2;target[1]+=3;}
+  if(issues.includes('overshoot')||issues.includes('dragFast')){target[0]-=3;target[1]-=4;}
+  if(issues.includes('recoil')){target[2]-=2;target[3]-=3;target[4]-=1;}
+  if(issues.includes('closeRecoil')){target[0]-=1;target[1]-=2;}
+  if(issues.includes('midRecoil')){target[2]-=2;target[3]-=2;}
+  if(issues.includes('longRecoil')||issues.includes('scopeShake')){target[3]-=3;target[4]-=2;}
+  if(issues.includes('neck')){target[1]+=1;}
+  if(issues.includes('drift')){target[0]-=1;target[1]-=1;}
+
+  if(/long.?range|far range|4x.*unstable|sniper.*unstable/.test(ev)){target[2]-=1;target[3]-=3;target[4]-=2;}
+  if(/recoil|spray|shake|shaky|kick/.test(ev)){target[2]-=1;target[3]-=2;target[4]-=1;}
+  if(/overshoot|fly over|too high/.test(ev)){target[0]-=1;target[1]-=2;}
+  if(/chest|under.?drag|stuck low/.test(ev)){target[0]+=1;target[1]+=2;}
+
+  // Evidence-weighted blend: never replace the complete device/HUD result.
+  const w=gameplay?.confidence&&String(gameplay.confidence).toLowerCase()==='high'?0.42:0.30;
+  for(let i=0;i<6;i++) values[i]=Math.round(values[i]*(1-w)+target[i]*w);
+
+  // Final control geometry. These are relationships, not promises of zero recoil.
+  g=clamp(g,176,198);
+  r=clamp(Math.min(r,g-8),164,190);
+  x2=clamp(Math.min(x2,r-10),148,170);
+  x4=clamp(Math.min(x4,x2-18),128,150);
+  sn=clamp(Math.min(sn,x4-52),72,88);
+  fl=clamp(fl,132,148);
+  return [g,r,x2,x4,sn,fl].map(Math.round);
+}
 function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Freestyle'){
   /*
-    VG MENT4L Universal Fusion Calibration v6
+    VG MENT4L Universal Fusion Calibration v7
     Philosophy:
     - Device profile is the anchor, not a random number generator.
     - HUD AI is the strongest live visual signal.
@@ -675,6 +723,8 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   // is allowed to dominate the final sensitivity.
   [g,r,x2,x4,sn,fl]=applyUniversalWeaponCoverage([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis);
 
+  [g,r,x2,x4,sn,fl]=precisionRecoilOptimizer([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis);
+
   const universalEv=[
     gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',
     gameplayAIAnalysis?.dragStyle||'',
@@ -760,13 +810,14 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   return {score,level,overshoot:Math.round(overshoot),close:Math.round(close),mid:Math.round(mid),long:Math.round(long),confidence:(gameplayAIAnalysis?.confidence||hud?.ai?.confidence||'medium'),coverage:cov};
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
-  const a=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
+  const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
+  const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
   const note=a.score>=78
-    ? 'Scoped values controlled hain; profile recoil stability ko prioritize karta hai. Actual gameplay test ke bina ise measured recoil result nahi maana jayega.'
+    ? 'Scoped values controlled hain; selected recoil/aim problems aur weapon-range coverage ko final curve mein apply kiya gaya hai. Ye measured match hit-rate nahi hai.'
     : 'Ye starting calibration hai. Actual spray/drag video test se recoil behaviour ko aur accurately tune kiya ja sakta hai.';
   return `<div class="section recoil-analysis">
     <h3>🎯 Recoil Control Analysis</h3>
-    <div class="small">90%+ ka matlab engine ke control-gates pass hue hain — actual weapon recoil ko physically zero karne ki guarantee nahi. Gameplay evidence available ho to range scores evidence + curve fit dono se nikalte hain.</div>
+    <div class="small">Score 0–100 calibration-fit hai — 100 se upar kabhi nahi jayega. High score ka matlab curve/control relationships strong hain; actual weapon recoil ya exact headshot rate ki guarantee nahi. Gameplay evidence available ho to range scores evidence + curve fit dono se nikalte hain.</div>
     <div class="recoil-grid">
       <div><b>${a.score}%</b><span>Recoil Stability</span></div>
       <div><b>${a.close}%</b><span>Close Range</span></div>
@@ -1008,20 +1059,21 @@ function showGuideOnly(){
 
 
 let autoTimer=null;
-function autoRecalculate(reason='Option changed'){
-  if(generating)return;
+function invalidateGeneratedResult(reason='Option changed'){
   sensitivityOverride=null;
-  const device=deviceEl.value.trim();
-  if(!device){statusEl.textContent='Device name dalo — phir options change karte hi sensitivity automatically update hogi.';return}
+  if(generating)return;
   clearTimeout(autoTimer);
   autoTimer=setTimeout(()=>{
-    const guns=selectedGuns();
-    if(!allGunsEl.checked && !guns.length){allGunsEl.checked=true;gunSlots.forEach(x=>{x.value='';x.disabled=true});}
-    const all=allGunsEl.checked;
-    statusEl.textContent=`${reason}: sensitivity automatically recalculate ho rahi hai…`;
-    render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
-    statusEl.innerHTML=`<span class="ok">Auto-updated: ${esc(styleEl.value)} + ${esc(modeEl.value)} + ${esc($('#preset').value)} + ${esc(fingersEl.value)}. ${all?'All Guns':'Selected Guns'} ke according nayi sensitivity di gayi.</span>`;
-  },120);
+    resultsEl.classList.add('hidden');
+    statusEl.innerHTML='<span class="warn">✓ '+esc(reason)+'. Sensitivity abhi generate nahi hui — sab inputs final karke <b>GENERATE SENSITIVITY</b> dabao.</span>';
+  },60);
+}
+function autoRecalculate(reason='Option changed'){
+  invalidateGeneratedResult(reason);
+}
+function showGuideOnly(){
+  resultsEl.classList.add('hidden');
+  statusEl.innerHTML='<span class="warn">Sensitivity sirf Generate button ke baad show hogi.</span>';
 }
 
 async function runGenerateProgress(device){
@@ -1072,18 +1124,18 @@ btn.addEventListener('click',async()=>{
   statusEl.textContent='Generation started — 100% completion tak wait karo…';
   await runGenerateProgress(device);
 });
-$('#obVersion').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/\s+/g,''); autoRecalculate('OB changed')});
-styleEl.addEventListener('change',()=>autoRecalculate('Player Mode changed'));
-playerStyleEl.addEventListener('change',()=>autoRecalculate('Player Style changed'));
-modeEl.addEventListener('change',()=>autoRecalculate('Game Mode changed'));
-$('#preset').addEventListener('change',()=>autoRecalculate('Game Sensitivity changed'));
-ramEl.addEventListener('change',()=>autoRecalculate('RAM changed'));
-fingersEl.addEventListener('change',()=>autoRecalculate('Finger Count changed'));
-document.querySelectorAll('#aimIssues input[type="checkbox"]').forEach(box=>box.addEventListener('change',()=>{syncAimIssueUI(box);autoRecalculate('Aim issues changed')}));
-deviceAgeEl.addEventListener('input',()=>{ if(resultsEl && !resultsEl.classList.contains('hidden')) autoRecalculate('Device age changed'); });
-deviceEl.addEventListener('input',()=>{ if(deviceEl.value.trim()) autoRecalculate('Device changed'); });
-allGunsEl.addEventListener('change',()=>autoRecalculate('Focus Guns changed'));
-gunSlots.forEach(sel=>sel.addEventListener('change',()=>autoRecalculate('Focus Gun changed')));
+$('#obVersion').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/\s+/g,''); invalidateGeneratedResult('OB changed')});
+styleEl.addEventListener('change',()=>invalidateGeneratedResult('Player Mode changed'));
+playerStyleEl.addEventListener('change',()=>invalidateGeneratedResult('Player Style changed'));
+modeEl.addEventListener('change',()=>invalidateGeneratedResult('Game Mode changed'));
+$('#preset').addEventListener('change',()=>invalidateGeneratedResult('Game Sensitivity changed'));
+ramEl.addEventListener('change',()=>invalidateGeneratedResult('RAM changed'));
+fingersEl.addEventListener('change',()=>invalidateGeneratedResult('Finger Count changed'));
+document.querySelectorAll('#aimIssues input[type="checkbox"]').forEach(box=>box.addEventListener('change',()=>{syncAimIssueUI(box);invalidateGeneratedResult('Aim issues changed')}));
+deviceAgeEl.addEventListener('input',()=>invalidateGeneratedResult('Device age changed'));
+deviceEl.addEventListener('input',()=>invalidateGeneratedResult('Device changed'));
+allGunsEl.addEventListener('change',()=>invalidateGeneratedResult('Focus Guns changed'));
+gunSlots.forEach(sel=>sel.addEventListener('change',()=>invalidateGeneratedResult('Focus Gun changed')));
 async function startGameplayEvidenceAnalysis(){
   const input=$('#gameplayVideo'), status=$('#gameplayStatus'), btn=$('#analyzeGameplayBtn');
   const f=input?.files?.[0];
@@ -1095,7 +1147,7 @@ async function startGameplayEvidenceAnalysis(){
   gameplayAnalysisPromise=(async()=>{gameplayIdentityKey=await hashGameplayFile(f);return analyzeGameplayForWebsite1()})();
   await gameplayAnalysisPromise;
   if(btn){btn.disabled=false;btn.textContent='🎮 ANALYZE GAMEPLAY VIDEO'}
-  autoRecalculate('Gameplay evidence ready');
+  invalidateGeneratedResult('Gameplay evidence ready');
 }
 $('#gameplayVideo').addEventListener('change',()=>{
   const f=$('#gameplayVideo').files?.[0],status=$('#gameplayStatus');
@@ -1118,7 +1170,7 @@ hudEl.addEventListener('change',()=>{
       hudPreview.classList.add('show');
       if(meta) meta.innerHTML=`<span>✓ Preview visible</span><span>${w} × ${h}px</span><span>${orientation}</span><span>${esc(file.name).slice(0,42)}</span>`;
       hudStatus.innerHTML='<span class="ok">✓ HUD screenshot visible. AI analysis start ho raha hai; layout will be used as the highest-priority tuning signal.</span>';
-      startHUDAnalysis(file).finally(()=>autoRecalculate('HUD Screenshot analyzed'));
+      startHUDAnalysis(file).finally(()=>invalidateGeneratedResult('HUD Screenshot analyzed'));
     };
     hudPreview.onerror=()=>{hudStatus.textContent='HUD screenshot preview load nahi ho saka.';hudPreview.classList.remove('show');};
     hudPreview.src=url;
