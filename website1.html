@@ -807,13 +807,29 @@ async function analyzeGameplayForWebsite1(){
     const frames=await extractGameplayEvidenceFrames(file);
     if(status)status.textContent='OpenAI Vision poore gameplay timeline ko analyse kar raha hai…';
     const context={device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,gameMode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,screenClass:screenClassEl.value,touchClass:touchClassEl.value,aimIssue:aimIssueEl.value,guns:selectedGuns(),obVersion:$('#obVersion')?.value||'OB55'};
-    const resp=await fetch('/api/gameplay-analyze-openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frames,context})});
-    const j=await resp.json();
-    if(!resp.ok||!j.ok)throw new Error(j.detail||j.error||'Gameplay AI analysis failed');
-    if(j.result?.configured===false)throw new Error(j.result.message||'OpenAI API not configured');
-    gameplayAIAnalysis=j.result;
-    if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — '+(j.result.framesAnalyzed||frames.length)+' timeline frames used.</span>';
-    return j.result;
+    const openaiResp=await fetch('/api/gameplay-analyze-openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frames,context})});
+    const openaiText=await openaiResp.text();
+    let j={};try{j=JSON.parse(openaiText)}catch{}
+    if(openaiResp.ok&&j.ok&&j.result?.configured!==false){
+      gameplayAIAnalysis=j.result;
+      if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — OpenAI Vision • '+(j.result.framesAnalyzed||frames.length)+' timeline frames.</span>';
+      return j.result;
+    }
+    const openaiError=String(j.detail||j.error||openaiText||'OpenAI gameplay analysis failed');
+    const quotaError=openaiResp.status===429||/insufficient_quota|credit_balance_exhausted|no credits remaining|quota/i.test(openaiError);
+    if(!quotaError)throw new Error(openaiError);
+    if(status)status.innerHTML='<span class="warn">OpenAI credits unavailable — Gemini gameplay backup start ho raha hai…</span>';
+    const ctx64=btoa(unescape(encodeURIComponent(JSON.stringify(context))));
+    const gemResp=await fetch('/api/gameplay-analyze',{
+      method:'POST',
+      headers:{'Content-Type':String(file.type||'video/mp4'),'X-VG-Context':ctx64},
+      body:file
+    });
+    const gemText=await gemResp.text();let gj={};try{gj=JSON.parse(gemText)}catch{}
+    if(!gemResp.ok||!gj.ok)throw new Error('OpenAI credits unavailable; Gemini backup bhi unavailable: '+String(gj.detail||gj.error||gemText));
+    gameplayAIAnalysis=gj.result;
+    if(status)status.innerHTML='<span class="ok">✓ Gameplay evidence analysed — Gemini backup • full video evidence.</span>';
+    return gj.result;
   }catch(e){
     gameplayAIAnalysis=null;
     if(status)status.innerHTML='<span class="danger">Gameplay analysis skipped: '+esc(e.message||e)+'</span><br><span class="small">Baaki engine normal inputs + HUD se continue karega.</span>';
