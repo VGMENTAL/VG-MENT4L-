@@ -62,13 +62,24 @@ async function getHUDIdentity(){
   }
 }
 async function getProfileIdentity(){
-  // Profile ID is tied to the DEVICE, not to every option.
-  // Example: iQOO Neo 10 always gets one stable ID; POCO gets another.
-  // Changing Player Mode/Style/Guns/etc. updates the sensitivity saved under
-  // that device ID instead of creating another ID.
+  // A Profile ID represents one complete submitted information set.
+  // Different submitted information automatically gets a different ID.
+  // Re-entering the exact same information later resolves to the same ID.
+  const guns=selectedGuns().slice().sort((a,b)=>a.localeCompare(b));
   return JSON.stringify({
-    schema:4,
-    device:normalizeProfileText(deviceEl.value)
+    schema:5,
+    device:normalizeProfileText(deviceEl.value),
+    playerMode:normalizeProfileText(styleEl.value),
+    playerStyle:normalizeProfileText(playerStyleEl.value),
+    gameMode:normalizeProfileText(modeEl.value),
+    preset:normalizeProfileText($('#preset').value),
+    obVersion:normalizeProfileText($('#obVersion')?.value||'OB55'),
+    deviceAge:normalizeProfileText(deviceAgeEl?.value||''),
+    ram:normalizeProfileText(ramEl.value),
+    fingers:normalizeProfileText(fingersEl.value),
+    guns,
+    allGuns:!!allGunsEl.checked,
+    hud:await getHUDIdentity()
   });
 }
 async function makeCodeForCurrentProfile(){
@@ -95,8 +106,8 @@ function getProfilePayload(){
   return {version:2,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
-  // Generate one stable Profile ID for this device/model.
-  // Option changes do not create another ID; they update this device's profile.
+  // Automatically resolve the Profile ID from the complete submitted
+  // information. No NEW PROFILE tap is required.
   profileCode=await makeCodeForCurrentProfile();
   const payload=getProfilePayload();
   localStorage.setItem('vg_ment4l_profile_code',profileCode);
