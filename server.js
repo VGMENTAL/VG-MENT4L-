@@ -149,7 +149,8 @@ async function initDb() {
     await pool.query('CREATE TABLE IF NOT EXISTS vg_profiles (code TEXT PRIMARY KEY, profile JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     await pool.query('CREATE TABLE IF NOT EXISTS vg_updates (id BIGSERIAL PRIMARY KEY, code TEXT NULL, item JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     await pool.query('CREATE INDEX IF NOT EXISTS vg_updates_code_idx ON vg_updates(code)');
-    await pool.query('CREATE TABLE IF NOT EXISTS vg_hud_analysis (hud_key TEXT PRIMARY KEY, analysis JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
+    await pool.query('CREATE TABLE IF NOT EXISTS vg_hud_analysis (hud_key TEXT PRIMARY KEY, analysis JSONB NOT NULL, fingerprint JSONB NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
+    await pool.query('ALTER TABLE vg_hud_analysis ADD COLUMN IF NOT EXISTS fingerprint JSONB NULL');
     dbReady = true;
     dbError = '';
     console.log('VG MENT4L persistent database connected.');
@@ -189,11 +190,34 @@ async function dbGetHudAnalysis(hudKey) {
   const r = await pool.query('SELECT analysis FROM vg_hud_analysis WHERE hud_key=$1 LIMIT 1', [hudKey]);
   return r.rows[0]?.analysis || null;
 }
-async function dbSaveHudAnalysis(hudKey, analysis) {
+function normalizeHudFingerprint(fp) {
+  if (!Array.isArray(fp)) return null;
+  const out=fp.slice(0,336).map(n=>Math.max(0,Math.min(15,Math.round(Number(n)||0))));
+  return out.length===336?out:null;
+}
+function hudFingerprintDistance(a,b) {
+  if (!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length||!a.length) return Infinity;
+  let sum=0;
+  for(let i=0;i<a.length;i++) sum+=Math.abs(Number(a[i])-Number(b[i]));
+  return sum/a.length;
+}
+async function dbFindSimilarHudAnalysis(fingerprint) {
+  if(!dbReady||!pool||!fingerprint) return null;
+  const r=await pool.query('SELECT hud_key,analysis,fingerprint FROM vg_hud_analysis WHERE fingerprint IS NOT NULL ORDER BY updated_at DESC LIMIT 250');
+  let best=null,bestDistance=Infinity;
+  for(const row of r.rows){
+    const fp=normalizeHudFingerprint(row.fingerprint);
+    const d=hudFingerprintDistance(fingerprint,fp);
+    if(d<bestDistance){bestDistance=d;best=row;}
+  }
+  if(best && bestDistance<=1.15) return {hudKey:best.hud_key,analysis:best.analysis,distance:bestDistance};
+  return null;
+}
+async function dbSaveHudAnalysis(hudKey, analysis, fingerprint) {
   if (!dbReady || !pool || !hudKey || !analysis) return false;
   await pool.query(
-    'INSERT INTO vg_hud_analysis(hud_key,analysis,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(hud_key) DO UPDATE SET analysis=EXCLUDED.analysis,updated_at=NOW()',
-    [hudKey, JSON.stringify(analysis)]
+    'INSERT INTO vg_hud_analysis(hud_key,analysis,fingerprint,updated_at) VALUES($1,$2::jsonb,$3::jsonb,NOW()) ON CONFLICT(hud_key) DO UPDATE SET analysis=EXCLUDED.analysis,fingerprint=EXCLUDED.fingerprint,updated_at=NOW()',
+    [hudKey, JSON.stringify(analysis), fingerprint?JSON.stringify(fingerprint):null]
   );
   return true;
 }
@@ -202,11 +226,26 @@ function hudCacheFile(hudKey) {
 }
 function localGetHudAnalysis(hudKey) {
   if (!hudKey) return null;
-  return readJson(hudCacheFile(hudKey));
+  const v=readJson(hudCacheFile(hudKey));
+  return v?.analysis||v||null;
 }
-function localSaveHudAnalysis(hudKey, analysis) {
+function localFindSimilarHudAnalysis(fingerprint) {
+  if(!fingerprint) return null;
+  let best=null,bestDistance=Infinity;
+  try{
+    for(const name of fs.readdirSync(HUD_CACHE)){
+      if(!name.endsWith('.json')) continue;
+      const v=readJson(path.join(HUD_CACHE,name));
+      const fp=normalizeHudFingerprint(v?.fingerprint);
+      const d=hudFingerprintDistance(fingerprint,fp);
+      if(d<bestDistance){bestDistance=d;best=v;}
+    }
+  }catch{}
+  return best&&bestDistance<=1.15?{hudKey:best.hudKey,analysis:best.analysis,distance:bestDistance}:null;
+}
+function localSaveHudAnalysis(hudKey, analysis, fingerprint) {
   if (!hudKey || !analysis) return;
-  try { writeJson(hudCacheFile(hudKey), analysis); } catch {}
+  try { writeJson(hudCacheFile(hudKey), {hudKey,analysis,fingerprint:normalizeHudFingerprint(fingerprint)}); } catch {}
 }
 
 function makeNewProfileCode() {
@@ -766,19 +805,23 @@ const server = http.createServer(async (req, res) => {
       const b=await readBody(req, MAX_BODY);
       if(!b.imageData) return json(res,400,{error:'HUD image is required'});
       const hudKey=String(b.hudKey||'').trim();
+      const fingerprint=normalizeHudFingerprint(b.fingerprint);
       try {
-        // Same normalized HUD = same AI analysis across phones.
+        // Exact key first, then a perceptual fingerprint match so Android
+        // screenshot resolution/compression differences do not split a profile.
         if(hudKey){
           const cached=dbReady ? await dbGetHudAnalysis(hudKey) : localGetHudAnalysis(hudKey);
-          if(cached) return json(res,200,{ok:true,analysis:cached,cached:true});
+          if(cached) return json(res,200,{ok:true,analysis:cached,hudKey,cached:true});
         }
+        const similar=dbReady ? await dbFindSimilarHudAnalysis(fingerprint) : localFindSimilarHudAnalysis(fingerprint);
+        if(similar) return json(res,200,{ok:true,analysis:similar.analysis,hudKey:similar.hudKey,cached:true,similar:true});
         const analysis=await runGeminiHudAnalysis(b);
         if(!analysis) return json(res,503,{error:'GEMINI_API_KEY is not configured'});
         if(hudKey){
-          if(dbReady) await dbSaveHudAnalysis(hudKey,analysis);
-          else localSaveHudAnalysis(hudKey,analysis);
+          if(dbReady) await dbSaveHudAnalysis(hudKey,analysis,fingerprint);
+          else localSaveHudAnalysis(hudKey,analysis,fingerprint);
         }
-        return json(res,200,{ok:true,analysis,cached:false});
+        return json(res,200,{ok:true,analysis,cached:false,hudKey});
       } catch(e) {
         console.error('HUD AI analysis failed:',e.message);
         return json(res,502,{error:e.message||'HUD AI analysis failed'});
