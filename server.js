@@ -750,6 +750,24 @@ async function saveNewProfile(clone) {
   if (dbReady) await dbSaveProfile(p); else writeJson(fileFor(PROFILES, code), p);
   return p;
 }
+
+// Website 3 gameplay analysis must update the EXISTING Profile ID in place.
+// The code stays the same; only the sensitivity values are replaced.
+// All original device/player/OB/RAM/fingers/guns/HUD information is preserved.
+async function updateExistingProfileSensitivity(code, sensitivity) {
+  const normalizedCode = safeCode(code);
+  if (!validCode(normalizedCode)) throw new Error('Valid existing Profile ID required');
+  const old = await loadProfile(normalizedCode);
+  if (!old) throw new Error('Existing Profile ID not found');
+  const updated = cleanProfile({
+    ...old,
+    sensitivity: normSens(sensitivity)
+  }, normalizedCode);
+  if (dbReady) await dbSaveProfile(updated);
+  else writeJson(fileFor(PROFILES, normalizedCode), updated);
+  return updated;
+}
+
 async function loadProfile(code) {
   if (dbReady) {
     const p = await dbGetProfile(code);
@@ -932,6 +950,28 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    // Website 3: apply the first full-gameplay AI result to the existing Profile ID.
+    // The Profile ID is intentionally stable. Only sensitivity is changed.
+    if (req.method === 'POST' && u.pathname === '/api/gameplay-apply') {
+      const b = await readBody(req);
+      const code = safeCode(b.code || '');
+      if (!validCode(code)) return json(res, 400, { error: 'Valid existing Profile ID required' });
+      const sensitivity = normSens(b.sensitivity);
+      try {
+        const updated = await updateExistingProfileSensitivity(code, sensitivity);
+        return json(res, 200, {
+          ok: true,
+          profileId: updated.code,
+          sensitivity: updated.sensitivity,
+          updatedAt: updated.updatedAt,
+          source: dbReady ? 'backend' : 'local-fallback',
+          onlySensitivityUpdated: true
+        });
+      } catch (e) {
+        return json(res, 404, { ok: false, error: 'Could not update existing Profile ID', detail: String(e?.message || e) });
+      }
+    }
+
     if (req.method === 'POST' && u.pathname === '/api/gameplay-fix') {
       const b = await readBody(req);
       const issues = cleanIssueList(b.issues ?? b.issue);
@@ -949,19 +989,27 @@ const server = http.createServer(async (req, res) => {
 
       const oldCode = safeCode(b.code || '');
       if (validCode(oldCode)) {
-        const old = await loadProfile(oldCode);
-        if (old) {
-          const clone = JSON.parse(JSON.stringify(old));
-          clone.sensitivity = fixed.sensitivity;
-          clone.recalibration = {
-            ...(clone.recalibration || {}), sourceProfileId: oldCode, issues, customText: custom,
-            source: 'full-video-ai-refinement', createdAt: new Date().toISOString(), aiModel: fixed.model || null
-          };
-          const p = await saveNewProfile(clone);
-          return json(res, 200, { ok: true, oldProfileId: oldCode, newProfileId: p.code, sensitivity: p.sensitivity, issues, customText: custom, oldProfileUnchanged: true, diagnosis: fixed.diagnosis || '', changes: fixed.changes || [], model: fixed.model || null });
+        try {
+          const updated = await updateExistingProfileSensitivity(oldCode, fixed.sensitivity);
+          return json(res, 200, {
+            ok: true,
+            oldProfileId: oldCode,
+            newProfileId: updated.code,
+            profileId: updated.code,
+            sensitivity: updated.sensitivity,
+            issues,
+            customText: custom,
+            oldProfileUnchanged: false,
+            onlySensitivityUpdated: true,
+            diagnosis: fixed.diagnosis || '',
+            changes: fixed.changes || [],
+            model: fixed.model || null
+          });
+        } catch (e) {
+          return json(res, 404, { ok: false, error: 'Could not update existing Profile ID', detail: String(e?.message || e) });
         }
       }
-      return json(res, 200, { ok: true, newProfileId: null, sensitivity: fixed.sensitivity, issues, customText: custom, oldProfileUnchanged: true, diagnosis: fixed.diagnosis || '', changes: fixed.changes || [], model: fixed.model || null });
+      return json(res, 200, { ok: true, newProfileId: null, profileId: null, sensitivity: fixed.sensitivity, issues, customText: custom, oldProfileUnchanged: true, onlySensitivityUpdated: true, diagnosis: fixed.diagnosis || '', changes: fixed.changes || [], model: fixed.model || null });
     }
 
     if (req.method === 'POST' && u.pathname === '/api/updates') {
