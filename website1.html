@@ -546,7 +546,7 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   if(gameplayAIAnalysis?.recommendedSensitivity){
     const ga=gameplayAIAnalysis;
     const conf=String(ga.confidence||'medium').toLowerCase();
-    const w=conf==='high'?0.18:(conf==='low'?0.06:0.11);
+    const w=conf==='high'?0.24:(conf==='low'?0.08:0.15);
     const rec=ga.recommendedSensitivity;
     const blend=(v,k)=>Number(v)+(Number(rec?.[k]??v)-Number(v))*w;
     g=blend(g,'general'); r=blend(r,'red_dot'); x2=blend(x2,'scope_2x');
@@ -565,6 +565,50 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   // This is the step that prevents independent inputs from creating random
   // high/mid/low/lowest-looking numbers.
   [g,r,x2,x4,sn,fl]=finalFusionLock([g,r,x2,x4,sn,fl],device,style,mode,ram,fingers,hud,guns,preset,playerStyle);
+
+  // 7.8) Precision-weapon + long-range stabilizer.
+  // Desert Eagle/precision weapons are sensitive to small sight movement. When
+  // one is part of the selected 3-gun loadout, keep close-range responsiveness
+  // intact but progressively calm scoped/precision axes for longer shots.
+  const gunNames=(guns||[]).map(x=>String(x).toLowerCase());
+  const precisionCount=gunNames.filter(n=>/desert eagle|woodpecker|sks|svd|ac80/.test(n)).length;
+  const shotgunCount=gunNames.filter(n=>/m1887|m1014|mag-7|charge buster/.test(n)).length;
+  if(precisionCount){
+    const strength=Math.min(1,precisionCount/2);
+    r-=3*strength;
+    x2-=3*strength;
+    x4-=4*strength;
+    sn-=1*strength;
+  }
+  if(precisionCount && shotgunCount){
+    // Preserve the close-range benefit of the shotgun without letting it
+    // cancel the precision weapon's scoped stability.
+    g+=1;
+    r+=1;
+  }
+
+  const gameEvidence=[
+    gameplayAIAnalysis?.mainIssue||'',
+    gameplayAIAnalysis?.rangePreference||'',
+    gameplayAIAnalysis?.dragStyle||'',
+    ...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),
+    ...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])
+  ].join(' ').toLowerCase();
+  if(/long.?range|long range|far range|distance|scope.*unstable|4x.*unstable|4x.*shake/.test(gameEvidence)){
+    x4-=4;
+    x2-=1.5;
+  }
+  if(/recoil|spray|shake|shaky|kick/.test(gameEvidence)){
+    x4-=2;
+    x2-=1;
+  }
+
+  // Re-lock after weapon/evidence stabilization so the scoped curve remains
+  // internally consistent.
+  if(r>g-5) r=g-5;
+  if(x2>r-7) x2=r-7;
+  if(x4>x2-14) x4=x2-14;
+  if(sn>x4-50) sn=x4-50;
 
   // 8) Deterministic soft bounds around the device anchor. This protects the
   // result from extreme stacking of many inputs while preserving meaningful
@@ -660,8 +704,17 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const close=Math.round(clamp(78+(s.general-185)*0.45+(s.red_dot-175)*0.30,0,98));
   const mid=Math.round(clamp(80+(s.scope_2x-155)*0.38,0,98));
   const long=Math.round(clamp(82+(s.scope_4x-140)*0.42,0,98));
+  const gameplayEvidence=[
+    gameplayAIAnalysis?.mainIssue||'',
+    gameplayAIAnalysis?.rangePreference||'',
+    ...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),
+    ...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])
+  ].join(' ').toLowerCase();
+  let longPenalty=0;
+  if(/long.?range|far range|distance|4x.*unstable|scope.*unstable/.test(gameplayEvidence)) longPenalty+=8;
+  if(/recoil|spray|shake|shaky|kick/.test(gameplayEvidence)) longPenalty+=4;
   const confidence=hud?.ai?.confidence||'medium';
-  return {score,level,overshoot,close,mid,long,confidence};
+  return {score,level,overshoot,close,mid, long:Math.max(0,long-longPenalty),confidence};
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const a=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
