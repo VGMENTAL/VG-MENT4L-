@@ -556,6 +556,52 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
   }
 }
 
+async function runGeminiGameplayFrames(frames, context) {
+  const key=String(process.env.GEMINI_API_KEY||'').trim();
+  if(!key) return {configured:false,message:'GEMINI_API_KEY is not configured.'};
+  const models=[String(process.env.GEMINI_MODEL||'gemini-3.8-flash'),'gemini-3.7-flash','gemini-3.6-flash','gemini-3.5-flash-lite'].filter((m,i,a)=>m&&a.indexOf(m)===i);
+  const usable=(Array.isArray(frames)?frames:[]).filter(f=>f&&typeof f.data==='string'&&f.data.startsWith('data:image/')).slice(0,28);
+  if(!usable.length) throw new Error('No gameplay evidence frames received.');
+  const prompt=`You are VG MENT4L gameplay sensitivity calibration analyst. These are chronological frames sampled across the COMPLETE gameplay video. Compare the whole timeline.
+Analyze repeated evidence: drag speed/length, overshoot/under-drag, head/neck/chest stopping, recoil/spray, close/mid/long tracking, target switching, movement while firing and weapon behavior. Separate player mistakes, FPS/ping and recording artifacts from sensitivity issues.
+PROFILE CONTEXT:
+${JSON.stringify(context)}
+Return ONLY JSON:
+{"playerType":"","dragStyle":"","rangePreference":"","mainIssue":"","problemDiagnosis":[""],"findings":[""],"recommendedSensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"adjustmentReasons":[""],"evidenceSummary":"","confidence":"low|medium|high","videoDuration":"","timestampEvidence":["timestamp + observation"]}
+Values 0-200. No guaranteed zero recoil/headshots. Prefer smallest evidence-supported changes.`;
+  const parts=[{text:prompt}];
+  for(const f of usable){
+    const m=String(f.data).match(/^data:(image\/[^;]+);base64,(.+)$/);
+    if(!m) continue;
+    parts.push({text:'Timestamp: '+String(f.t||'unknown')});
+    parts.push({inline_data:{mime_type:m[1],data:m[2]}});
+  }
+  let last='';
+  for(const model of models){
+    for(let attempt=0;attempt<2;attempt++){
+      const rr=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
+        method:'POST',headers:{['x-goog-'+'api-key']:key,'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0,seed:42,maxOutputTokens:1200,responseMimeType:'application/json'}})
+      },60000);
+      const tx=await rr.text();
+      if(rr.ok){
+        try{
+          const out=parseJsonOutput(extractText(JSON.parse(tx)));
+          out.recommendedSensitivity=normSens(out.recommendedSensitivity);
+          out.findings=Array.isArray(out.findings)?out.findings.slice(0,24):[];
+          out.problemDiagnosis=Array.isArray(out.problemDiagnosis)?out.problemDiagnosis.slice(0,16):[];
+          out.adjustmentReasons=Array.isArray(out.adjustmentReasons)?out.adjustmentReasons.slice(0,16):[];
+          out.timestampEvidence=Array.isArray(out.timestampEvidence)?out.timestampEvidence.slice(0,12):[];
+          out.model=model;out.configured=true;out.fullVideo=true;out.frameTimeline=true;out.framesAnalyzed=usable.length;
+          return out;
+        }catch(e){last=String(e.message||e)}
+      }else{last='Gemini frame analysis HTTP '+rr.status+': '+tx.slice(0,900);if(rr.status!==503&&rr.status!==429) break}
+      await new Promise(x=>setTimeout(x,900*(attempt+1)));
+    }
+  }
+  throw new Error(last||'Gemini gameplay frame analysis failed');
+}
+
 async function runOpenAIGameplayFrames(frames, context) {
   const key = String(process.env.OPENAI_API_KEY || '').trim();
   if (!key) return { configured: false, message: 'OPENAI_API_KEY is not configured. Render Environment Variables mein OpenAI API key add karo.' };
@@ -943,6 +989,21 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         console.error('OpenAI gameplay analysis failed:', e);
         return json(res, 502, { ok: false, error: 'OpenAI gameplay analysis failed', detail: String(e?.message || e) });
+      }
+    }
+
+    if (req.method === 'POST' && u.pathname === '/api/gameplay-analyze-gemini-frames') {
+      let b;
+      try { b = await readBody(req, 16 * 1024 * 1024); }
+      catch(e) { return json(res,413,{error:'Gameplay evidence payload too large',detail:String(e?.message||e)}); }
+      const frames=Array.isArray(b.frames)?b.frames:[];
+      if(!frames.length) return json(res,400,{error:'No gameplay evidence frames received.'});
+      try {
+        const result=await runGeminiGameplayFrames(frames,b.context||{});
+        return json(res,200,{ok:true,temporary:true,videoStored:false,fullVideo:true,frameTimeline:true,result});
+      } catch(e) {
+        console.error('Gemini gameplay frame analysis failed:',e);
+        return json(res,502,{ok:false,error:'Gemini gameplay frame analysis failed',detail:String(e?.message||e)});
       }
     }
 
