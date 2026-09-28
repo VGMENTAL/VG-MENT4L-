@@ -139,7 +139,7 @@ function getProfilePayload(){
   const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
   const modes=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad']:[modeEl.value];
   playerModes.forEach(pm=>playerStyles.forEach(ps=>modes.forEach(md=>{profiles[pm+' | '+ps+' | '+md]=calculate(deviceEl.value.trim(),pm,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps)})));
-  return {version:3,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudIdentity:hudIdentityKey||null,hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
+  return {version:3,calibrationVersion:4,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudIdentity:hudIdentityKey||null,hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'', sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
   // Automatically resolve the Profile ID from the complete submitted
@@ -247,39 +247,138 @@ async function verifyDeviceForProfile(device){
 }
 
 function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Freestyle'){
-  const cls=deviceClass(device), p=STYLE_PROFILES[style]||STYLE_PROFILES["Balanced"], ps=PLAYER_STYLES[playerStyle]||{g:0,r:0,x2:0,x4:0,sn:0,fl:0};
-  let [g,r,x2,x4,sn,fl]=cls.base;
-  const modeOffsets={"BR + CS":{g:0,r:0,x2:0,x4:0,sn:0,fl:0},"Battle Royale":{g:-4,r:-3,x2:-2,x4:-2,sn:1,fl:4},"Clash Squad":{g:6,r:7,x2:4,x4:2,sn:-1,fl:1}};
-  const mo=modeOffsets[mode]||modeOffsets["BR + CS"]; g+=mo.g;r+=mo.r;x2+=mo.x2;x4+=mo.x4;sn+=mo.sn;fl+=mo.fl;
+  /*
+    VG MENT4L Precision Calibration v4
+    Philosophy:
+    - Device profile is the anchor, not a random number generator.
+    - HUD AI is the strongest live visual signal.
+    - Weapon + finger + mode + player style are smaller, controlled corrections.
+    - RAM is context only; it never multiplies sensitivity.
+    - Device age is context only; age alone must not arbitrarily lower sensitivity.
+    - A recoil-aware stability prior prevents over-aggressive scoped values.
+    - Every correction is deterministic and bounded so the same profile produces
+      the same result on every device.
+  */
+  const cls=deviceClass(device);
+  const p=STYLE_PROFILES[style]||STYLE_PROFILES["Balanced"];
+  const ps=PLAYER_STYLES[playerStyle]||{g:0,r:0,x2:0,x4:0,sn:0,fl:0};
+  let [g,r,x2,x4,sn,fl]=cls.base.map(Number);
+
+  // 1) Game-mode context. Keep this deliberately smaller than the core device
+  // profile so a mode switch changes the result without overwhelming it.
+  const modeOffsets={
+    "BR + CS":{g:0,r:0,x2:0,x4:0,sn:0,fl:0},
+    "Battle Royale":{g:-3,r:-2,x2:-2,x4:-2,sn:1,fl:2},
+    "Clash Squad":{g:5,r:5,x2:3,x4:2,sn:-1,fl:1}
+  };
+  const mo=modeOffsets[mode]||modeOffsets["BR + CS"];
+  g+=mo.g;r+=mo.r;x2+=mo.x2;x4+=mo.x4;sn+=mo.sn;fl+=mo.fl;
+
+  // 2) Player mode + player style.
   g+=p.g;r+=p.r;x2+=p.x2;x4+=p.x4;sn+=p.sn;fl+=p.fl;
   g+=ps.g;r+=ps.r;x2+=ps.x2;x4+=ps.x4;sn+=ps.sn;fl+=ps.fl;
-  const fingerAdj={"2 Finger":{g:2,r:2,x2:1,x4:0,sn:0,fl:1},"3 Finger":{g:1,r:1,x2:0,x4:0,sn:0,fl:1},"4 Finger":{g:-1,r:-1,x2:-1,x4:-1,sn:-1,fl:0},"5 Finger":{g:-2,r:-2,x2:-2,x4:-1,sn:-1,fl:0},"6 Finger":{g:-3,r:-3,x2:-2,x4:-2,sn:-1,fl:-1}};
-  const fa=fingerAdj[fingers]||fingerAdj["2 Finger"]; g+=fa.g;r+=fa.r;x2+=fa.x2;x4+=fa.x4;sn+=fa.sn;fl+=fa.fl;
-  // RAM is context, not a direct sensitivity multiplier; only a small stability adjustment is applied.
-  if(/2 GB|3 GB|4 GB/.test(ram)){g-=2;r-=2;x2-=1;x4-=1}
-  if(/12 GB|16 GB|18 GB/.test(ram)){g+=1;r+=1}
-  // HUD is the highest-priority tuning input. AI deltas are applied strongly; geometry remains as fallback.
+
+  // 3) Finger-count control geometry.
+  const fingerAdj={
+    "2 Finger":{g:2,r:2,x2:1,x4:0,sn:0,fl:1},
+    "3 Finger":{g:1,r:1,x2:0,x4:0,sn:0,fl:1},
+    "4 Finger":{g:-1,r:-1,x2:-1,x4:-1,sn:-1,fl:0},
+    "5 Finger":{g:-2,r:-2,x2:-2,x4:-1,sn:-1,fl:0},
+    "6 Finger":{g:-3,r:-3,x2:-2,x4:-2,sn:-1,fl:-1}
+  };
+  const fa=fingerAdj[fingers]||fingerAdj["2 Finger"];
+  g+=fa.g;r+=fa.r;x2+=fa.x2;x4+=fa.x4;sn+=fa.sn;fl+=fa.fl;
+
+  // RAM intentionally does not alter sensitivity. It remains profile context.
+  // Device age also remains context: an old phone is not automatically "slower"
+  // and should not receive an arbitrary sensitivity penalty.
+
+  // 4) Free Fire sensitivity preset.
+  if(preset==='High'){g+=4;r+=4;x2+=2;x4+=1;fl+=2}
+  else {g-=1;r-=1}
+
+  // 5) Weapon-specific corrections.
+  const has=n=>guns.some(x=>String(x).toLowerCase().includes(n));
+  const hasShotgun=has('m1887')||has('m1014')||has('mag-7')||has('charge buster');
+  const hasPrecision=has('desert eagle')||has('woodpecker')||has('sks')||has('svd')||has('ac80');
+  const hasSmg=has('mp40')||has('vector')||has('mac10')||has('p90')||has('ump')||has('thompson');
+  const hasSniper=has('awm')||has('kar98')||has('m82b');
+  const hasAR=has('ak47')||has('groza')||has('m4a1')||has('scar')||has('xm8')||has('famas')||has('an94')||has('g36')||has('parafal')||has('m60')||has('m249')||has('kord');
+
+  if(hasShotgun){g+=3;r+=3}
+  if(hasPrecision){r+=1;x2-=1;x4-=1}
+  if(hasSmg){g+=2;r+=2;x2+=1}
+  if(hasSniper){x4-=2;sn-=2}
+  if(hasAR){x2-=1;x4-=1}
+
+  // 6) Recoil-aware stability prior. This is intentionally small: it should
+  // reduce over-correction during spray without killing drag responsiveness.
+  const recoilMode=/spray|recoil/i.test(style);
+  if(recoilMode){x2-=2;x4-=3;sn-=1}
+  if(hasAR && !hasShotgun){x2-=1;x4-=1}
+
+  // 7) HUD AI = highest-priority live signal. Use confidence-aware weighting
+  // and hard-cap the AI delta so one noisy interpretation cannot destroy the
+  // device/weapon baseline.
   if(hud.uploaded){
     const ha=hud.ai;
     if(ha&&ha.sensitivityDelta){
-      const weight=0.85;
-      g+=Number(ha.sensitivityDelta.general||0)*weight;r+=Number(ha.sensitivityDelta.red_dot||0)*weight;
-      x2+=Number(ha.sensitivityDelta.scope_2x||0)*weight;x4+=Number(ha.sensitivityDelta.scope_4x||0)*weight;
-      sn+=Number(ha.sensitivityDelta.sniper||0)*weight;fl+=Number(ha.sensitivityDelta.free_look||0)*weight;
-    } else {g+=1;r+=2;x2+=1;x4+=1;if(hud.height>hud.width)fl+=1;}
-  }
-  // Game sensitivity preset: High is intentionally more responsive than Default.
-  if(preset==='High'){g+=5;r+=5;x2+=3;x4+=2;fl+=3} else {g-=1;r-=1}
-  const ageAdj=deviceAgeAdjustment(deviceAgeEl?.value||''); g+=ageAdj.g;r+=ageAdj.r;x2+=ageAdj.x2;x4+=ageAdj.x4;sn+=ageAdj.sn;fl+=ageAdj.fl;
-  const has=n=>guns.some(x=>x.toLowerCase().includes(n));
-  if(has('m1887')||has('m1014')||has('mag-7')||has('charge buster')){g+=3;r+=3}
-  if(has('desert eagle')||has('woodpecker')||has('sks')||has('svd')||has('ac80')){r+=1;x2-=1;x4-=1}
-  if(has('mp40')||has('vector')||has('mac10')||has('p90')||has('ump')||has('thompson')){g+=2;r+=2;x2+=1}
-  if(has('awm')||has('kar98')||has('m82b')){sn-=2;x4-=2}
-  if(has('ak47')||has('groza')||has('m4a1')||has('scar')||has('xm8')||has('famas')||has('an94')||has('g36')){x2-=1;x4-=2}
-  return {general:clamp(g),red_dot:clamp(r),scope_2x:clamp(x2),scope_4x:clamp(x4),sniper:clamp(sn),free_look:clamp(fl)};
-}
+      const conf=String(ha.confidence||'medium').toLowerCase();
+      const confidenceWeight=conf==='high'?0.90:(conf==='low'?0.64:0.78);
+      const cap=v=>Math.max(-12,Math.min(12,Number(v)||0));
+      const apply=(v)=>cap(v)*confidenceWeight;
+      g+=apply(ha.sensitivityDelta.general);
+      r+=apply(ha.sensitivityDelta.red_dot);
+      x2+=apply(ha.sensitivityDelta.scope_2x);
+      x4+=apply(ha.sensitivityDelta.scope_4x);
+      sn+=apply(ha.sensitivityDelta.sniper);
+      fl+=apply(ha.sensitivityDelta.free_look);
 
+      // If the HUD analyst repeatedly observes recoil/shake/overshoot, apply
+      // only a tiny stabilizer on scoped controls. Do not let text heuristics
+      // override the numeric AI recommendation.
+      const evidence=[
+        ha.mainIssue||'',
+        ha.evidenceSummary||'',
+        ...(Array.isArray(ha.findings)?ha.findings:[]),
+        ...(Array.isArray(ha.problemDiagnosis)?ha.problemDiagnosis:[])
+      ].join(' ').toLowerCase();
+      if(/recoil|spray|shaky|shake|overshoot/.test(evidence)){
+        x2-=1;x4-=1;
+      }
+    }else{
+      // Safe geometry-only fallback.
+      g+=1;r+=1;x2+=1;x4+=1;
+      if(hud.height>hud.width) fl+=1;
+    }
+  }
+
+  // 8) Deterministic soft bounds around the device anchor. This protects the
+  // result from extreme stacking of many inputs while preserving meaningful
+  // differences between profiles.
+  const anchor=cls.base;
+  const soft=(value,index,range)=>{
+    const lo=Number(anchor[index])-range, hi=Number(anchor[index])+range;
+    return Math.max(lo,Math.min(hi,value));
+  };
+  g=soft(g,0,24);r=soft(r,1,24);x2=soft(x2,2,20);x4=soft(x4,3,18);sn=soft(sn,4,14);fl=soft(fl,5,22);
+
+  // 9) Optical/sensitivity relationships. Keep the scopes controlled relative
+  // to General/Red Dot so low-recoil tuning does not create a dead-feeling aim.
+  if(x2>r-8) x2=r-8;
+  if(x4>x2-10) x4=x2-10;
+  if(sn>x4-28) sn=x4-28;
+  if(r>g+2) r=g+2;
+
+  return {
+    general:clamp(g),
+    red_dot:clamp(r),
+    scope_2x:clamp(x2),
+    scope_4x:clamp(x4),
+    sniper:clamp(sn),
+    free_look:clamp(fl)
+  };
+}
 function weaponProfile(gun, base, style, mode){
   let a={g:base.general,r:base.red_dot,x2:base.scope_2x,x4:base.scope_4x,sn:base.sniper};
   const n=gun.toLowerCase();
@@ -392,7 +491,8 @@ function render(device,style,mode,ram,fingers,hud,guns,preset){
   });
   $('#copy').onclick=()=>{let text=`VG MENT4L
 Device: ${device}
-Style: ${style}
+Player Mode: ${style}
+Player Style: ${playerStyleEl.value}
 Mode: ${mode}
 Game Sensitivity: ${preset}
 RAM: ${ram}
@@ -403,7 +503,7 @@ Device age: ${deviceAgeEl?.value.trim()||'Not specified'}
 OB: ${$('#obVersion')?.value||'OB55'}
 
 `;
-    styles.forEach(st=>modes.forEach(md=>{const ss=calculate(device,st,md,ram,fingers,hud,guns,preset);text+=`${st} | ${md}
+    styles.forEach(st=>playerStyles.forEach(ps=>modes.forEach(md=>{const ss=calculate(device,st,md,ram,fingers,hud,guns,preset,ps);text+=`${st} | ${ps} | ${md}
 General: ${ss.general}
 Red Dot: ${ss.red_dot}
 2× Scope: ${ss.scope_2x}
