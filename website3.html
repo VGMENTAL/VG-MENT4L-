@@ -331,9 +331,14 @@ $('go').onclick=async()=>{
     const frames = await extractTimelineFrames(file, meta);
     j = await analyzeWithOpenAI(contextPayload(), frames);
   } catch (openAiError) {
-    // OpenAI path is primary because it avoids the recurring Gemini full-video 503.
-    // Gemini remains a secondary fallback so the workflow still has another provider.
-    status('<b>Stage 3/5: Backup AI Vision</b><br><span class="mut">Primary vision provider unavailable. Complete video Gemini backup pipeline ko diya ja raha hai.</span>','status warn');
+    // Do NOT automatically fall back to Gemini when OpenAI is configured but unavailable.
+    // Gemini free-tier quota can be exhausted too, which used to turn one provider failure into a second failure.
+    const msg=String(openAiError?.message||openAiError);
+    const openAiConfiguredFailure=!/OPENAI_API_KEY is not configured/i.test(msg);
+    if(openAiConfiguredFailure){
+      throw new Error('OpenAI gameplay vision unavailable — '+msg);
+    }
+    status('<b>Stage 3/5: Backup AI Vision</b><br><span class="mut">OpenAI key configured nahi hai, isliye Gemini backup try kiya ja raha hai.</span>','status warn');
     j = await analyzeWithGeminiFullVideo(contextPayload());
     if (j && j.result) j.result.providerFallback = 'gemini';
   }
