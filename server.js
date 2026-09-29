@@ -630,7 +630,9 @@ Return ONLY JSON in this exact shape:
   "videoDuration":"",
   "timestampEvidence":["timestamp + observation"]
 }
-Sensitivity values are integers 0-200. Do not promise zero recoil or guaranteed headshots. Prefer measured changes over extreme values.`;
+Sensitivity values are integers 0-200. PROFILE CONTEXT includes a deterministic baselineSensitivity. Treat it as the starting point and return a candidate calibrated from that baseline, not a generic internet sensitivity.
+For every changed axis, look for repeated evidence across multiple timestamps. Prefer small changes (normally within +/-8 from baseline; never more than +/-12) and explain the direction in adjustmentReasons. If evidence is insufficient for an axis, keep the baseline value.
+Do not promise zero recoil or guaranteed headshots. Separate player technique, FPS/frame-pacing, ping and recording artifacts from sensitivity-related patterns.`;
   const content = [{ type: 'input_text', text: prompt }];
   for (const f of frames) {
     if (!f || typeof f.data !== 'string' || !f.data.startsWith('data:image/')) continue;
