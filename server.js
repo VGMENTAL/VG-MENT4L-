@@ -1100,7 +1100,9 @@ const server = http.createServer(async (req, res) => {
         return json(res,200,{ok:true,temporary:true,videoStored:false,fullVideo:true,frameTimeline:true,result});
       } catch(e) {
         console.error('Gemini gameplay frame analysis failed:',e);
-        return json(res,502,{ok:false,error:'Gemini gameplay frame analysis failed',detail:String(e?.message||e)});
+        const detail=String(e?.message||e);
+        const quota=/quota|resource_exhausted|rate.?limit|too many requests|429/i.test(detail);
+        return json(res,quota?429:502,{ok:false,error:quota?'Gemini Free Tier quota temporarily unavailable':'Gemini gameplay frame analysis failed',code:quota?'GEMINI_FREE_QUOTA':'GEMINI_GAMEPLAY_ERROR',detail});
       }
     }
 
