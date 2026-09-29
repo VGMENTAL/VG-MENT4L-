@@ -1075,7 +1075,17 @@ const server = http.createServer(async (req, res) => {
         return json(res, 200, { ok: true, temporary: true, videoStored: false, fullVideo: true, frameTimeline: true, framesReceived: frames.length, result });
       } catch (e) {
         console.error('OpenAI gameplay analysis failed:', e);
-        return json(res, 502, { ok: false, error: 'OpenAI gameplay analysis failed', detail: String(e?.message || e) });
+        const detail=String(e?.message || e);
+        if(/insufficient_quota|credit_balance_exhausted|no credits remaining|quota/i.test(detail)){
+          return json(res, 429, {
+            ok:false,
+            error:'OpenAI gameplay AI quota/credits unavailable',
+            code:'OPENAI_QUOTA_EXHAUSTED',
+            detail:'OpenAI API credits/quota available nahi hai. Website Gemini par automatically switch nahi karegi, taaki ek provider ki quota problem doosre provider ki quota error mein convert na ho.',
+            provider:'openai'
+          });
+        }
+        return json(res, 502, { ok: false, error: 'OpenAI gameplay analysis failed', detail });
       }
     }
 
