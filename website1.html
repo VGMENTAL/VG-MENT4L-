@@ -725,6 +725,35 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
 
   [g,r,x2,x4,sn,fl]=precisionRecoilOptimizer([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis);
 
+  // Gameplay Evidence Lock v8:
+  // Keep the deterministic profile as the anchor, then let repeated gameplay
+  // evidence make a bounded correction AFTER the generic fusion stages.
+  if(gameplayAIAnalysis && gameplayAIAnalysis.recommendedSensitivity){
+    const ga=gameplayAIAnalysis;
+    const conf=String(ga.confidence||'medium').toLowerCase();
+    const evidenceWeight=conf==='high'?0.46:(conf==='low'?0.12:0.28);
+    const rec=ga.recommendedSensitivity;
+    const keys=['general','red_dot','scope_2x','scope_4x','sniper','free_look'];
+    const vals=[g,r,x2,x4,sn,fl];
+    const baseline=Array.isArray(ga.baselineSensitivity)?ga.baselineSensitivity:null;
+    for(let i=0;i<6;i++){
+      const rv=Number(rec[keys[i]]);
+      if(Number.isFinite(rv)&&rv>0){
+        const delta=Math.max(-10,Math.min(10,rv-vals[i]));
+        vals[i]=Math.round(vals[i]+delta*evidenceWeight);
+      }
+    }
+    if(baseline&&baseline.length===6){
+      for(let i=0;i<5;i++){
+        const maxFromBase=i===0||i===1?28:24;
+        if(Math.abs(vals[i]-Number(baseline[i]))>maxFromBase){
+          vals[i]=Math.round(Number(baseline[i])+Math.sign(vals[i]-Number(baseline[i]))*maxFromBase);
+        }
+      }
+    }
+    [g,r,x2,x4,sn,fl]=vals;
+  }
+
   const universalEv=[
     gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',
     gameplayAIAnalysis?.dragStyle||'',
@@ -931,7 +960,10 @@ async function extractGameplayEvidenceFrames(file){
   try{
     await new Promise((resolve,reject)=>{v.onloadedmetadata=resolve;v.onerror=()=>reject(new Error('Gameplay video decode failed.'));v.src=u});
     const duration=Math.max(.2,meta.duration||v.duration||0);
-    const count=Math.max(10,Math.min(16,Math.ceil(duration/4))),step=duration/count;
+    // More evidence points: 50s gameplay par 12-13 frames bahut sparse hote hain.
+    // Use roughly one frame every ~2.2s, capped at 28, so repeated fights/aim behaviour
+    // are less likely to be missed while keeping the mobile upload practical.
+    const count=Math.max(18,Math.min(28,Math.ceil(duration/2.2))),step=duration/count;
     const W=Math.min(480,v.videoWidth||480),H=Math.max(1,Math.round(W*(v.videoHeight||432)/(v.videoWidth||432)));
     canvas.width=W;canvas.height=H;const frames=[];
     for(let i=0;i<count;i++){
@@ -966,7 +998,20 @@ async function analyzeGameplayForWebsite1(){
       touchClass:String(touchClassEl?.value||'normal'),
       aimIssues:getAimIssues(),
       guns:selectedGuns().map(g=>String(g)),
-      obVersion:String($('#obVersion')?.value||'OB55')
+      obVersion:String($('#obVersion')?.value||'OB55'),
+      // Give the vision analyst the exact deterministic baseline it must improve.
+      // This prevents it from inventing a generic "recommended sensitivity".
+      baselineSensitivity:calculate(
+        String(deviceEl?.value||'').trim(),
+        String(styleEl?.value||'Balanced'),
+        String(modeEl?.value||'BR + CS'),
+        String(ramEl?.value||''),
+        String(fingersEl?.value||'3 Finger'),
+        {uploaded:false},
+        selectedGuns().map(g=>String(g)),
+        String($('#preset')?.value||'Default'),
+        String(playerStyleEl?.value||'Freestyle')
+      )
     };
 
     // Build the timeline once, then reuse the SAME plain frame array for both providers.
