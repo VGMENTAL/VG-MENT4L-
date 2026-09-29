@@ -590,19 +590,25 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   const cls=deviceClass(device);
   const p=STYLE_PROFILES[style]||STYLE_PROFILES["Balanced"];
 
-  // Verified/researched hardware is a secondary calibration signal. It never
-  // replaces the device model profile, but it can refine touch/display class.
+  const ps=PLAYER_STYLES[playerStyle]||{g:0,r:0,x2:0,x4:0,sn:0,fl:0};
+  let [g,r,x2,x4,sn,fl]=cls.base.map(Number);
+
+  // Verified/researched hardware is applied only after base values exist.
+  // Faster hardware does not mean maximum sensitivity: it mainly reduces
+  // overshoot risk and keeps scoped controls stable.
   if(deviceResearchData && normalizeProfileText(deviceResearchData.canonical||'')===normalizeProfileText(device)){
     const hz=Number(String(deviceResearchData.refreshRate||'').match(/\d+(?:\.\d+)?/)?.[0]||0);
     const touchHz=Number(String(deviceResearchData.touchSampling||'').match(/\d+(?:\.\d+)?/)?.[0]||0);
     const screen=String(deviceResearchData.display||'').toLowerCase();
-    if(hz>=120) { g+=1; r+=1; }
-    if(touchHz>=240) { g-=1; r-=1; x2+=1; }
-    if(/hd\+/.test(screen) && !/fhd|1\.5k|2k|qhd|1440/.test(screen)){ x4-=1; sn-=1; }
-    if(/1\.5k|2k|qhd|1440/.test(screen)){ g-=1; r-=1; }
+    const chip=String(deviceResearchData.chipset||'').toLowerCase();
+    if(hz>=120){g-=1;r-=1;}
+    if(hz>=144){x2-=1;x4-=1;}
+    if(touchHz>=240){g-=1;r-=1;x2+=1;}
+    if(touchHz>=480){r-=1;x2-=1;}
+    if(/hd\+/.test(screen)&&!/fhd|1\.5k|2k|qhd|1440/.test(screen)){x4-=1;sn-=1;}
+    if(/1\.5k|2k|qhd|1440/.test(screen)){g-=1;r-=1;x4-=1;}
+    if(/snapdragon 8|dimensity 9|a1[6-9]|a18|tensor g[3-5]/.test(chip)){x2-=1;x4-=1;}
   }
-  const ps=PLAYER_STYLES[playerStyle]||{g:0,r:0,x2:0,x4:0,sn:0,fl:0};
-  let [g,r,x2,x4,sn,fl]=cls.base.map(Number);
 
   // 1) Game-mode context. Keep this deliberately smaller than the core device
   // profile so a mode switch changes the result without overwhelming it.
@@ -632,6 +638,10 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   // RAM intentionally does not alter sensitivity. It remains profile context.
   // Device age also remains context: an old phone is not automatically "slower"
   // and should not receive an arbitrary sensitivity penalty.
+
+  // 3.5) Screen/touch class is a light correction, never a multiplier.
+  if((screenClassEl?.value||'normal')==='high'){g-=2;r-=2;x4-=1;sn-=1;}
+  if((touchClassEl?.value||'normal')==='high'){g-=1;r-=1;x2-=1;}
 
   // 4) Free Fire sensitivity preset.
   if(preset==='High'){g+=4;r+=4;x2+=2;x4+=1;fl+=2}
