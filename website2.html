@@ -67,7 +67,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
 .researchTitle{font-weight:800;letter-spacing:.08em;color:#d9b5ff;margin-bottom:5px}
 .researchBox .help{line-height:1.5}
 
-.issuePanel{margin-top:16px;padding:16px;border:1px solid rgba(108,236,255,.28);border-radius:16px;background:linear-gradient(135deg,rgba(10,30,50,.62),rgba(55,10,75,.5));box-shadow:0 0 22px rgba(80,60,255,.12)}.issueGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.issuePanel textarea{width:100%;min-height:86px;border:1px solid rgba(184,94,255,.38);background:rgba(2,1,8,.82);color:white;border-radius:13px;padding:13px 14px;outline:none;font-size:14px;resize:vertical}.issueResult{margin-top:12px;padding:12px;border-radius:12px;background:rgba(2,1,8,.55);border:1px solid rgba(108,236,255,.2);line-height:1.55}.issueValues{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}.issueValue{padding:8px;border-radius:9px;background:rgba(0,0,0,.28);text-align:center}.issueValue b{display:block;font-size:18px}.issueValue span{font-size:9px;opacity:.8}@media(max-width:700px){.issueGrid{grid-template-columns:1fr}.issueValues{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.manualIssueChecks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.manualIssueChecks label{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:#f3eaff}.manualIssueChecks input{width:auto;accent-color:#b93cff}.manualIssueChecks label:has(input:checked){border-color:#6cecff;background:rgba(108,236,255,.08)}@media(max-width:700px){.manualIssueChecks{grid-template-columns:1fr}}.issuePanel{margin-top:16px;padding:16px;border:1px solid rgba(108,236,255,.28);border-radius:16px;background:linear-gradient(135deg,rgba(10,30,50,.62),rgba(55,10,75,.5));box-shadow:0 0 22px rgba(80,60,255,.12)}.issueGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.issuePanel textarea{width:100%;min-height:86px;border:1px solid rgba(184,94,255,.38);background:rgba(2,1,8,.82);color:white;border-radius:13px;padding:13px 14px;outline:none;font-size:14px;resize:vertical}.issueResult{margin-top:12px;padding:12px;border-radius:12px;background:rgba(2,1,8,.55);border:1px solid rgba(108,236,255,.2);line-height:1.55}.issueValues{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}.issueValue{padding:8px;border-radius:9px;background:rgba(0,0,0,.28);text-align:center}.issueValue b{display:block;font-size:18px}.issueValue span{font-size:9px;opacity:.8}@media(max-width:700px){.issueGrid{grid-template-columns:1fr}.issueValues{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .update-progress{display:none;margin:16px 0 6px;padding:16px 18px;border:1px solid rgba(108,236,255,.35);border-radius:18px;background:rgba(4,8,20,.78);box-shadow:0 0 28px rgba(185,60,255,.12)}
 .update-progress.show{display:block}.update-progress .up-top{display:flex;justify-content:space-between;gap:12px;align-items:center;font-weight:800}.update-progress .up-pct{font-size:22px;color:#6cecff}.update-progress .up-track{height:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0}.update-progress .up-bar{height:100%;width:0;background:linear-gradient(90deg,#6cecff,#b93cff,#ff36e7);transition:width .35s ease}.update-progress .up-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:11px;color:#c9b8d9;text-align:center}.update-progress .up-done{color:#72ffbd;font-weight:800}.update-progress .up-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.25);border-top-color:#6cecff;border-radius:50%;animation:vgspin .8s linear infinite;margin-right:7px;vertical-align:-1px}@keyframes vgspin{to{transform:rotate(360deg)}}
@@ -151,7 +151,17 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     <div class="issuePanel" id="manualIssuePanel">
       <h3>🛠️ SENSITIVITY PROBLEM FIXER</h3>
       <div class="help">Yahan isi imported sensitivity ko baseline rakho. Source OB aur Target OB upar select karo — dono same bhi ho sakte hain. Problem preset select karo ya apni problem khud likho. Code ki zarurat nahi.</div>
-      <div class="issueGrid"><div class="field"><label>Problem select karo</label><select id="manualIssuePreset"><option>Aim head se upar ja raha hai</option><option>Aim chest pe lock ho raha hai</option><option>Aim neck pe lock ho raha hai</option><option>Drag slow lag raha hai</option><option>Drag bahut fast / overshoot</option><option>Recoil / spray shaky</option><option>Close-range tracking slow</option><option>Long-range aim unstable</option><option>Aim target pe stick nahi kar raha</option><option value="CUSTOM">CUSTOM / KHUD LIKHO</option></select></div><div class="field"><label>Apni problem likho</label><textarea id="manualIssueText" placeholder="Example: M1887 mein drag neck se upar chala jaata hai aur MP40 spray chest pe rukta hai..."></textarea></div></div>
+      <div class="issueGrid"><div class="field"><label>Problems select karo — jitni problems hain sab select kar sakte ho</label><div id="manualIssueChecks" class="manualIssueChecks">
+<label><input type="checkbox" class="manualIssueCheck" value="Aim head se upar ja raha hai"> Aim head se upar ja raha hai</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Aim chest pe lock ho raha hai"> Aim chest pe lock ho raha hai</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Aim neck pe lock ho raha hai"> Aim neck pe lock ho raha hai</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Drag slow lag raha hai"> Drag slow lag raha hai</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Drag bahut fast / overshoot"> Drag bahut fast / overshoot</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Recoil / spray shaky"> Recoil / spray shaky</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Close-range tracking slow"> Close-range tracking slow</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Long-range aim unstable"> Long-range aim unstable</label>
+<label><input type="checkbox" class="manualIssueCheck" value="Aim target pe stick nahi kar raha"> Aim target pe stick nahi kar raha</label>
+</div><small class="help">Ek saath 1, 2, 3… jitni bhi problems hain select karo. Sab selected problems combined recalibration mein use hongi.</small></div><div class="field"><label>Apni problem / extra issue likho</label><textarea id="manualIssueText" placeholder="Example: M1887 mein drag neck se upar chala jaata hai aur MP40 spray chest pe rukta hai..."></textarea></div></div>
       <div class="actions"><button class="secondary" id="manualIssueFix">ANALYSE PROBLEM + FIX SENSITIVITY</button><button class="secondary" id="manualRestoreSensitivity" type="button">RESTORE ORIGINAL IMPORT</button></div><div id="manualIssueResult" class="issueResult hidden"></div>
     </div>
   </div>
@@ -198,7 +208,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
   <div class="notice ok"><b>Latest supported/current OB: OB55</b> — This build will not generate an update above OB55. When a new official OB is released and analysed, the supported target can be advanced.</div><div id="obFacts"></div>
 </section>
 
-<footer>VG MENT4L UPDATE'S • Sensitivity is a starting configuration, not a guaranteed headshot/recoil result.</footer>
+<footer>VG MENT4L UPDATE'S • Manual imports get a deterministic Profile Code. Same imported information produces the same code; changed sensitivity/OB details produce a new code. Sensitivity is a starting configuration, not a guaranteed headshot/recoil result.</footer>
 </div>
 
 <script>
@@ -488,6 +498,13 @@ function updateByOb(oldOb,targetOb,base,p={}){
   }
   return out;
 }
+function showManualCode(code,label){
+  const box=$('#updatedCodeBox');
+  if(!box)return;
+  box.style.display='block';
+  box.innerHTML='<b>🔐 '+esc(label||'MANUAL SENSITIVITY CODE')+'</b><div style="margin-top:6px;font-size:22px;letter-spacing:1px"><code>'+esc(code)+'</code></div><div style="margin-top:6px">Ye code isi manual sensitivity profile ko identify karta hai. Same imported information se same code milega; sensitivity/OB details badalne par naya code banega.</div><button type="button" class="secondary" id="copyManualCode" style="margin-top:8px">COPY CODE</button>';
+  $('#copyManualCode').onclick=async()=>{try{await navigator.clipboard.writeText(code)}catch(e){}};
+}
 function renderResult(oldOb,targetOb,oldVals,newVals,meta,analysisText){
   const names=[['General','general'],['Red Dot','red_dot'],['2× Scope','scope_2x'],['4× Scope','scope_4x'],['Sniper Scope','sniper'],['Free Look','free_look']];
   $('#resultValues').innerHTML=names.map(([n,k])=>{
@@ -546,6 +563,25 @@ function issueContext(oldOb,targetOb){
   if(a==null || b==null) return {label:'OB context: '+(oldOb||'UNKNOWN')+' → '+(targetOb||LATEST_OB), factor:1};
   const distance=Math.min(5,Math.abs(b-a));
   return {label:'OB context: '+oldOb+' → '+targetOb, factor:1 + distance*0.08};
+}
+function getSelectedManualIssues(){return [...document.querySelectorAll('.manualIssueCheck:checked')].map(x=>x.value);}
+function stableManualHash(input){
+  let h=1469598103934665603n;
+  const prime=1099511628211n, mask=(1n<<64n)-1n;
+  for(const ch of String(input)){h^=BigInt(ch.charCodeAt(0));h=(h*prime)&mask;}
+  return h.toString(36).toUpperCase().padStart(13,'0').slice(-10);
+}
+function makeManualProfileCode(sensitivity,preset,sourceOb,targetOb){
+  const key=JSON.stringify({v:1,sensitivity,preset:String(preset||'Default'),sourceOb:String(sourceOb||'UNKNOWN'),targetOb:String(targetOb||LATEST_OB)});
+  return '#'+stableManualHash(key);
+}
+async function saveManualImportedProfile(code,sensitivity,preset,sourceOb,targetOb){
+  const profile={code,manualImport:true,profileType:'manual-sensitivity',preset:String(preset||'Default'),obVersion:normalizeOb(targetOb)||LATEST_OB,sourceOb:normalizeOb(sourceOb)||'UNKNOWN',sensitivity:{...sensitivity},device:'Manual Import',playerMode:'Manual Import',playerStyle:'Manual',gameMode:'Manual',guns:[],allGuns:false,updatedAt:new Date().toISOString()};
+  localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
+  try{
+    const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
+    return r.ok;
+  }catch(e){return false;}
 }
 function getSelectedProfileIssues(){
   return [...document.querySelectorAll('.profileIssueCheck:checked')].map(x=>x.value);
@@ -624,16 +660,21 @@ function bindIssueFixers(){
       $('#copyUpdatedCode').onclick=async()=>{try{await navigator.clipboard.writeText(currentProfile.code||'');}catch(e){}};
     }
   };
-  const mb=$('#manualIssueFix'); if(mb) mb.onclick=()=>{
+  const mb=$('#manualIssueFix'); if(mb) mb.onclick=async()=>{
     if(!manualImportedBaseline) captureManualBaseline();
     const base={...manualImportedBaseline};
-    const preset=$('#manualIssuePreset').value, custom=$('#manualIssueText').value.trim();
-    const issue=preset==='CUSTOM'?(custom||'Target tracking / aim lock issue'):custom||preset;
+    const selected=getSelectedManualIssues();
+    const custom=$('#manualIssueText').value.trim();
+    if(!selected.length && !custom){alert('Kam se kam 1 problem select karo ya custom problem likho.');return;}
     const oldOb=normalizeOb($('#manualOldOb').value||'UNKNOWN');
     const targetOb=normalizeOb($('#manualTargetOb').value||LATEST_OB);
-    const fixed=applyIssueFixWithContext(base,issue,{preset:$('#manualPreset').value,oldOb,targetOb});
-    ['mGeneral','mRed','m2x','m4x','mSniper','mFree'].forEach((id,i)=>$('#'+id).value=[fixed.general,fixed.red_dot,fixed.scope_2x,fixed.scope_4x,fixed.sniper,fixed.free_look][i]);
+    const issue=[...selected,(custom?'CUSTOM: '+custom:'')].join(' + ');
+    const fixed=applyMultipleIssueFixWithContext(base,selected,{preset:$('#manualPreset').value,oldOb,targetOb,customIssue:custom});
+    writeManualSensitivity(fixed);
+    const code=makeManualProfileCode(fixed,$('#manualPreset').value,oldOb,targetOb);
+    await saveManualImportedProfile(code,fixed,$('#manualPreset').value,oldOb,targetOb);
     showIssueOutput($('#manualIssueResult'),base,fixed,issue,'Manual sensitivity recalibration complete',oldOb,targetOb);
+    showManualCode(code,'Problem-fixed manual sensitivity code');
   };
   const restore=$('#manualRestoreSensitivity'); if(restore) restore.onclick=()=>{ if(!manualImportedBaseline) captureManualBaseline(); writeManualSensitivity(manualImportedBaseline); $('#manualIssueResult').classList.add('hidden'); };
 }
@@ -739,13 +780,18 @@ async function runManualUpdate(){
   if(!unknown && obNum(oldOb)===targetNum){
     const same={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
     window.__OB_RESEARCH__={hasResearch:false,serverResearch:false,versions:[],notes:[]};
-    renderResult(oldOb,target,same,same,`<span class="pill">Same OB</span><span class="pill">Manual import</span><span class="pill">Problem Fix available</span>`,`Source OB aur Target OB dono ${normalizeOb(target)} hain, isliye OB conversion apply nahi kiya gaya. Agar aim/drag/recoil mein problem hai to neeche Sensitivity Problem Fixer se isi sensitivity ko recalibrate karo.`);
+    const sameCode=makeManualProfileCode(same,$('#manualPreset').value,oldOb,target);
+    await saveManualImportedProfile(sameCode,same,$('#manualPreset').value,oldOb,target);
+    renderResult(oldOb,target,same,same,`<span class="pill">Same OB</span><span class="pill">Manual import</span><span class="pill">Code: ${esc(sameCode)}</span><span class="pill">Problem Fix available</span>`,`Source OB aur Target OB dono ${normalizeOb(target)} hain, isliye OB conversion apply nahi kiya gaya. Agar aim/drag/recoil mein problem hai to neeche Sensitivity Problem Fixer se isi sensitivity ko recalibrate karo.`);
+    showManualCode(sameCode,'MANUAL SENSITIVITY CODE');
     await showUpdateProgress('manual','Same OB confirmed — ready for problem recalibration',100,true);
     updateBusy=false; $('#manualUpdate').disabled=false; setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200); return;
   }
   if(unknown && target!=='OB55'){alert('UNKNOWN old OB mode abhi current supported OB55 ke liye use karo.'); updateBusy=false; $('#manualUpdate').disabled=false; $('#manualUpdateProgress')?.classList.remove('show'); return;}
   const oldVals={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
   const p={preset:$('#manualPreset').value};
+  const importedCode=makeManualProfileCode(oldVals,$('#manualPreset').value,oldOb,target);
+  await saveManualImportedProfile(importedCode,oldVals,$('#manualPreset').value,oldOb,target);
   await researchOfficial(oldOb,target,'manual');
   await showUpdateProgress('manual','Analysing patch signals + imported values…',48); await sleep(180);
   let newVals,shownOld,analysis;
@@ -764,8 +810,11 @@ async function runManualUpdate(){
   await showUpdateProgress('manual','Recalibrating six sensitivity values…',72); await sleep(180);
   saveUpdateHistory('manual',shownOld,target,oldVals,newVals,'');
   await showUpdateProgress('manual','Saving update history…',92); await sleep(180);
-  const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
+  const finalCode=makeManualProfileCode(newVals,$('#manualPreset').value,shownOld,target);
+  await saveManualImportedProfile(finalCode,newVals,$('#manualPreset').value,shownOld,target);
+  const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">Code: ${esc(finalCode)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
   renderResult(shownOld,target,oldVals,newVals,meta,analysis);
+  showManualCode(finalCode,'UPDATED MANUAL SENSITIVITY CODE');
   await showUpdateProgress('manual','Update generation complete — 100%',100,true);
   updateBusy=false; $('#manualUpdate').disabled=false;
   setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200);
