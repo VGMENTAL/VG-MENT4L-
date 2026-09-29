@@ -60,7 +60,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section class="panel">
 <h2>Gameplay Video</h2>
-<p class="mut"><b>Full-gameplay AI:</b> Tumhara <b>poora gameplay video</b> timeline ke across analyse hota hai. Primary path OpenAI Vision ke chronological evidence frames use karta hai; Gemini backup provider hai. Video Profile/Database mein save nahi hota.</p>
+<p class="mut"><b>Full-gameplay AI:</b> Tumhara <b>poora gameplay video</b> timeline ke across analyse hota hai. Gemini Free Tier ke chronological evidence frames use hote hain. OpenAI API ki zaroorat nahi hai. Video Profile/Database mein save nahi hota.</p>
 <div class="video">
 <input id="vid" type="file" accept="video/*">
 <div id="vm" class="status">Gameplay video select karo.</div>
@@ -72,7 +72,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section class="panel">
 <h2>Gameplay Analysis</h2>
-<p class="mut">Poore gameplay timeline + profile/device/current sensitivity ko analyse karke visible problem, player pattern aur updated sensitivity nikalega. Primary AI path Gemini ke 503 par dependent nahi hai.</p>
+<p class="mut">Poore gameplay timeline + profile/device/current sensitivity ko analyse karke visible problem, player pattern aur updated sensitivity nikalega. Gemini Free Tier primary AI path hai.</p>
 <button id="go" class="btn primary" style="width:100%">ANALYZE GAMEPLAY & CREATE NEW SENSITIVITY</button>
 <div id="out" class="result hidden"></div>
 </section>
@@ -206,7 +206,7 @@ async function applyGameplaySensitivityToProfile(sensitivity){
  return j;
 }
 
-/* OpenAI Vision path: the browser walks the ENTIRE video timeline and sends chronological frames. */
+/* Gemini Free AI path: the browser walks the ENTIRE video timeline and sends chronological frames. */
 async function readVideoMeta(f){
  return new Promise((resolve,reject)=>{
   const v=document.createElement('video');v.preload='metadata';v.muted=true;v.playsInline=true;
@@ -227,9 +227,9 @@ async function extractTimelineFrames(f, meta){
   v.onloadedmetadata=async()=>{
    try{
     const duration=Math.max(0.1,Number(v.duration)||meta.duration||0);
-    const count=Math.max(12,Math.min(36,Math.ceil(duration/0.9)));
+    const count=Math.max(16,Math.min(24,Math.ceil(duration/1.2)));
     const step=duration/count;
-    const W=Math.min(960,v.videoWidth||960),H=Math.max(1,Math.round(W*(v.videoHeight||540)/(v.videoWidth||960)));
+    const W=Math.min(720,v.videoWidth||720),H=Math.max(1,Math.round(W*(v.videoHeight||540)/(v.videoWidth||960)));
     canvas.width=W;canvas.height=H;
     const frames=[];
     for(let i=0;i<count;i++){
@@ -241,7 +241,7 @@ async function extractTimelineFrames(f, meta){
       v.addEventListener('seeked',onseek,{once:true});v.addEventListener('error',onerr,{once:true});v.currentTime=t;
      });
      ctx.drawImage(v,0,0,W,H);
-     const data=canvas.toDataURL('image/jpeg',0.62);
+     const data=canvas.toDataURL('image/jpeg',0.55);
      frames.push({t:t.toFixed(1)+'s',data});
      $('prog').style.width=(18+((i+1)/count)*27).toFixed(1)+'%';
      status(`<b>Stage 2/5:</b> Full video timeline read ${(i+1)}/${count}<br><span class="mut">${t.toFixed(1)}s / ${duration.toFixed(1)}s — har part se evidence collect ho raha hai.</span>`);
@@ -294,14 +294,19 @@ function analyzeWithGeminiFullVideo(context){
  });
 }
 
-function analyzeWithOpenAI(context, frames){
+function analyzeWithGeminiFrames(context, frames){
  return new Promise((resolve,reject)=>{
-  const xhr=new XMLHttpRequest();xhr.open('POST',api('/api/gameplay-analyze-openai'),true);
+  const xhr=new XMLHttpRequest();xhr.open('POST',api('/api/gameplay-analyze-gemini-frames'),true);
   xhr.setRequestHeader('Content-Type','application/json');
-  xhr.upload.onprogress=e=>{if(e.lengthComputable){const pct=45+(e.loaded/e.total)*10;$('prog').style.width=pct.toFixed(1)+'%';status(`<b>Stage 2/5:</b> AI evidence upload ${Math.round(e.loaded/e.total*100)}%<br><span class="mut">${frames.length} chronological frames prepared.</span>`);}};
-  xhr.onload=()=>{let j={};try{j=JSON.parse(xhr.responseText||'{}')}catch{};if(xhr.status>=200&&xhr.status<300)resolve(j);else if(xhr.status===429||j.code==='OPENAI_QUOTA_EXHAUSTED')reject(new Error('OPENAI_QUOTA_EXHAUSTED: '+(j.detail||j.error||'OpenAI API credits/quota unavailable.')));else reject(new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:'')))};
-  xhr.onerror=()=>reject(new Error('Network error while sending gameplay evidence to OpenAI'));
-  xhr.ontimeout=()=>reject(new Error('OpenAI analysis timed out.'));
+  xhr.upload.onprogress=e=>{
+   if(e.lengthComputable){
+    const pct=45+(e.loaded/e.total)*12;$('prog').style.width=pct.toFixed(1)+'%';
+    status('<b>Stage 3/5:</b> Gemini Free AI evidence upload '+Math.round(e.loaded/e.total*100)+'%<br><span class="mut">'+frames.length+' chronological frames — close/mid/long range evidence included.</span>');
+   }
+  };
+  xhr.onload=()=>{let j={};try{j=JSON.parse(xhr.responseText||'{}')}catch{};if(xhr.status>=200&&xhr.status<300)resolve(j);else reject(new Error((j.error||'Gemini gameplay analysis failed')+(j.detail?' — '+j.detail:'')))};
+  xhr.onerror=()=>reject(new Error('Network error while sending gameplay evidence to Gemini'));
+  xhr.ontimeout=()=>reject(new Error('Gemini gameplay analysis timed out.'));
   xhr.timeout=30*60*1000;
   xhr.send(JSON.stringify({context,frames}));
  });
@@ -319,34 +324,21 @@ $('go').onclick=async()=>{
    $('timer').textContent=aiStarted?'AI analysis running…':'Preparing AI analysis…';
    $('out').querySelector('[data-timer]')?.replaceChildren(document.createTextNode(aiStarted?'AI analysis running…':'Preparing AI analysis…'));
  },300);
- $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">OpenAI Vision poore gameplay timeline ko chronological evidence ke saath analyse karega; Gemini sirf backup provider rahega.</p>';
+ $('out').className='result';$('out').innerHTML='<b>Stage 2/5: Reading the complete gameplay timeline...</b><p class="mut" data-timer>AI time: 0.0s</p><p class="mut">Gemini Free AI poore gameplay timeline ko chronological evidence ke saath analyse karega.</p>';
  $('prog').style.width='18%';setStep('upload');
  try{
   $('bar').classList.add('aiBusy');setStep('upload');$('prog').style.width='20%';
-  $('out').innerHTML='<b>Stage 2/5: Complete gameplay timeline prepare ho raha hai...</b><p class="mut" data-timer>AI analysis time: 0.0s</p><p class="mut">Video ko browser mein poore timeline se chronological evidence frames mein read kiya ja raha hai. Gemini 503 ab primary path ko block nahi karega.</p>';
+  $('out').innerHTML='<b>Stage 2/5: Complete gameplay timeline prepare ho raha hai...</b><p class="mut" data-timer>AI analysis time: 0.0s</p><p class="mut">Video ko browser mein poore timeline se chronological evidence frames mein read kiya ja raha hai. Gemini Free Tier primary analysis path hai.</p>';
   let j;
-  try {
-    setStep('vision');
-    status('<b>Stage 3/5: OpenAI Vision — Full Timeline</b><br><span class="mut">Poore video se chronological frames analyse ho rahe hain. Koi single screenshot par depend nahi hai.</span>');
-    const frames = await extractTimelineFrames(file, meta);
-    j = await analyzeWithOpenAI(contextPayload(), frames);
-  } catch (openAiError) {
-    // Do NOT automatically fall back to Gemini when OpenAI is configured but unavailable.
-    // Gemini free-tier quota can be exhausted too, which used to turn one provider failure into a second failure.
-    const msg=String(openAiError?.message||openAiError);
-    const openAiConfiguredFailure=!/OPENAI_API_KEY is not configured/i.test(msg);
-    if(openAiConfiguredFailure){
-      throw new Error('OpenAI gameplay vision unavailable — '+msg);
-    }
-    status('<b>Stage 3/5: Backup AI Vision</b><br><span class="mut">OpenAI key configured nahi hai, isliye Gemini backup try kiya ja raha hai.</span>','status warn');
-    j = await analyzeWithGeminiFullVideo(contextPayload());
-    if (j && j.result) j.result.providerFallback = 'gemini';
-  }
+  setStep('vision');
+  status('<b>Stage 3/5: Gemini Free AI — Full Timeline</b><br><span class="mut">Poore video se chronological evidence frames analyse ho rahe hain. OpenAI API ki zaroorat nahi hai.</span>');
+  const frames = await extractTimelineFrames(file, meta);
+  j = await analyzeWithGeminiFrames(contextPayload(), frames);
   $('bar').classList.remove('aiBusy');setStep('diagnosis');
   $('bar').classList.remove('aiBusy');$('timer').textContent=lastResult?.aiAnalysisMs?('AI server time: '+(lastResult.aiAnalysisMs/1000).toFixed(1)+'s'):'AI analysis complete';$('prog').style.width='92%';setStep('diagnosis');
   if(!j.ok)throw new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:''));
   lastResult=j.result||j.analysis||{};
-  if(lastResult.configured===false){$('out').innerHTML=`<h3>OpenAI AI unavailable</h3><div class="status warn">${esc(lastResult.message||'OPENAI_API_KEY configure karo.')}</div>`;return}
+  if(lastResult.configured===false){$('out').innerHTML=`<h3>Gemini AI unavailable</h3><div class="status warn">${esc(lastResult.message||'GEMINI_API_KEY configure karo.')}</div>`;return}
   // Persist the first AI-generated sensitivity into the same Profile ID.
   let profileUpdateWarning='';
   if(profile?.code && lastResult.recommendedSensitivity){
@@ -357,7 +349,7 @@ $('go').onclick=async()=>{
   const s=getSensFromProfile(lastResult.recommendedSensitivity);
   $('out').innerHTML=`<h3>✓ Full Gameplay Analysis Complete</h3>
   <p><b>Video:</b> ${esc(lastResult.videoDuration||meta?.duration?.toFixed(1)+'s')} · <b>AI:</b> ${esc(lastResult.model||'Gemini')} · <b>Mode:</b> Timeline Vision · <b>Full Video:</b> Yes · <b>Confidence:</b> ${esc(lastResult.confidence||'—')}</p>
-  <p class="mut"><b>Gemini server analysis:</b> ${lastResult.aiAnalysisMs?((lastResult.aiAnalysisMs/1000).toFixed(1)+'s'):'—'} · network/upload/fallback time is shown separately only while processing.</p>
+  <p class="mut"><b>Gemini Free AI:</b> ${lastResult.model||'Gemini Flash'} · ${lastResult.framesAnalyzed||frames?.length||0} timeline frames analysed. Video permanently store nahi hota.</p>
   <div class="infoGrid"><div class="infoBox"><span class="mut">Player Type</span><b>${esc(lastResult.playerType||'—')}</b></div><div class="infoBox"><span class="mut">Drag Style</span><b>${esc(lastResult.dragStyle||'—')}</b></div><div class="infoBox"><span class="mut">Range</span><b>${esc(lastResult.rangePreference||'—')}</b></div><div class="infoBox"><span class="mut">Main Issue</span><b>${esc(lastResult.mainIssue||'—')}</b></div></div>
   <h4>1. Tumhari current sensitivity mein kya problem thi?</h4><ul>${list(lastResult.problemDiagnosis,'Reliable diagnosis nahi mila.')}</ul>
   <h4>2. Poore gameplay se kya observe hua?</h4><ul>${list(lastResult.findings,'No reliable finding returned.')}</ul>
@@ -373,8 +365,8 @@ $('go').onclick=async()=>{
  }catch(e){
   $('bar').classList.remove('aiBusy');$('prog').style.width='45%';setStep('vision');$('out').className='result';
   const em=String(e?.message||e);
-  if(em.includes('OPENAI_QUOTA_EXHAUSTED')) $('out').innerHTML='<b>AI analysis temporarily unavailable</b><div class="status warn">OpenAI API credits/quota exhausted hai. Gemini par automatic fallback intentionally disabled hai, isliye repeated 429 error nahi aayega. OpenAI credits/quota restore hone ke baad same gameplay dobara Analyze karo.</div>';
-  else $('out').innerHTML='<b>Analysis failed:</b> '+esc(em)+'<br><span class="mut">Exact OpenAI/backend detail show ki gayi hai.</span>';
+  if(/GEMINI.*quota|429|quota|RESOURCE_EXHAUSTED/i.test(em)) $('out').innerHTML='<b>Gemini Free AI quota temporarily unavailable</b><div class="status warn">Google Gemini Free Tier ki current quota/limit hit hui hai. Thodi der baad dobara try karo. Koi paid OpenAI API required nahi hai.</div>';
+  else $('out').innerHTML='<b>Analysis failed:</b> '+esc(em)+'<br><span class="mut">Exact Gemini/backend detail show ki gayi hai.</span>';
  }finally{
   clearInterval(timerId);
   window.__vgAiStarted=null;
