@@ -813,20 +813,23 @@ function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
   const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
   const note=a.score>=78
-    ? 'Scoped values controlled hain; selected recoil/aim problems aur weapon-range coverage ko final curve mein apply kiya gaya hai. Ye measured match hit-rate nahi hai.'
-    : 'Ye starting calibration hai. Actual spray/drag video test se recoil behaviour ko aur accurately tune kiya ja sakta hai.';
+    ? 'Curve relationships selected device, HUD, weapons and declared problems ke saath strong match karte hain. Ye actual bullet-by-bullet recoil measurement nahi hai.'
+    : 'Ye calibration starting point hai. Real gameplay evidence ke baad range-specific tuning aur improve ki ja sakti hai.';
+  const gameplayStatus=gameplayAIAnalysis
+    ? 'Gameplay evidence analysed — score mein gameplay observations ka bounded influence included hai.'
+    : 'Gameplay evidence not analysed — score sirf profile/HUD/weapon curve fit hai.';
   return `<div class="section recoil-analysis">
-    <h3>🎯 Recoil Control Analysis</h3>
-    <div class="small">Score 0–100 calibration-fit hai — 100 se upar kabhi nahi jayega. High score ka matlab curve/control relationships strong hain; actual weapon recoil ya exact headshot rate ki guarantee nahi. Gameplay evidence available ho to range scores evidence + curve fit dono se nikalte hain.</div>
+    <h3>🎯 Recoil & Aim Calibration Analysis</h3>
+    <div class="small"><b>Important:</b> Ye 0–100 <b>calibration-fit</b> scale hai. Ye recoil ko automatically remove nahi karta aur exact headshot rate guarantee nahi karta. 100 se upar kabhi nahi jayega.</div>
     <div class="recoil-grid">
-      <div><b>${a.score}%</b><span>Recoil Stability</span></div>
-      <div><b>${a.close}%</b><span>Close Range</span></div>
-      <div><b>${a.mid}%</b><span>Mid Range</span></div>
-      <div><b>${a.long}%</b><span>Long Range</span></div>
-      <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
+      <div><b>${a.score}%</b><span>Overall Calibration Fit</span></div>
+      <div><b>${a.close}%</b><span>Close-Range Fit</span></div>
+      <div><b>${a.mid}%</b><span>Mid-Range Fit</span></div>
+      <div><b>${a.long}%</b><span>Long-Range Fit</span></div>
+      <div><b>${a.overshoot}%</b><span>Overshoot Control Fit</span></div>
     </div>
     <div class="notice ${a.score>=78?'ok':'warn'}"><b>Calibration level: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Why:</b> General/Red Dot responsiveness ko scoped sensitivity ke saath balance kiya gaya hai; 2×/4× recoil stability ke liye comparatively controlled rakhe gaye hain. HUD AI confidence: ${esc(a.confidence)}.</div>
+    <div class="small"><b>Evidence:</b> ${esc(gameplayStatus)}<br><b>Why:</b> General/Red Dot responsiveness ko scoped sensitivity ke saath balance kiya gaya hai; 2×/4× control ko selected range problems ke according tune kiya gaya hai. HUD AI confidence: ${esc(a.confidence)}.</div>
   </div>`;
 }
 
