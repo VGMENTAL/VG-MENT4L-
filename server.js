@@ -48,7 +48,24 @@ const VERIFIED_DEVICES = {
     refreshRate: 'Up to 144 Hz', touchSampling: 'Up to 3000 Hz instant touch / 360 Hz custom',
     os: 'Funtouch OS 15 based on Android 15',
     gaming: 'Supercomputing Chip Q1; 144 FPS gaming support; 7000 mm² VC cooling',
-    source: 'https://www.iqoo.com/in/products/neo10'
+    source: 'https://www.iqoo.com/in/products/neo10', sourceType: 'official'
+  },
+  'oppo a6 5g': {
+    canonical: 'OPPO A6 5G', brand: 'OPPO', platform: 'Android',
+    chipset: 'MediaTek Dimensity 6300', gpu: 'ARM Mali-G57 MC2',
+    ram: '4/6 GB LPDDR4X', display: '17.15 cm HD+ LCD (1570 × 720)',
+    refreshRate: 'Up to 120 Hz', touchSampling: 'Up to 240 Hz (120 Hz default)',
+    os: 'ColorOS 15.0 / Android 15',
+    gaming: 'AI GameBoost 2.0; 3900 mm² SuperCool VC',
+    source: 'https://www.oppo.com/in/smartphones/series-a/a6-5g/specs/', sourceType: 'official'
+  },
+  'oppo a6': {
+    canonical: 'OPPO A6', brand: 'OPPO', platform: 'Android',
+    chipset: 'MediaTek Dimensity 6300', gpu: 'ARM Mali-G57 MC2',
+    ram: '4/6/8 GB LPDDR4X', display: '6.75-inch HD+ LCD (1570 × 720)',
+    refreshRate: 'Up to 120 Hz', touchSampling: 'Up to 240 Hz (120 Hz default)',
+    os: 'ColorOS 15.0 / Android 15',
+    source: 'https://www.oppo.com/en/smartphones/series-a/a6/specs/', sourceType: 'official'
   }
 };
 
@@ -120,6 +137,71 @@ function lookupDevice(name) {
   const n = normalizeDevice(name);
   for (const [k, v] of Object.entries(VERIFIED_DEVICES)) {
     if (n === k || n.includes(k) || k.includes(n)) return { ...v, match: 'exact', query: name };
+  }
+  return null;
+}
+
+function firstString(...vals){
+  for(const v of vals){
+    if(v!==undefined && v!==null && String(v).trim()) return String(v).trim();
+  }
+  return '';
+}
+
+function mapExternalPhoneSpec(x, query){
+  if(!x || typeof x!=='object') return null;
+  const brand=firstString(x.brand,x.brand_name,x.manufacturer);
+  const model=firstString(x.model_name,x.model,x.phone_name,nameFromQuery(query));
+  if(!model) return null;
+  const chipset=firstString(x.chipset,x.processor,x.platform?.chipset,x.platform);
+  const gpu=firstString(x.gpu,x.graphics);
+  const display=firstString(x.screen_size && x.resolution ? x.screen_size+' '+x.resolution : '',x.display,x.screen_type);
+  const refresh=firstString(x.refresh_rate,x.refreshRate);
+  const ram=firstString(x.ram,x.memory);
+  const os=firstString(x.os,x.operating_system);
+  const source=firstString(x.source_url,x.source);
+  if(!chipset && !display && !refresh) return null;
+  return {
+    canonical: [brand,model].filter(Boolean).join(' ') || model,
+    brand, platform:/iphone|ios/i.test(os+' '+model)?'iOS':'Android',
+    chipset:chipset||'Not listed',
+    gpu:gpu||'Not listed',
+    ram:ram||'Not listed',
+    display:display||'Not listed',
+    refreshRate:refresh||'Not listed',
+    touchSampling:firstString(x.touch_sampling,x.touch_sampling_rate,x.touchSampling)||'Not listed',
+    os:os||'Not listed',
+    source:source||'https://phone-specs-api.vercel.app/',
+    sourceType:'spec-database',
+    sourceLabel:'phone-specs / GSMArena-derived research database',
+    match:'research',
+    query
+  };
+}
+
+function nameFromQuery(q){ return String(q||'').trim(); }
+
+async function fetchExternalPhoneSpec(name){
+  const q=String(name||'').trim();
+  if(!q) return null;
+  const urls=[
+    'https://phone-specs-api.vercel.app/search?query='+encodeURIComponent(q),
+    'https://phone-specs-api.vercel.app/search?q='+encodeURIComponent(q)
+  ];
+  for(const url of urls){
+    const ctl=new AbortController();
+    const timer=setTimeout(()=>ctl.abort(),7000);
+    try{
+      const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'VG-MENT4L-DeviceResearch/1.0','Accept':'application/json'}});
+      if(!r.ok) continue;
+      const j=await r.json();
+      const rows=Array.isArray(j)?j:(Array.isArray(j.data)?j.data:(Array.isArray(j.results)?j.results:[]));
+      const exact=rows.find(x=>normalizeDevice(firstString(x.model_name,x.model,x.phone_name)).includes(normalizeDevice(q)) || normalizeDevice(q).includes(normalizeDevice(firstString(x.model_name,x.model,x.phone_name))));
+      const candidate=exact||rows[0];
+      const mapped=mapExternalPhoneSpec(candidate,q);
+      if(mapped) return mapped;
+    }catch{}
+    finally{clearTimeout(timer);}
   }
   return null;
 }
@@ -886,7 +968,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && u.pathname === '/api/device-research') {
       const q = u.searchParams.get('device') || '';
       const hit = lookupDevice(q);
-      return json(res, 200, { ok: true, device: hit, verified: !!hit, query: q, notice: hit ? 'Exact/known device profile found.' : 'Exact device not in the verified catalog; do not invent hardware specs.' });
+      if(hit) return json(res,200,{ok:true,device:hit,verified:true,query:q,notice:'Exact device profile found.',sourceType:hit.sourceType||'official'});
+      const researched=await fetchExternalPhoneSpec(q);
+      if(researched) return json(res,200,{ok:true,device:researched,verified:true,researched:true,query:q,notice:'Device research profile found from external specifications database.',sourceType:'spec-database'});
+      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Device could not be verified from the available specification sources; hardware specs were not invented.'});
     }
     if (req.method === 'POST' && u.pathname === '/api/hud-analyze') {
       const b=await readBody(req, MAX_BODY);
