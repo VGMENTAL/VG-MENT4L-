@@ -308,10 +308,17 @@ function blueprintFusionTarget(device,style,mode,fingers,guns,preset,playerStyle
   const cls=deviceClass(device);
   const tier=cls.tier;
   // Blueprint reference converted from 0-100 -> 0-200.
-  const low=[200,192,173,153,85,140];
-  const mid=[196,184,173,153,85,140];
-  const high=[192,176,173,153,85,140];
-  const base=tier==='high'?high:(tier==='mid'?mid:(tier==='low'?low:[196,184,173,153,85,140]));
+  const low=[196,188,170,150,92,140];
+  const mid=[192,184,168,148,96,140];
+  const high=[188,182,166,146,98,140];
+  const generic=tier==='high'?high:(tier==='mid'?mid:(tier==='low'?low:[194,184,168,148,96,140]));
+  // Brazilian/Freestyle is a curve prior, not a copied player preset:
+  // fast General/Red Dot, active 2x, controlled 4x, but Sniper is not
+  // artificially pushed into the old 70s band.
+  const brazilian=playerStyle==='Brazilian Freestyle';
+  const base=brazilian
+    ? (tier==='high'?[188,182,166,146,98,140]:tier==='mid'?[192,184,168,148,96,140]:[194,186,170,150,94,140])
+    : generic;
   const out=base.slice();
   const screen=screenClassEl?.value||'normal';
   const touch=touchClassEl?.value||'normal';
@@ -534,7 +541,7 @@ function finalFusionLock(values,device,style,mode,ram,fingers,hud,guns,preset,pl
   if(best[4]>=best[3]) best[4]=best[3]-50;
   return best.map(Math.round);
 }
-function precisionRecoilOptimizer(values,guns,gameplay){
+function precisionRecoilOptimizer(values,guns,gameplay,playerStyle='Freestyle'){
   /*
     VG MENT4L Precision Recoil + Headshot Optimizer v7
     Goal: reduce unnecessary over-flick and scoped recoil while preserving
@@ -550,7 +557,10 @@ function precisionRecoilOptimizer(values,guns,gameplay){
 
   // Current community reference ranges are used only as a starting prior;
   // device/HUD/weapon evidence remains dominant.
-  const target=screen==='high'?[190,179,158,138,82,141]:[192,181,160,140,84,140];
+  const brazilian=playerStyle==='Brazilian Freestyle';
+  const target=screen==='high'
+    ? (brazilian?[188,181,166,146,98,141]:[190,179,160,140,92,141])
+    : (brazilian?[190,184,168,148,100,140]:[192,181,160,140,94,140]);
   if(touch==='high'){target[0]-=2;target[1]-=1;target[2]+=1;}
   if(cov.mix.long>cov.mix.close){target[3]-=2;target[4]-=1;}
   if(cov.mix.close>cov.mix.long){target[0]+=1;target[1]+=1;}
@@ -578,7 +588,7 @@ function precisionRecoilOptimizer(values,guns,gameplay){
   r=clamp(Math.min(r,g-8),164,190);
   x2=clamp(Math.min(x2,r-10),148,170);
   x4=clamp(Math.min(x4,x2-18),128,150);
-  sn=clamp(Math.min(sn,x4-52),72,88);
+  sn=clamp(Math.min(sn,x4-45),88,112);
   fl=clamp(fl,132,148);
   return [g,r,x2,x4,sn,fl].map(Math.round);
 }
@@ -785,7 +795,7 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   // is allowed to dominate the final sensitivity.
   [g,r,x2,x4,sn,fl]=applyUniversalWeaponCoverage([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis);
 
-  [g,r,x2,x4,sn,fl]=precisionRecoilOptimizer([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis);
+  [g,r,x2,x4,sn,fl]=precisionRecoilOptimizer([g,r,x2,x4,sn,fl],guns,gameplayAIAnalysis,playerStyle);
 
   // Gameplay Evidence Lock v8:
   // Keep the deterministic profile as the anchor, then let repeated gameplay
@@ -829,7 +839,7 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   r=clamp(Math.min(r,g-10),162,188);
   x2=clamp(Math.min(x2,r-10),148,170);
   x4=clamp(Math.min(x4,x2-17),130,150);
-  sn=clamp(Math.min(sn,x4-52),72,88);
+  sn=clamp(Math.min(sn,x4-45),88,112);
   fl=clamp(fl,132,148);
 
   // 8) Deterministic soft bounds around the device anchor. This protects the
@@ -870,35 +880,18 @@ function weaponProfile(gun, base, style, mode){
 }
 
 function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
-  // Profile-specific calibration: compare the final curve with a target derived
-  // from device class, selected mode/style, player style and gun mix.
-  // This is still an internal calibration score, not measured in-game recoil reduction.
+  /*
+    VG MENT4L Joint Curve Calibration v9
+    The score evaluates the COMPLETE sensitivity curve:
+    General + Red Dot + 2x + 4x + Sniper + Free Look.
+    It is an internal calibration score, not a measured headshot/recoil rate.
+  */
   const cls=deviceClass(device);
-  const p=STYLE_PROFILES[style]||STYLE_PROFILES["Balanced"];
-  const ps=PLAYER_STYLES[playerStyle]||PLAYER_STYLES["Freestyle"];
-  const modeAdj={
-    "BR + CS":[0,0,0,0,0,0],
-    "Battle Royale":[-3,-2,-2,-2,1,2],
-    "Clash Squad":[5,5,3,2,-1,1]
-  }[mode]||[0,0,0,0,0,0];
-  const base=cls?.base||[184,170,154,136,78,140];
+  const brazilian=playerStyle==='Brazilian Freestyle';
+  const highTouch=(screenClassEl?.value||'normal')==='high'||(touchClassEl?.value||'normal')==='high';
   const gunCov=universalWeaponCoverage(guns||[]);
-  const target={
-    general:clamp(base[0]+Math.round(p.g*.45)+Math.round(ps.g*.45)+modeAdj[0]),
-    red_dot:clamp(base[1]+Math.round(p.r*.45)+Math.round(ps.r*.45)+modeAdj[1]),
-    scope_2x:clamp(base[2]+Math.round(p.x2*.45)+Math.round(ps.x2*.45)+modeAdj[2]),
-    scope_4x:clamp(base[3]+Math.round(p.x4*.45)+Math.round(ps.x4*.45)+modeAdj[3]),
-    sniper:clamp(base[4]+Math.round(p.sn*.35)+Math.round(ps.sn*.35)+modeAdj[4]),
-    free_look:clamp(base[5]+Math.round(p.fl*.4)+Math.round(ps.fl*.4)+modeAdj[5])
-  };
-  // Weapon mix is a secondary target nudge, not a raw multiplier.
-  target.general=clamp(Math.round((target.general*0.78)+(gunCov[0]*0.22)));
-  target.red_dot=clamp(Math.round((target.red_dot*0.78)+(gunCov[1]*0.22)));
-  target.scope_2x=clamp(Math.round((target.scope_2x*0.78)+(gunCov[2]*0.22)));
-  target.scope_4x=clamp(Math.round((target.scope_4x*0.78)+(gunCov[3]*0.22)));
-  target.sniper=clamp(Math.round((target.sniper*0.78)+(gunCov[4]*0.22)));
-
-  const ev=[hud?.ai?.mainIssue||'',hud?.ai?.evidenceSummary||'',
+  const ev=[
+    hud?.ai?.mainIssue||'',hud?.ai?.evidenceSummary||'',
     ...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),
     gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',
     gameplayAIAnalysis?.dragStyle||'',
@@ -907,32 +900,70 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
     ...getAimIssues()
   ].join(' ').toLowerCase();
 
-  const fit=(v,t,tol)=>Math.max(0,100-Math.min(55,Math.abs(v-t)*100/Math.max(1,tol)));
-  const close=Math.round((fit(s.general,target.general,9)+fit(s.red_dot,target.red_dot,9))/2);
-  const mid=Math.round((fit(s.red_dot,target.red_dot,9)+fit(s.scope_2x,target.scope_2x,8))/2);
-  const long=Math.round((fit(s.scope_2x,target.scope_2x,8)+fit(s.scope_4x,target.scope_4x,8)+fit(s.sniper,target.sniper,7))/3);
-  const overshoot=Math.round((fit(s.general-s.red_dot,target.general-target.red_dot,6)+fit(s.red_dot-s.scope_2x,target.red_dot-target.scope_2x,6)+fit(s.scope_2x-s.scope_4x,target.scope_2x-target.scope_4x,6))/3);
+  const deviceShift=cls.tier==='high'?-2:(cls.tier==='mid'?0:2);
+  const target=brazilian
+    ? [186+deviceShift,181+deviceShift,165,147,100,140]
+    : [184+deviceShift,178+deviceShift,163,145,96,140];
 
-  // Evidence changes the calibration target only when there is actual evidence.
-  let evidenceNudge=0;
-  if(/overshoot|too high|upar/.test(ev)) evidenceNudge-=2;
-  if(/chest|slow drag|slow/.test(ev)) evidenceNudge+=1;
-  if(/recoil|spray|shake|shaky/.test(ev)) evidenceNudge-=1;
+  const bands=brazilian
+    ? [[170,198],[170,195],[150,185],[130,170],[88,120],[110,170]]
+    : [[165,198],[165,193],[145,182],[125,168],[84,115],[105,175]];
 
-  const values=[close,mid,long,overshoot].map(v=>Math.max(0,Math.min(100,v+evidenceNudge)));
-  const gates={
-    close:s.general>=176&&s.general<=198&&s.red_dot>=160&&s.red_dot<=190,
-    mid:s.scope_2x>=145&&s.scope_2x<=172,
-    long:s.scope_4x>=126&&s.scope_4x<=152&&s.sniper>=68&&s.sniper<=90,
-    gaps:(s.general-s.red_dot)>=8&&(s.red_dot-s.scope_2x)>=8&&(s.scope_2x-s.scope_4x)>=12
-  };
-  const score=Math.round(values.reduce((a,b)=>a+b,0)/values.length);
-  const gatedScore=Object.values(gates).every(Boolean)?score:Math.min(89,score);
-  const confidence=hud?.ai?'high':(hud?.uploaded?'medium':'baseline');
+  const vals=[s.general,s.red_dot,s.scope_2x,s.scope_4x,s.sniper,s.free_look].map(Number);
+  function bandScore(v,[lo,hi]){
+    if(v>=lo&&v<=hi)return 100;
+    const d=v<lo?lo-v:v-hi;
+    return Math.max(0,100-d*4);
+  }
+  function targetScore(v,t){ return Math.max(0,100-Math.abs(v-t)*2.15); }
+
+  const desiredGaps=brazilian?[5,16,18,47]:[6,15,18,48];
+  const gaps=[vals[0]-vals[1],vals[1]-vals[2],vals[2]-vals[3],vals[3]-vals[4]];
+  const gapScore=gaps.reduce((sum,gap,i)=>sum+Math.max(0,100-Math.abs(gap-desiredGaps[i])*3.5),0)/4;
+  const band=vals.reduce((sum,v,i)=>sum+bandScore(v,bands[i]),0)/6;
+  const proximity=vals.reduce((sum,v,i)=>sum+targetScore(v,target[i]),0)/6;
+
+  const deviceFit=vals.reduce((sum,v,i)=>{
+    const anchor=Number(cls.base[i]||v);
+    return sum+Math.max(0,100-Math.abs(v-anchor)*1.7);
+  },0)/6;
+
+  let evidence=100;
+  if(/overshoot|too high|upar|over.?drag/.test(ev)) evidence-=Math.max(0,(vals[0]-target[0])*1.5);
+  if(/chest|slow drag|slow|stuck low/.test(ev)) evidence-=Math.max(0,(target[1]-vals[1])*1.4);
+  if(/recoil|spray|shake|shaky|kick|unstable/.test(ev)){
+    evidence-=Math.max(0,(vals[2]-target[2])*1.2);
+    evidence-=Math.max(0,(vals[3]-target[3])*1.4);
+  }
+  if(/long.?range|far range|distance|4x|sniper/.test(ev)){
+    evidence-=Math.max(0,(vals[3]-target[3])*1.2);
+    evidence-=Math.max(0,(vals[4]-target[4])*1.0);
+  }
+  evidence=Math.max(70,Math.min(100,evidence));
+
+  const mix=gunCov.mix||{};
+  const coverage=100-Math.min(30,Math.abs((mix.close||0)-(mix.long||0))*18);
+  const hardware=highTouch?Math.min(100,deviceFit+3):deviceFit;
+
+  const score=Math.round(
+    band*0.30+
+    gapScore*0.25+
+    proximity*0.20+
+    hardware*0.10+
+    evidence*0.10+
+    coverage*0.05
+  );
+  const close=Math.round((bandScore(vals[0],bands[0])+bandScore(vals[1],bands[1])+targetScore(vals[1],target[1]))/3);
+  const mid=Math.round((bandScore(vals[1],bands[1])+bandScore(vals[2],bands[2])+targetScore(vals[2],target[2]))/3);
+  const long=Math.round((bandScore(vals[2],bands[2])+bandScore(vals[3],bands[3])+bandScore(vals[4],bands[4])+targetScore(vals[3],target[3]))/4);
+  const overshoot=Math.round((bandScore(vals[0]-vals[1],[4,28])+bandScore(vals[1]-vals[2],[8,28])+bandScore(vals[2]-vals[3],[10,28]))/3);
+  const finalScore=Math.max(0,Math.min(100,score));
   return {
-    score:gatedScore,close:values[0],mid:values[1],long:values[2],overshoot:values[3],
-    level:gatedScore>=90?'90%+ Target Range':(gatedScore>=80?'Strong Calibration':'Needs Calibration'),
-    confidence,target
+    score:finalScore,close,mid,long,overshoot,
+    level:finalScore>=90?'90%+ Internal Calibration Target':(finalScore>=80?'Strong Joint Calibration':'Needs Calibration'),
+    confidence:hud?.ai?'high':(hud?.uploaded?'medium':'baseline'),
+    target,gaps,desiredGaps,
+    methodology:'Joint six-axis curve: role bands + inter-scope gaps + device fit + evidence + weapon coverage.'
   };
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
@@ -953,7 +984,7 @@ function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
       <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
     </div>
     <div class="notice ${a.score>=90?'ok':'warn'}"><b>Calibration: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4× और Sniper ko independently check kiya gaya hai. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}. <b>Real-game measurement:</b> abhi available nahi hai.</div>
+    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4×, Sniper aur Free Look ko ek joint six-axis curve ke roop mein check kiya gaya hai. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}. <b>Real-game measurement:</b> abhi available nahi hai.</div>
   </div>`;
 }
 
@@ -995,7 +1026,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
   <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">Player Mode: ${esc(style)}</div><div class="pill">Player Style: ${esc(playerStyle)}</div><div class="pill">Game Mode: ${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
-  <div class="section"><h3>🇧🇷 Brazilian Control Calibration</h3><div class="pill">Fast drag / headshot prior</div><div class="pill">Controlled 2× / 4×</div><div class="pill">HUD-aware</div><div class="pill">Anti-Fly / Anti-Chest</div><div class="small note">Brazilian-style public guides commonly high General/Red Dot aur comparatively controlled scopes describe karte hain. VG MENT4L is prior ko tumhare device, mode, style, fingers, guns aur HUD ke saath blend karta hai. Ye kisi ek player ka copied setting nahi hai.</div></div>
+  <div class="section"><h3>🇧🇷 Brazilian Control Calibration</h3><div class="pill">Fast drag / headshot prior</div><div class="pill">Controlled 2× / 4×</div><div class="pill">HUD-aware</div><div class="pill">Anti-Fly / Anti-Chest</div><div class="small note">Public 2026 Brazilian-style references commonly fast General/Red Dot, active 2× aur comparatively controlled 4×/Sniper describe karte hain. VG MENT4L is prior ko tumhare device, mode, style, fingers, guns aur HUD ke saath blend karta hai. Ye kisi ek player ka copied setting nahi hai.</div></div>
   ${renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle)}
   <div class="section"><h3>🎯 Focus Guns — Universal Range Coverage</h3><div class="small">${guns.length?`You selected ${guns.length}/3 guns. Engine in guns ko close + mid + long range coverage ke liye jointly tune karta hai.`:'All Guns selected. Engine complete gun catalog ko close + mid + long range coverage ke liye jointly tune karta hai.'}</div><div class="weapon-table">${weaponRows}</div></div>
   <div class="section"><h3>🖼️ HUD Screenshot — highest priority</h3><div class="hud-analysis">${hud.uploaded?`HUD screenshot loaded (${hud.width||'?'} × ${hud.height||'?'}). The recommendation uses your HUD upload as the first adjustment reference. ${esc(hud.desc)}`:'No HUD screenshot uploaded. Upload your current HUD for the most targeted tuning.'}</div></div>
