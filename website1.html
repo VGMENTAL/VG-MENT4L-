@@ -13,24 +13,9 @@
 .code-box{margin-top:14px;padding:16px;border:1px solid rgba(91,210,255,.35);background:linear-gradient(135deg,rgba(30,90,160,.18),rgba(120,60,220,.12));border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.code-box .code{font-size:25px;font-weight:900;letter-spacing:4px;color:#e8fbff}.code-box .small{margin-top:4px}.code-actions{display:flex;gap:8px}.code-actions button{width:auto!important;margin:0!important;padding:9px 12px!important;font-size:12px}.profile-note{font-size:11px;color:#9fb2d3;margin-top:8px}
 
 .fix-panel{margin-top:16px;padding:16px;border:1px solid rgba(91,210,255,.28);background:linear-gradient(135deg,rgba(16,31,65,.72),rgba(73,25,104,.38));border-radius:16px}.fix-panel h3{margin:0 0 6px;color:#eafaff}.fix-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.fix-panel textarea{width:100%;min-height:82px;border:1px solid rgba(91,210,255,.3);background:rgba(2,7,18,.8);color:#fff;border-radius:12px;padding:12px;resize:vertical}.fix-panel button{margin-top:12px!important}.fix-result{margin-top:12px;padding:12px;border-radius:12px;background:rgba(3,8,18,.72);border:1px solid rgba(91,210,255,.22);line-height:1.55}.fix-values{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}.fix-value{padding:8px;border-radius:9px;background:rgba(0,0,0,.28);text-align:center}.fix-value b{display:block;font-size:18px}.fix-value span{font-size:9px;opacity:.8}@media(max-width:700px){.fix-grid{grid-template-columns:1fr}.fix-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
-</style></style></head><body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script><main class="wrap"><div class="brand">VG MENT4L</div><div class="tag">DEVICE ANALYSIS • VERIFIED INPUTS • FREE FIRE MAX</div><section class="panel"><div class="grid"><div><label>Device name *</label><input id="device" placeholder="iQOO Neo 10 / iPhone 15 Pro Max / Galaxy S25 Ultra / POCO X6 Pro"/></div><div><label>Player Mode</label><select id="style"><option>All Styles</option><option>Balanced</option><option>One-Tap / Drag Headshot</option><option>Aggressive Drag</option><option>Tracking / Close Range</option><option>Spray / Recoil Control</option></select><div class="field-help">Player Mode device/control ke hisaab se base tuning decide karega.</div></div><div><label>Player Style</label><select id="playerStyle"><option>All Styles</option><option>Freestyle</option><option>Brazilian Freestyle</option><option>Jump Shot</option><option>Situp Shot</option><option>Noob Work</option></select><div class="field-help">Style ke hisaab se alag sensitivity profile milegi.</div></div><div><label>Game mode</label><select id="mode"><option>All Modes</option><option>BR + CS</option><option>Battle Royale</option><option>Clash Squad</option></select><div class="field-help">All Modes select karoge to har mode ki alag sensitivity milegi.</div></div><div><label>Game Sensitivity</label><select id="preset"><option>Default</option><option>High</option></select><div class="field-help">Free Fire ke sensitivity preset ke according tuning.</div></div><div><label>Current Game OB</label><input id="obVersion" value="OB55" maxlength="8" placeholder="OB55"/><div class="field-help">Current/live OB dalo. Future OB ko claim nahi kiya jayega.</div></div><div><label>Device kitna purana hai?</label><input id="deviceAge" placeholder="Example: 1 year 6 months / 8 months / 3 years"/><div class="field-help">Khud se approximate age likho. Ye verified hardware age nahi hai; performance/thermal stability context ke liye use hoga.</div></div></div><div class="extra-grid"><div><label>RAM</label><select id="ram"><option>Not specified</option><option>2 GB</option><option>3 GB</option><option>4 GB</option><option>6 GB</option><option>8 GB</option><option>12 GB</option><option>16 GB</option><option>18 GB+</option></select><div class="field-help">RAM direct sensitivity multiplier nahi hai; stability/performance context ke liye use hoga.</div></div><div><label>Kitne finger player?</label><select id="fingers"><option>2 Finger</option><option>3 Finger</option><option>4 Finger</option><option>5 Finger</option><option>6 Finger</option></select><div class="field-help">Finger count HUD movement, drag length aur control style ko affect karega.</div></div></div><div class="blueprint-grid"><div><label>Screen Resolution Class</label><select id="screenClass"><option value="normal">FHD+ / Normal</option><option value="high">1.5K / 2K / High-End</option></select><div class="field-help">Screen-response class for the blueprint engine.</div></div><div><label>Touch Sampling Class</label><select id="touchClass"><option value="normal">180–240 Hz / Normal</option><option value="high">360–3000 Hz / Gaming / High</option></select><div class="field-help">Exact Hz pata ho to closest class choose karo.</div></div><div><label>Current Aim Issues — jitni dikkat hai utni select karo</label><div class="aim-issue-grid" id="aimIssues">
-<label class="aim-issue-option"><input type="checkbox" value="balanced" checked> No major issue / Balanced</label>
-<label class="aim-issue-option"><input type="checkbox" value="chest"> Aim chest par stuck hota hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="neck"> Aim neck par lock hota hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="overshoot"> Aim head ke upar fly karta hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="dragSlow"> Drag slow / heavy lagta hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="dragFast"> Drag bahut fast / overshoot hota hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="recoil"> Recoil / spray shaky hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="closeRecoil"> Close-range recoil zyada hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="midRecoil"> Mid-range recoil / spray control problem</label>
-<label class="aim-issue-option"><input type="checkbox" value="longRecoil"> Long-range recoil / 4× control problem</label>
-<label class="aim-issue-option"><input type="checkbox" value="scopeShake"> Scope shake / 4× unstable</label>
-<label class="aim-issue-option"><input type="checkbox" value="tracking"> Target tracking slow / break hoti hai</label>
-<label class="aim-issue-option"><input type="checkbox" value="stick"> Aim target par stick nahi karta</label>
-<label class="aim-issue-option"><input type="checkbox" value="drift"> Aim left/right drift karta hai</label>
-</div><div class="aim-issue-count" id="aimIssueCount">1 issue selected — Balanced</div><div class="aim-issue-note">Multiple issues select kar sakte ho. Engine sab selected problems ko combine karke final sensitivity curve aur recoil tuning mein use karega.</div></div></div><div class="extra-grid"><div class="hud-box"><label>HUD Screenshot — IMPORTANT</label><input accept="image/*" id="hud" type="file"/><div class="field-help">Apna current HUD screenshot upload karo. Isko sensitivity recommendation aur adjustment guide mein highest-priority input maana jayega.</div><div class="hud-preview-wrap"><img alt="Uploaded HUD screenshot preview" class="hud-preview" id="hudPreview"/><div class="hud-meta" id="hudMeta"><span>Preview: waiting</span></div></div><div class="field-help" id="hudStatus">Screenshot upload karte hi yahin preview dikhega.</div></div><div class="gameplay-box"><label>🎮 Gameplay Video — Evidence Calibration (Optional)</label><input accept="video/*" id="gameplayVideo" type="file"/><button type="button" id="analyzeGameplayBtn" style="margin-top:10px;width:100%;padding:11px 14px;border:1px solid rgba(100,220,255,.45);border-radius:10px;background:rgba(20,80,120,.28);color:#eafaff;font-weight:700">🎮 ANALYZE GAMEPLAY VIDEO</button><div class="field-help">Real gameplay upload karo. Timeline se drag, recoil, tracking aur weapon behaviour ka evidence analyse hoga. Video profile/database mein save nahi hoga.</div><div class="small" id="gameplayStatus">Pehle gameplay video select karo.</div></div><div class="gun-wrap"><label>Focus Guns</label><div class="gun-choice"><label class="all-gun-choice"><input checked="" id="allGuns" type="checkbox"/><span>All Guns Sensitivity</span></label><div class="gun-slots"><select id="gun1"><option value="">Select Gun 1</option></select><select id="gun2"><option value="">Select Gun 2</option></select><select id="gun3"><option value="">Select Gun 3</option></select></div></div><div class="selected-guns" id="selectedGuns">All Guns selected</div><div class="field-help">Either All Guns rakho, ya maximum 3 guns manually select karo. Dono ek saath nahi.</div></div></div><div class="generate-wrap"><button id="go">RESEARCH DEVICE + GENERATE SENSITIVITY</button><div class="generate-progress" id="generateProgress" aria-live="polite"><div class="progress-top"><span id="progressStage"><span class="generate-spin"></span>Preparing...</span><span class="progress-pct" id="progressPct">0%</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="progress-steps"><span>Validate</span><span>HUD</span><span>Device</span><span>Tune</span><span>Finalize</span></div></div></div><div class="status" id="status">Device name डालकर button दबाओ. Selected player style के हिसाब से अलग sensitivity बनेगी.</div></section><section id="deviceEvidence" class="notice hidden"></section><section class="results hidden" id="results"></section></main><script>
+</style></style></head><body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script><main class="wrap"><div class="brand">VG MENT4L</div><div class="tag">DEVICE ANALYSIS • VERIFIED INPUTS • FREE FIRE MAX</div><section class="panel"><div class="grid"><div><label>Device name *</label><input id="device" placeholder="iQOO Neo 10 / iPhone 15 Pro Max / Galaxy S25 Ultra / POCO X6 Pro"/></div><div><label>Player Mode</label><select id="style"><option>All Styles</option><option>Balanced</option><option>One-Tap / Drag Headshot</option><option>Aggressive Drag</option><option>Tracking / Close Range</option><option>Spray / Recoil Control</option></select><div class="field-help">Player Mode device/control ke hisaab se base tuning decide karega.</div></div><div><label>Player Style</label><select id="playerStyle"><option>All Styles</option><option>Freestyle</option><option>Brazilian Freestyle</option><option>Jump Shot</option><option>Situp Shot</option><option>Noob Work</option></select><div class="field-help">Style ke hisaab se alag sensitivity profile milegi.</div></div><div><label>Game mode</label><select id="mode"><option>All Modes</option><option>BR + CS</option><option>Battle Royale</option><option>Clash Squad</option></select><div class="field-help">All Modes select karoge to har mode ki alag sensitivity milegi.</div></div><div><label>Game Sensitivity</label><select id="preset"><option>Default</option><option>High</option></select><div class="field-help">Free Fire ke sensitivity preset ke according tuning.</div></div></div></div><div class="extra-grid"></div><div><label>Kitne finger player?</label><select id="fingers"><option>2 Finger</option><option>3 Finger</option><option>4 Finger</option><option>5 Finger</option><option>6 Finger</option></select><div class="field-help">Finger count HUD movement, drag length aur control style ko affect karega.</div></div></div><div class="extra-grid"><div class="hud-box"><label>HUD Screenshot — IMPORTANT</label><input accept="image/*" id="hud" type="file"/><div class="field-help">Apna current HUD screenshot upload karo. Isko sensitivity recommendation aur adjustment guide mein highest-priority input maana jayega.</div><div class="hud-preview-wrap"><img alt="Uploaded HUD screenshot preview" class="hud-preview" id="hudPreview"/><div class="hud-meta" id="hudMeta"><span>Preview: waiting</span></div></div><div class="field-help" id="hudStatus">Screenshot upload karte hi yahin preview dikhega.</div></div><div class="gameplay-box"><label>🚀 Sensitivity Booster — Gameplay Evidence (Optional)</label><input accept="video/*" id="gameplayVideo" type="file"/><button type="button" id="analyzeGameplayBtn" style="margin-top:10px;width:100%;padding:11px 14px;border:1px solid rgba(100,220,255,.45);border-radius:10px;background:rgba(20,80,120,.28);color:#eafaff;font-weight:700">🚀 ANALYZE GAMEPLAY + BOOSTER</button><div class="field-help">Real gameplay upload karo. Timeline se drag, recoil, tracking aur weapon behaviour ka evidence analyse hoga; final sensitivity ko booster correction milega. Video profile/database mein save nahi hoga.</div><div class="small" id="gameplayStatus">Gameplay video optional hai. Upload karoge to booster evidence milega.</div></div><div class="gun-wrap"><label>Focus Guns</label><div class="gun-choice"><label class="all-gun-choice"><input checked="" id="allGuns" type="checkbox"/><span>All Guns Sensitivity</span></label><div class="gun-slots"><select id="gun1"><option value="">Select Gun 1</option></select><select id="gun2"><option value="">Select Gun 2</option></select><select id="gun3"><option value="">Select Gun 3</option></select></div></div><div class="selected-guns" id="selectedGuns">All Guns selected</div><div class="field-help">Either All Guns rakho, ya maximum 3 guns manually select karo. Dono ek saath nahi.</div></div></div><div class="generate-wrap"><button id="go">RESEARCH DEVICE + GENERATE SENSITIVITY</button><div class="generate-progress" id="generateProgress" aria-live="polite"><div class="progress-top"><span id="progressStage"><span class="generate-spin"></span>Preparing...</span><span class="progress-pct" id="progressPct">0%</span></div><div class="progress-track"><div class="progress-bar" id="progressBar"></div></div><div class="progress-steps"><span>Validate</span><span>HUD</span><span>Device</span><span>Tune</span><span>Finalize</span></div></div></div><div class="status" id="status">Device name डालकर button दबाओ. Selected player style के हिसाब से अलग sensitivity बनेगी.</div></section><section id="deviceEvidence" class="notice hidden"></section><section class="results hidden" id="results"></section></main><script>
 const $=s=>document.querySelector(s);
-const deviceEl=$('#device'), styleEl=$('#style'), playerStyleEl=$('#playerStyle'), modeEl=$('#mode'), ramEl=$('#ram'), fingersEl=$('#fingers'), deviceAgeEl=$('#deviceAge'), screenClassEl=$('#screenClass'), touchClassEl=$('#touchClass'), hudEl=$('#hud'), hudPreview=$('#hudPreview'), hudStatus=$('#hudStatus'), selectedGunsEl=$('#selectedGuns'), statusEl=$('#status'), resultsEl=$('#results'), btn=$('#go'), progressBox=$('#generateProgress'), progressBar=$('#progressBar'), progressPct=$('#progressPct'), progressStage=$('#progressStage');
+const deviceEl=$('#device'), styleEl=$('#style'), playerStyleEl=$('#playerStyle'), modeEl=$('#mode'), ramEl={value:'Auto'}, fingersEl=$('#fingers'), deviceAgeEl={value:''}, screenClassEl={value:'normal'}, touchClassEl={value:'normal'}, fireButtonEl=$('#fireButton'), dragSpeedEl=$('#dragSpeed'), fpsStabilityEl=$('#fpsStability'), hudEl=$('#hud'), hudPreview=$('#hudPreview'), hudStatus=$('#hudStatus'), selectedGunsEl=$('#selectedGuns'), statusEl=$('#status'), resultsEl=$('#results'), btn=$('#go'), progressBox=$('#generateProgress'), progressBar=$('#progressBar'), progressPct=$('#progressPct'), progressStage=$('#progressStage');
 let generating=false;
 let hudAIAnalysis=null;
 let hudAnalysisPromise=null;
@@ -126,12 +111,10 @@ async function getProfileIdentity(){
     playerStyle:normalizeProfileText(playerStyleEl.value),
     gameMode:normalizeProfileText(modeEl.value),
     preset:normalizeProfileText($('#preset').value),
-    obVersion:normalizeProfileText($('#obVersion')?.value||'OB55'),
-    deviceAge:normalizeProfileText(deviceAgeEl?.value||''),
-    ram:normalizeProfileText(ramEl.value),
     fingers:normalizeProfileText(fingersEl.value),
-    screenClass:normalizeProfileText(screenClassEl?.value||'normal'),
-    touchClass:normalizeProfileText(touchClassEl?.value||'normal'),
+    fireButton:normalizeProfileText(fireButtonEl?.value||'auto'),
+    dragSpeed:normalizeProfileText(dragSpeedEl?.value||'auto'),
+    fpsStability:normalizeProfileText(fpsStabilityEl?.value||'auto'),
     aimIssues:getAimIssues().slice().sort(),
     guns,
     allGuns:!!allGunsEl.checked,
@@ -164,14 +147,14 @@ function getPrimarySensitivity(){
   return consensus;
 }
 function getProfilePayload(){
-  const ob=String($('#obVersion')?.value||'OB55').trim().toUpperCase().replace(/\s+/g,'');
+  const ob='OB55';
   const primary=sensitivityOverride||getPrimarySensitivity();
   const profiles={};
   const playerModes=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES):[styleEl.value];
   const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
   const modes=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad']:[modeEl.value];
   playerModes.forEach(pm=>playerStyles.forEach(ps=>modes.forEach(md=>{profiles[pm+' | '+ps+' | '+md]=calculate(deviceEl.value.trim(),pm,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps)})));
-  return {version:4,calibrationVersion:6,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:ramEl.value,fingers:fingersEl.value,guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudIdentity:hudIdentityKey||null,hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,gameplayUploaded:!!$('#gameplayVideo')?.files?.[0],gameplayIdentity:gameplayIdentityKey||null,gameplayAnalysis:gameplayAIAnalysis||null,obVersion:ob,deviceAge:deviceAgeEl?.value.trim()||'',screenClass:screenClassEl?.value||'normal',touchClass:touchClassEl?.value||'normal',aimIssues:getAimIssues().slice().sort(),aimIssue:getAimIssues().join('|'), sensitivity:primary, sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
+  return {version:4,calibrationVersion:7,code:profileCode,device:deviceEl.value.trim(),style:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,preset:$('#preset').value,ram:'Auto',fingers:fingersEl.value,fireButton:fireButtonEl?.value||'auto',dragSpeed:dragSpeedEl?.value||'auto',fpsStability:fpsStabilityEl?.value||'auto',guns:selectedGuns(),allGuns:allGunsEl.checked,hudUploaded:!!hudEl.files?.[0],hudIdentity:hudIdentityKey||null,hudSize:{width:hudPreview.naturalWidth||0,height:hudPreview.naturalHeight||0},hudAnalysis:hudAIAnalysis||null,gameplayUploaded:!!$('#gameplayVideo')?.files?.[0],gameplayIdentity:gameplayIdentityKey||null,gameplayAnalysis:gameplayAIAnalysis||null,obVersion:ob,deviceAge:'',screenClass:'normal',touchClass:'normal',aimIssues:getAimIssues().slice().sort(),aimIssue:getAimIssues().join('|'),sensitivity:primary,sensitivityProfiles:profiles,lastIssue:null,updatedAt:new Date().toISOString()};
 }
 async function saveProfile(){
   // Automatically resolve the Profile ID from the complete submitted
@@ -656,6 +639,20 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   if((screenClassEl?.value||'normal')==='high'){g-=2;r-=2;x4-=1;sn-=1;}
   if((touchClassEl?.value||'normal')==='high'){g-=1;r-=1;x2-=1;}
 
+  // 3.6) Direct gameplay controls: these replace weak manual hardware-context
+  // fields. Fire-button size, drag speed and FPS stability affect control feel,
+  // but stay as bounded corrections rather than raw multipliers.
+  const buttonBand=String(fireButtonEl?.value||'auto');
+  if(buttonBand==='40-44'){g+=1;r+=1;}
+  if(buttonBand==='49-52'){g-=1;r-=1;}
+  if(buttonBand==='53-56'){g-=2;r-=2;x2-=1;}
+  const drag=String(dragSpeedEl?.value||'auto');
+  if(drag==='slow'){g+=3;r+=3;x2+=1;}
+  if(drag==='fast'){g-=3;r-=3;x2-=1;}
+  const fps=String(fpsStabilityEl?.value||'auto');
+  if(fps==='variable'){g-=2;r-=2;x2-=1;x4-=1;}
+  if(fps==='low'){g-=4;r-=4;x2-=2;x4-=2;sn-=1;}
+
   // 4) Free Fire sensitivity preset.
   if(preset==='High'){g+=4;r+=4;x2+=2;x4+=1;fl+=2}
   else {g-=1;r-=1}
@@ -938,7 +935,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   const focus=guns.length?guns:GUNS;
   const weaponRows=focus.map(g=>{const w=weaponProfile(g,s,style,mode);return `<div class="weapon-row"><b>${esc(g)}</b><span>Gen ${w.g}</span><span>Red ${w.r}</span><span>2× ${w.x2}</span><span>4× ${w.x4}</span><span>Sniper ${w.sn}</span></div>`}).join('');
   const profileTitle=totalProfiles>1?`PROFILE ${profileIndex} / ${totalProfiles}`:`VG MENT4L SETTINGS`;
-  return `<div class="section result-head"><div><h2>${profileTitle}</h2><div class="small">${esc(device)} • <b>Player Mode:</b> ${esc(style)} • <b>Player Style:</b> ${esc(playerStyle)} • <b>Game Mode:</b> ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
+  return `<div class="section result-head"><div><h2>${profileTitle}</h2><div class="small">${esc(device)} • <b>Player Mode:</b> ${esc(style)} • <b>Player Style:</b> ${esc(playerStyle)} • <b>Game Mode:</b> ${esc(mode)} • ${esc(preset)} • ${esc(fingers)}</div></div></div>
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
   <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">Player Mode: ${esc(style)}</div><div class="pill">Player Style: ${esc(playerStyle)}</div><div class="pill">Game Mode: ${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
@@ -975,6 +972,49 @@ function inferIssue(text){
   else d=ISSUE_DELTAS['Aim target pe stick nahi kar raha'];
   return d;
 }
+
+function boosterPanelHTML(){
+  return `<div class="fix-panel" id="boosterPanel">
+    <h3>🚀 SENSITIVITY BOOSTER — TRAINING FEEDBACK</h3>
+    <div class="small">Generated sensitivity ko Training Ground mein test karke actual result batao. Booster sirf controlled correction karega; har slider ko random maximum par nahi le jayega.</div>
+    <div class="fix-grid">
+      <div><label>Close / Drag Result</label><select id="boostClose"><option value="stable">Stable head line</option><option value="chest">Chest/body par rukta hai</option><option value="overshoot">Head ke upar chala jata hai</option></select></div>
+      <div><label>Red Dot Result</label><select id="boostRed"><option value="stable">Stable</option><option value="slow">Head tak drag slow</option><option value="overshoot">Head ke upar overshoot</option></select></div>
+      <div><label>2× / 4× Result</label><select id="boostScope"><option value="stable">Stable tracking</option><option value="slow">Tracking slow</option><option value="shake">Shake / over-correction</option></select></div>
+      <div><label>Sniper Result</label><select id="boostSniper"><option value="stable">Stable</option><option value="slow">Micro aim slow</option><option value="shake">Micro aim shaky</option></select></div>
+    </div>
+    <button class="copy" id="boostSensitivityBtn">🚀 APPLY GAMEPLAY BOOST</button>
+    <div id="boostResult" class="fix-result hidden"></div>
+  </div>`;
+}
+function bindSensitivityBooster(){
+  const b=$('#boostSensitivityBtn'); if(!b)return;
+  b.onclick=()=>{
+    const base=getPrimarySensitivity(), out={...base};
+    const adj={general:0,red_dot:0,scope_2x:0,scope_4x:0,sniper:0,free_look:0};
+    const close=$('#boostClose')?.value, red=$('#boostRed')?.value, scope=$('#boostScope')?.value, sniper=$('#boostSniper')?.value;
+    if(close==='chest'){adj.general+=3;adj.red_dot+=3;}
+    if(close==='overshoot'){adj.general-=3;adj.red_dot-=3;}
+    if(red==='slow'){adj.red_dot+=3;adj.general+=1;}
+    if(red==='overshoot'){adj.red_dot-=3;adj.general-=1;}
+    if(scope==='slow'){adj.scope_2x+=2;adj.scope_4x+=2;}
+    if(scope==='shake'){adj.scope_2x-=2;adj.scope_4x-=3;}
+    if(sniper==='slow')adj.sniper+=2;
+    if(sniper==='shake')adj.sniper-=2;
+    for(const k of Object.keys(adj)) out[k]=clamp(Number(out[k])+adj[k]);
+    out.red_dot=clamp(Math.min(out.red_dot,out.general-10));
+    out.scope_2x=clamp(Math.min(out.scope_2x,out.red_dot-10));
+    out.scope_4x=clamp(Math.min(out.scope_4x,out.scope_2x-17));
+    out.sniper=clamp(Math.min(out.sniper,out.scope_4x-52));
+    sensitivityOverride=out;
+    const profile=getProfilePayload(); profile.sensitivity=out; profile.lastBooster={time:new Date().toISOString(),before:base,after:out,feedback:{close,red,scope,sniper}};
+    localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(profile));
+    const names=[['General','general'],['Red Dot','red_dot'],['2×','scope_2x'],['4×','scope_4x'],['Sniper','sniper'],['Free Look','free_look']];
+    const r=$('#boostResult'); if(r){r.classList.remove('hidden');r.innerHTML='<b>✓ Booster applied:</b> '+names.map(([n,k])=>n+' '+out[k]+' ('+(out[k]-base[k]>=0?'+':'')+(out[k]-base[k])+')').join(' • ')+'<br><span class="small">Next test: same HUD, same weapon and same drag distance rakho; phir sirf ek category ko change karo.</span>';}
+    saveProfile();
+  };
+}
+
 function issuePanelHTML(){return `<div class="fix-panel" id="fixPanel"><h3>🛠️ SENSITIVITY FIX / RECALIBRATION</h3><div class="small">Kuch din baad sensitivity ka feel change ho gaya? Apni problem select karo ya khud likho. Profile code mein tumhari device/settings/sensitivity detail already saved rahegi.</div><div class="fix-grid"><div><label>Problem</label><select id="issuePreset"><option value="Aim head se upar ja raha hai">Aim head se upar ja raha hai</option><option value="Aim chest pe lock ho raha hai">Aim chest pe lock ho raha hai</option><option value="Aim neck pe lock ho raha hai">Aim neck pe lock ho raha hai</option><option value="Drag slow lag raha hai">Drag slow lag raha hai</option><option value="Drag bahut fast / overshoot">Drag bahut fast / overshoot</option><option value="Recoil / spray shaky">Recoil / spray shaky</option><option value="Close-range tracking slow">Close-range tracking slow</option><option value="Long-range aim unstable">Long-range aim unstable</option><option value="Aim target pe stick nahi kar raha">Aim target pe stick nahi kar raha</option><option value="CUSTOM">CUSTOM / KHUD LIKHO</option></select></div><div><label>Apni problem likho</label><textarea id="customIssue" placeholder="Example: M1887 drag karne par aim neck se upar nikal jaata hai, MP40 spray mein chest pe rukta hai..."></textarea></div></div><button class="copy" id="fixSensitivityBtn">ANALYSE PROBLEM + FIX MY SENSITIVITY</button><div id="fixResult" class="fix-result hidden"></div></div>`;}
 function applyIssueFix(base,issue){
   const d=ISSUE_DELTAS[issue]||inferIssue(issue);
@@ -1054,7 +1094,7 @@ async function analyzeGameplayForWebsite1(){
       touchClass:String(touchClassEl?.value||'normal'),
       aimIssues:getAimIssues(),
       guns:selectedGuns().map(g=>String(g)),
-      obVersion:String($('#obVersion')?.value||'OB55'),
+      obVersion:String('OB55'||'OB55'),
       // Give the vision analyst the exact deterministic baseline it must improve.
       // This prevents it from inventing a generic "recommended sensitivity".
       baselineSensitivity:calculate(
@@ -1127,7 +1167,7 @@ function render(device,style,mode,ram,fingers,hud,guns,preset){
     allPlayerStyles?'Player Style: ALL → every Player Style separately':`Player Style: ${playerStyleEl.value}`,
     allModes?'Game Mode: ALL → BR + CS, Battle Royale and Clash Squad separately':`Game Mode: ${mode}`
   ].join(' • ');
-  let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(selectionNote)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)} • Device age ${esc(deviceAgeEl?.value.trim()||'Not specified')} • OB ${esc($('#obVersion')?.value||'OB55')} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div><div class="small" style="margin-top:8px;color:#7deaff"><b>✓ ${totalProfiles} separate analysis profile${totalProfiles===1?'':'s'} generated.</b> Each profile uses its own selected Player Mode + Player Style + Game Mode. <b>ALL is never converted to Balanced/Freestyle.</b></div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
+  let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(selectionNote)} • ${esc(preset)} • ${esc(fingers)} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div><div class="small" style="margin-top:8px;color:#7deaff"><b>✓ ${totalProfiles} separate analysis profile${totalProfiles===1?'':'s'} generated.</b> Each profile uses its own selected Player Mode + Player Style + Game Mode. <b>ALL is never converted to Balanced/Freestyle.</b></div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
   if(allStyles||allPlayerStyles||allModes){
     html+=`<div class="section" style="border-color:rgba(91,210,255,.35);background:linear-gradient(135deg,rgba(12,38,70,.55),rgba(72,25,100,.28))">
       <h3>🧠 ALL-SELECTION ANALYSIS</h3>
@@ -1136,8 +1176,8 @@ function render(device,style,mode,ram,fingers,hud,guns,preset){
     </div>`; 
   }
   let profileIndex=0; styles.forEach(st=>playerStyles.forEach(ps=>modes.forEach(md=>{profileIndex++; html+=renderSingle(device,st,ps,md,ram,fingers,hud,guns,preset,totalProfiles===1,profileIndex,totalProfiles);})));
-  html+=issuePanelHTML();
-  resultsEl.classList.remove('hidden'); resultsEl.innerHTML=html; window.__profileSavePromise=saveProfile(); bindCodeActions(); bindIssueFix();
+  html+=boosterPanelHTML(); html+=issuePanelHTML();
+  resultsEl.classList.remove('hidden'); resultsEl.innerHTML=html; window.__profileSavePromise=saveProfile(); bindCodeActions(); bindIssueFix(); bindSensitivityBooster();
   const evidence=$('#deviceEvidence'); if(evidence){evidence.classList.remove('hidden'); evidence.textContent='Checking device specification evidence…';}
   const applyDeviceEvidence=info=>{
     deviceResearchData=info||null;
@@ -1171,8 +1211,8 @@ Fingers: ${fingers}
 Focus guns: ${guns.length?guns.join(', '):'All Guns'}
 HUD screenshot: ${hud.uploaded?'Uploaded':'Not uploaded'}
 Gameplay evidence: ${gameplayAIAnalysis?'Analysed':'Not uploaded'}
-Device age: ${deviceAgeEl?.value.trim()||'Not specified'}
-OB: ${$('#obVersion')?.value||'OB55'}
+Device age: ${''||'Not specified'}
+OB: ${'OB55'||'OB55'}
 
 `;
     styles.forEach(st=>playerStyles.forEach(ps=>modes.forEach(md=>{const ss=calculate(device,st,md,ram,fingers,hud,guns,preset,ps);text+=`${st} | ${ps} | ${md}
@@ -1264,15 +1304,15 @@ btn.addEventListener('click',async()=>{
   statusEl.textContent='Generation started — 100% completion tak wait karo…';
   await runGenerateProgress(device);
 });
-$('#obVersion').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/\s+/g,''); invalidateGeneratedResult('OB changed')});
 styleEl.addEventListener('change',()=>invalidateGeneratedResult('Player Mode changed'));
 playerStyleEl.addEventListener('change',()=>invalidateGeneratedResult('Player Style changed'));
 modeEl.addEventListener('change',()=>invalidateGeneratedResult('Game Mode changed'));
 $('#preset').addEventListener('change',()=>invalidateGeneratedResult('Game Sensitivity changed'));
-ramEl.addEventListener('change',()=>invalidateGeneratedResult('RAM changed'));
 fingersEl.addEventListener('change',()=>invalidateGeneratedResult('Finger Count changed'));
+fireButtonEl?.addEventListener('change',()=>invalidateGeneratedResult('Fire Button Size changed'));
+dragSpeedEl?.addEventListener('change',()=>invalidateGeneratedResult('Drag Speed changed'));
+fpsStabilityEl?.addEventListener('change',()=>invalidateGeneratedResult('FPS Stability changed'));
 document.querySelectorAll('#aimIssues input[type="checkbox"]').forEach(box=>box.addEventListener('change',()=>{syncAimIssueUI(box);invalidateGeneratedResult('Aim issues changed')}));
-deviceAgeEl.addEventListener('input',()=>invalidateGeneratedResult('Device age changed'));
 deviceEl.addEventListener('input',()=>invalidateGeneratedResult('Device changed'));
 allGunsEl.addEventListener('change',()=>invalidateGeneratedResult('Focus Guns changed'));
 gunSlots.forEach(sel=>sel.addEventListener('change',()=>invalidateGeneratedResult('Focus Gun changed')));
