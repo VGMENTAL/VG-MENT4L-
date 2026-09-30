@@ -835,60 +835,77 @@ function weaponProfile(gun, base, style, mode){
 }
 
 function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
+  // Calibration score = how well the final sensitivity is internally tuned for
+  // controlled aim/recoil. It is NOT a measured bullet recoil percentage.
   const cov=universalWeaponCoverage(guns);
-  const ev=[hud?.ai?.mainIssue||'',hud?.ai?.evidenceSummary||'',...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',gameplayAIAnalysis?.dragStyle||'',...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])].join(' ').toLowerCase();
-  const fit=(v,t,k)=>clamp(100-Math.abs(v-t)*k,0,100);
-  let close=(fit(s.general,184,.45)+fit(s.red_dot,170,.30)+fit(s.general-s.red_dot,14,.80))/3;
-  let mid=(fit(s.red_dot,170,.25)+fit(s.scope_2x,156,.38)+fit(s.red_dot-s.scope_2x,14,.55))/3;
-  let long=(fit(s.scope_2x,156,.28)+fit(s.scope_4x,138,.42)+fit(s.scope_2x-s.scope_4x,18,.60)+fit(s.sniper,80,.32))/4;
-  let overshoot=(fit(s.general-s.red_dot,14,1.7)+fit(s.red_dot-s.scope_2x,14,.65)+fit(s.scope_2x-s.scope_4x,18,.45))/3;
-  const evidenceBonus=(hud?.ai?2:0)+(gameplayAIAnalysis?4:0)+(String(hud?.ai?.confidence||'').toLowerCase()==='high'?2:0)+(String(gameplayAIAnalysis?.confidence||'').toLowerCase()==='high'?3:0);
-  const coverageBonus=cov.allGuns?3:2;
-  close=clamp(close+evidenceBonus+coverageBonus,0,98);
-  mid=clamp(mid+evidenceBonus+coverageBonus,0,98);
-  long=clamp(long+evidenceBonus+coverageBonus,0,98);
-  overshoot=clamp(overshoot+evidenceBonus+coverageBonus,0,98);
-  if(/long.?range|far range|4x.*unstable|sniper.*unstable/.test(ev))long=Math.max(90,long-3);
-  if(/recoil|spray|shake|shaky|kick/.test(ev)){mid=Math.max(90,mid-2);long=Math.max(90,long-2);}
-  if(/overshoot|fly over|too high/.test(ev))overshoot=Math.max(90,overshoot-2);
+  const ev=[hud?.ai?.mainIssue||'',hud?.ai?.evidenceSummary||'',
+    ...(Array.isArray(hud?.ai?.findings)?hud.ai.findings:[]),
+    gameplayAIAnalysis?.mainIssue||'',gameplayAIAnalysis?.rangePreference||'',
+    gameplayAIAnalysis?.dragStyle||'',
+    ...(Array.isArray(gameplayAIAnalysis?.findings)?gameplayAIAnalysis.findings:[]),
+    ...(Array.isArray(gameplayAIAnalysis?.problemDiagnosis)?gameplayAIAnalysis.problemDiagnosis:[])
+  ].join(' ').toLowerCase();
+  const rangeFit=(v,lo,hi)=>v>=lo&&v<=hi?100:Math.max(0,100-Math.min(40,Math.abs(v-(v<lo?lo:hi))*3));
+  const gapFit=(v,lo,hi)=>v>=lo&&v<=hi?100:Math.max(0,100-Math.min(40,Math.abs(v-(v<lo?lo:hi))*4));
+  let close=(rangeFit(s.general,178,198)+rangeFit(s.red_dot,162,188)+gapFit(s.general-s.red_dot,10,20))/3;
+  let mid=(rangeFit(s.red_dot,162,188)+rangeFit(s.scope_2x,148,170)+gapFit(s.red_dot-s.scope_2x,10,18))/3;
+  let long=(rangeFit(s.scope_2x,148,170)+rangeFit(s.scope_4x,130,150)+gapFit(s.scope_2x-s.scope_4x,14,22)+rangeFit(s.sniper,72,88))/4;
+  let overshoot=(gapFit(s.general-s.red_dot,10,20)+gapFit(s.red_dot-s.scope_2x,10,18)+gapFit(s.scope_2x-s.scope_4x,14,22))/3;
+  const evidenceBonus=(hud?.ai?2:0)+(gameplayAIAnalysis?3:0)+(String(hud?.ai?.confidence||'').toLowerCase()==='high'?2:0)+(String(gameplayAIAnalysis?.confidence||'').toLowerCase()==='high'?2:0);
+  const coverageBonus=cov.allGuns?2:1;
+  close=Math.min(100,close+evidenceBonus+coverageBonus); mid=Math.min(100,mid+evidenceBonus+coverageBonus);
+  long=Math.min(100,long+evidenceBonus+coverageBonus); overshoot=Math.min(100,overshoot+evidenceBonus+coverageBonus);
+  if(/long.?range|far range|4x.*unstable|sniper.*unstable/.test(ev))long=Math.max(90,long-4);
+  if(/recoil|spray|shake|shaky|kick/.test(ev)){mid=Math.max(90,mid-3);long=Math.max(90,long-3);}
+  if(/overshoot|fly over|too high/.test(ev))overshoot=Math.max(90,overshoot-3);
   const gates={
     close:s.general>=178&&s.general<=198&&s.red_dot>=162&&s.red_dot<=188,
     mid:s.red_dot-s.scope_2x>=10&&s.red_dot-s.scope_2x<=18&&s.scope_2x>=148&&s.scope_2x<=170,
     long:s.scope_2x-s.scope_4x>=14&&s.scope_2x-s.scope_4x<=22&&s.scope_4x>=130&&s.scope_4x<=150&&s.sniper>=72&&s.sniper<=88,
-    over:Math.abs((s.general-s.red_dot)-14)<=5&&Math.abs((s.red_dot-s.scope_2x)-14)<=5
+    over:s.general-s.red_dot>=10&&s.general-s.red_dot<=20&&s.red_dot-s.scope_2x>=10&&s.red_dot-s.scope_2x<=18
   };
-  if(!gates.close)close=Math.min(close,89);
-  if(!gates.mid)mid=Math.min(mid,89);
-  if(!gates.long)long=Math.min(long,89);
-  if(!gates.over)overshoot=Math.min(overshoot,89);
+  if(!gates.close)close=Math.min(close,89); if(!gates.mid)mid=Math.min(mid,89);
+  if(!gates.long)long=Math.min(long,89); if(!gates.over)overshoot=Math.min(overshoot,89);
   const score=Math.round((close+mid+long+overshoot)/4);
-  const level=score>=90?'Ultra-High':score>=82?'Very High':score>=72?'High':score>=60?'Medium-High':'Needs tuning';
-  return {score,level,overshoot:Math.round(overshoot),close:Math.round(close),mid:Math.round(mid),long:Math.round(long),confidence:(gameplayAIAnalysis?.confidence||hud?.ai?.confidence||'medium'),coverage:cov};
+  return {score,level:score>=90?'90%+ Target Range':score>=82?'Strong Calibration':'Needs Calibration',
+    overshoot:Math.round(overshoot),close:Math.round(close),mid:Math.round(mid),long:Math.round(long),
+    confidence:(gameplayAIAnalysis?.confidence||hud?.ai?.confidence||'medium'),coverage:cov};
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
   const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
-  const note=a.score>=78
-    ? 'Curve relationships selected device, HUD, weapons and declared problems ke saath strong match karte hain. Ye actual bullet-by-bullet recoil measurement nahi hai.'
-    : 'Ye calibration starting point hai. Real gameplay evidence ke baad range-specific tuning aur improve ki ja sakti hai.';
-  const gameplayStatus=gameplayAIAnalysis
-    ? 'Gameplay evidence analysed — score mein gameplay observations ka bounded influence included hai.'
-    : 'Gameplay evidence not analysed — score sirf profile/HUD/weapon curve fit hai.';
+  const note=a.score>=90
+    ? '90%+ ka matlab sensitivity curve ne internal control checks pass kiye hain. Actual game mein recoil weapon, movement, FPS/touch aur player input par depend karega.'
+    : 'Engine 90%+ calibration target ko reach karne ke liye curve ko device, HUD, guns aur selected problems ke according tune karta hai.';
+  const gameplayStatus=gameplayAIAnalysis?'Gameplay evidence included in the calibration.':'Gameplay evidence not analysed; profile/HUD/weapon inputs are being used.';
   return `<div class="section recoil-analysis">
-    <h3>🎯 Recoil & Aim Calibration Analysis</h3>
-    <div class="small"><b>Important:</b> Ye 0–100 <b>calibration-fit</b> scale hai. Ye recoil ko automatically remove nahi karta aur exact headshot rate guarantee nahi karta. 100 se upar kabhi nahi jayega.</div>
+    <h3>🎯 Recoil Control & Sensitivity Calibration</h3>
+    <div class="small"><b>Target:</b> 90%+ calibration. Ye percentage sensitivity curve ki expected control compatibility hai, measured bullet-recoil reduction ya guaranteed headshot rate nahi.</div>
     <div class="recoil-grid">
-      <div><b>${a.score}%</b><span>Overall Calibration Fit</span></div>
-      <div><b>${a.close}%</b><span>Close-Range Fit</span></div>
-      <div><b>${a.mid}%</b><span>Mid-Range Fit</span></div>
-      <div><b>${a.long}%</b><span>Long-Range Fit</span></div>
-      <div><b>${a.overshoot}%</b><span>Overshoot Control Fit</span></div>
+      <div><b>${a.score}%</b><span>Overall Sensitivity Work</span></div>
+      <div><b>${a.close}%</b><span>Close-Range Control</span></div>
+      <div><b>${a.mid}%</b><span>Mid-Range Recoil Control</span></div>
+      <div><b>${a.long}%</b><span>Long-Range Control</span></div>
+      <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
     </div>
-    <div class="notice ${a.score>=78?'ok':'warn'}"><b>Calibration level: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Evidence:</b> ${esc(gameplayStatus)}<br><b>Why:</b> General/Red Dot responsiveness ko scoped sensitivity ke saath balance kiya gaya hai; 2×/4× control ko selected range problems ke according tune kiya gaya hai. HUD AI confidence: ${esc(a.confidence)}.</div>
+    <div class="notice ${a.score>=90?'ok':'warn'}"><b>Calibration: ${esc(a.level)}</b><br>${esc(note)}</div>
+    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4× और Sniper ko independently check kiya gaya hai; ek fixed ratio ko success metric nahi banaya gaya. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}.</div>
   </div>`;
 }
 
+function adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns){
+  const cls=deviceClass(device);
+  return `
+  <div class="guide-grid">
+    <div><b>1. General</b><p>${s.general>175?"Fast starting point. If aim flies past the head, reduce 3–5.":"If camera feels slow, raise 3–5; if it overshoots, lower 3–5."}</p></div>
+    <div><b>2. Red Dot</b><p>${style.includes("One-Tap")||style.includes("Aggressive")?"Use short upward drags. If the drag jumps over the head, lower 3–4.":"For body-to-head correction, raise 2–4 if the sight feels heavy; lower 2–4 if it jumps."}</p></div>
+    <div><b>3. 2× / 4×</b><p>Change only 2–4 points at a time. Too much movement while spraying = lower; target tracking feels slow = raise.</p></div>
+    <div><b>4. Sniper</b><p>Keep it controlled. If micro-adjustments feel shaky, lower 2–3. If the scope feels too slow, raise 2–3.</p></div>
+    <div><b>5. Free Look</b><p>Does not need to match General. Raise for faster scanning; lower if camera movement feels too quick.</p></div>
+    <div><b>6. Test rule</b><p>Change one category at a time, test 5–10 minutes in Training, then keep the setting that gives the most repeatable drag and tracking.</p></div>
+  </div>
+  <div class="section"><h3>Device-specific adjustment</h3><div class="small">${esc(cls.guide)}</div><div class="hud-analysis"><b>HUD priority:</b> ${esc(hud.desc)} ${hud.uploaded?"Use the uploaded HUD as the first reference before changing values." : "Upload your HUD screenshot for more targeted tuning."}</div><div class="small"><b>Finger:</b> ${esc(fingers)} • <b>RAM:</b> ${esc(ram)} • <b>Focus guns:</b> ${guns.length?esc(guns.join(", ")):"All guns / none selected"}</div></div>`;
+}
 function adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns){
   const cls=deviceClass(device);
   return `
