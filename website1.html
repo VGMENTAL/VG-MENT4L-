@@ -147,9 +147,13 @@ async function makeCodeForCurrentProfile(){
   return code;
 }
 function getPrimarySensitivity(){
-  const st=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES)[0]:styleEl.value;
-  const ps=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES)[0]:playerStyleEl.value;
-  const md=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad'][0]:modeEl.value;
+  // IMPORTANT: "All" is not a real single sensitivity profile.
+  // Never silently convert All Styles / All Modes into the first option.
+  // A primary value is kept only as a compatibility fallback for older profile
+  // readers; the complete sensitivityProfiles matrix is the authoritative result.
+  const st=styleEl.value==='All Styles'?'Balanced':styleEl.value;
+  const ps=playerStyleEl.value==='All Styles'?'Freestyle':playerStyleEl.value;
+  const md=modeEl.value==='All Modes'?'BR + CS':modeEl.value;
   return calculate(deviceEl.value.trim(),st,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps);
 }
 function getProfilePayload(){
@@ -908,12 +912,12 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   return `<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • Mode: ${esc(style)} • Style: ${esc(playerStyle)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
-  <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">${esc(style)}</div><div class="pill">${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
+  <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">Player Mode: ${esc(style)}</div><div class="pill">Player Style: ${esc(playerStyle)}</div><div class="pill">Game Mode: ${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
   <div class="section"><h3>🇧🇷 Brazilian Control Calibration</h3><div class="pill">Fast drag / headshot prior</div><div class="pill">Controlled 2× / 4×</div><div class="pill">HUD-aware</div><div class="pill">Anti-Fly / Anti-Chest</div><div class="small note">Brazilian-style public guides commonly high General/Red Dot aur comparatively controlled scopes describe karte hain. VG MENT4L is prior ko tumhare device, mode, style, fingers, guns aur HUD ke saath blend karta hai. Ye kisi ek player ka copied setting nahi hai.</div></div>
   ${renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle)}
   <div class="section"><h3>🎯 Focus Guns — Universal Range Coverage</h3><div class="small">${guns.length?`You selected ${guns.length}/3 guns. Engine in guns ko close + mid + long range coverage ke liye jointly tune karta hai.`:'All Guns selected. Engine complete gun catalog ko close + mid + long range coverage ke liye jointly tune karta hai.'}</div><div class="weapon-table">${weaponRows}</div></div>
   <div class="section"><h3>🖼️ HUD Screenshot — highest priority</h3><div class="hud-analysis">${hud.uploaded?`HUD screenshot loaded (${hud.width||'?'} × ${hud.height||'?'}). The recommendation uses your HUD upload as the first adjustment reference. ${esc(hud.desc)}`:'No HUD screenshot uploaded. Upload your current HUD for the most targeted tuning.'}</div></div>
-  <div class="section"><h3>How to adjust — ${esc(style)} / ${esc(mode)} / ${esc(preset)}</h3>${adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns)}</div>
+  <div class="section"><h3>How to adjust — ${esc(style)} / ${esc(playerStyle)} / ${esc(mode)} / ${esc(preset)}</h3>${adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns)}</div>
   <div class="section"><h3>Quick symptom → adjustment</h3><div class="guide-grid"><div><b>Crosshair head ke upar chala jaye</b><p>General −3, then Red Dot −2.</p></div><div><b>Headshot ke liye drag slow lage</b><p>General +3, then Red Dot +2.</p></div><div><b>Spray mein aim hilta rahe</b><p>2×/4× −3 to −5; General ko turant mat badlo.</p></div><div><b>Close-range tracking slow</b><p>General +3 and Red Dot +2.</p></div><div><b>Long-range shaky</b><p>4× −3 and Sniper −2.</p></div><div><b>FPS/touch unstable</b><p>General/Red Dot 3–6 lower karke test karo.</p></div></div></div>
   <div class="section"><h3>Device-wise adjustment guide</h3><div class="small">Class: <b>${esc(cls.name)}</b>. Direct-open mode live device database access nahi rakhta, isliye unverified chipset/touch/FPS specs invent nahi karta. Ye device-family starting profile hai; HUD + training test se fine-tune karo.</div></div>`;
 }
@@ -1081,10 +1085,20 @@ async function analyzeGameplayForWebsite1(){
   }
 }
 function render(device,style,mode,ram,fingers,hud,guns,preset){
+  // Build the analysis matrix directly from the user's selections.
+  // Specific selection = exactly one profile. "All" = every requested
+  // combination, with no fallback to the first/default option.
   const styles=style==='All Styles'?Object.keys(STYLE_PROFILES):[style];
   const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
   const modes=mode==='All Modes'?["BR + CS","Battle Royale","Clash Squad"]:[mode];
-  let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(style)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)} • Device age ${esc(deviceAgeEl?.value.trim()||'Not specified')} • OB ${esc($('#obVersion')?.value||'OB55')} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
+  const totalProfiles=styles.length*playerStyles.length*modes.length;
+  const allStyles=style==='All Styles', allPlayerStyles=playerStyleEl.value==='All Styles', allModes=mode==='All Modes';
+  const selectionNote=[
+    allStyles?'Player Mode: ALL → every Player Mode separately':`Player Mode: ${style}`,
+    allPlayerStyles?'Player Style: ALL → every Player Style separately':`Player Style: ${playerStyleEl.value}`,
+    allModes?'Game Mode: ALL → BR + CS, Battle Royale and Clash Squad separately':`Game Mode: ${mode}`
+  ].join(' • ');
+  let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(selectionNote)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)} • Device age ${esc(deviceAgeEl?.value.trim()||'Not specified')} • OB ${esc($('#obVersion')?.value||'OB55')} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div><div class="small" style="margin-top:8px;color:#7deaff"><b>✓ ${totalProfiles} separate analysis profile${totalProfiles===1?'':'s'} generated.</b> Each profile uses its own selected Player Mode + Player Style + Game Mode; no All selection is converted into the first option.</div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
   let firstProfile=true; styles.forEach(st=>playerStyles.forEach(ps=>modes.forEach(md=>{html+=renderSingle(device,st,ps,md,ram,fingers,hud,guns,preset,firstProfile); firstProfile=false;})));
   html+=issuePanelHTML();
   resultsEl.classList.remove('hidden'); resultsEl.innerHTML=html; window.__profileSavePromise=saveProfile(); bindCodeActions(); bindIssueFix();
