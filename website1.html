@@ -24,6 +24,18 @@ let gameplayAIAnalysis=null,gameplayAnalysisPromise=null,gameplayIdentityKey=nul
 let deviceResearchData=null,deviceResearchPromise=null;
 let profileCode=localStorage.getItem('vg_ment4l_profile_code')||'';
 let sensitivityOverride=null;
+let deepRuntime=null;
+async function collectDeepRuntime(){
+  try{
+    const n=navigator||{},u=n.userAgentData;
+    let h={};
+    if(u?.getHighEntropyValues) h=await u.getHighEntropyValues(['model','platformVersion','architecture','bitness','formFactors']);
+    const c=n.connection||n.mozConnection||n.webkitConnection||null;
+    const out={model:String(h.model||''),platform:String(h.platform||n.platform||''),platformVersion:String(h.platformVersion||''),architecture:String(h.architecture||''),bitness:String(h.bitness||''),touch:Number(n.maxTouchPoints||0),threads:Number(n.hardwareConcurrency||0),memory:Number(n.deviceMemory||0),dpr:Number(devicePixelRatio||1),width:Number(screen?.width||0),height:Number(screen?.height||0),effectiveType:String(c?.effectiveType||'')};
+    deepRuntime=out; return out;
+  }catch(e){deepRuntime=null;return null}
+}
+const deepRuntimePromise=collectDeepRuntime();
 const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 // Profile ID rule:
 // 1) Every genuinely different profile gets a different code automatically.
@@ -604,6 +616,14 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
     if(/hd\+/.test(screen)&&!/fhd|1\.5k|2k|qhd|1440/.test(screen)){x4-=1;sn-=1;}
     if(/1\.5k|2k|qhd|1440/.test(screen)){g-=1;r-=1;x4-=1;}
     if(/snapdragon 8|dimensity 9|a1[6-9]|a18|tensor g[3-5]/.test(chip)){x2-=1;x4-=1;}
+  }
+
+  // Deep runtime evidence: browser-accessible touch/display signals only.
+  // They refine the curve; they never act as a RAM multiplier.
+  if(deepRuntime){
+    if(deepRuntime.touch>=5 && deepRuntime.width<=430){g+=1;r+=1;}
+    if(deepRuntime.dpr>=3.5){x4-=1;sn-=1;}
+    if(/slow-2g|2g/.test(deepRuntime.effectiveType||'')){g-=1;r-=1;x2-=1;}
   }
 
   // 1) Game-mode context. Keep this deliberately smaller than the core device
@@ -1372,6 +1392,9 @@ async function runGenerateProgress(device){
   }
   // Render only after HUD + device research are finished. Hardware evidence can
   // therefore influence the same sensitivity that gets displayed and saved.
+  await deepRuntimePromise;
+  progressStage.innerHTML='<span class="generate-spin"></span>Deep device/runtime evidence fused…';
+  await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
   progressStage.innerHTML='<span class="generate-spin"></span>Saving Profile ID + syncing backend…';
   await saveProfile();
   render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
