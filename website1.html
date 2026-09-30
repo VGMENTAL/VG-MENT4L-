@@ -147,14 +147,21 @@ async function makeCodeForCurrentProfile(){
   return code;
 }
 function getPrimarySensitivity(){
-  // IMPORTANT: "All" is not a real single sensitivity profile.
-  // Never silently convert All Styles / All Modes into the first option.
-  // A primary value is kept only as a compatibility fallback for older profile
-  // readers; the complete sensitivityProfiles matrix is the authoritative result.
-  const st=styleEl.value==='All Styles'?'Balanced':styleEl.value;
-  const ps=playerStyleEl.value==='All Styles'?'Freestyle':playerStyleEl.value;
-  const md=modeEl.value==='All Modes'?'BR + CS':modeEl.value;
-  return calculate(deviceEl.value.trim(),st,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps);
+  // "All" is a real multi-profile request, not a request for Balanced/Freestyle.
+  // For legacy readers that need one sensitivity object, use a neutral consensus
+  // across EVERY selected Player Mode + Player Style + Game Mode combination.
+  // The authoritative data remains sensitivityProfiles.
+  const styles=styleEl.value==='All Styles'?Object.keys(STYLE_PROFILES):[styleEl.value];
+  const playerStyles=playerStyleEl.value==='All Styles'?Object.keys(PLAYER_STYLES):[playerStyleEl.value];
+  const modes=modeEl.value==='All Modes'?['BR + CS','Battle Royale','Clash Squad']:[modeEl.value];
+  const curves=[];
+  styles.forEach(pm=>playerStyles.forEach(ps=>modes.forEach(md=>{
+    curves.push(calculate(deviceEl.value.trim(),pm,md,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value,ps));
+  })));
+  const keys=['general','red_dot','scope_2x','scope_4x','sniper','free_look'];
+  const consensus={};
+  keys.forEach(k=>consensus[k]=Math.round(curves.reduce((sum,v)=>sum+Number(v[k]||0),0)/Math.max(1,curves.length)));
+  return consensus;
 }
 function getProfilePayload(){
   const ob=String($('#obVersion')?.value||'OB55').trim().toUpperCase().replace(/\s+/g,'');
@@ -851,10 +858,12 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   let mid=(rangeFit(s.red_dot,162,188)+rangeFit(s.scope_2x,148,170)+gapFit(s.red_dot-s.scope_2x,10,18))/3;
   let long=(rangeFit(s.scope_2x,148,170)+rangeFit(s.scope_4x,130,150)+gapFit(s.scope_2x-s.scope_4x,14,22)+rangeFit(s.sniper,72,88))/4;
   let overshoot=(gapFit(s.general-s.red_dot,10,20)+gapFit(s.red_dot-s.scope_2x,10,18)+gapFit(s.scope_2x-s.scope_4x,14,22))/3;
-  const evidenceBonus=(hud?.ai?2:0)+(gameplayAIAnalysis?3:0)+(String(hud?.ai?.confidence||'').toLowerCase()==='high'?2:0)+(String(gameplayAIAnalysis?.confidence||'').toLowerCase()==='high'?2:0);
-  const coverageBonus=cov.allGuns?2:1;
-  close=Math.min(100,close+evidenceBonus+coverageBonus); mid=Math.min(100,mid+evidenceBonus+coverageBonus);
-  long=Math.min(100,long+evidenceBonus+coverageBonus); overshoot=Math.min(100,overshoot+evidenceBonus+coverageBonus);
+  // Do NOT add arbitrary evidence/coverage bonus points. A calibration score should
+  // describe the curve itself; HUD/gameplay evidence is reported separately as confidence.
+  // This still is not an in-game recoil measurement.
+  const coverageBonus=0;
+  close=Math.min(100,close+coverageBonus); mid=Math.min(100,mid+coverageBonus);
+  long=Math.min(100,long+coverageBonus); overshoot=Math.min(100,overshoot+coverageBonus);
   if(/long.?range|far range|4x.*unstable|sniper.*unstable/.test(ev))long=Math.max(90,long-4);
   if(/recoil|spray|shake|shaky|kick/.test(ev)){mid=Math.max(90,mid-3);long=Math.max(90,long-3);}
   if(/overshoot|fly over|too high/.test(ev))overshoot=Math.max(90,overshoot-3);
@@ -875,21 +884,21 @@ function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
   const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
   const note=a.score>=90
-    ? '90%+ ka matlab sensitivity curve ne internal control checks pass kiye hain. Actual game mein recoil weapon, movement, FPS/touch aur player input par depend karega.'
-    : 'Engine 90%+ calibration target ko reach karne ke liye curve ko device, HUD, guns aur selected problems ke according tune karta hai.';
+    ? '90%+ ka matlab sensitivity curve ke internal control checks pass hue hain. Isse actual game recoil 90%+ reduce hoga aisa claim nahi kiya ja sakta; real result weapon, movement, FPS/touch aur player input par depend karta hai.'
+    : 'Engine 90%+ internal calibration target ko reach karne ke liye curve ko device, HUD, guns aur selected problems ke according tune karta hai.';
   const gameplayStatus=gameplayAIAnalysis?'Gameplay evidence included in the calibration.':'Gameplay evidence not analysed; profile/HUD/weapon inputs are being used.';
   return `<div class="section recoil-analysis">
     <h3>🎯 Recoil Control & Sensitivity Calibration</h3>
-    <div class="small"><b>Target:</b> 90%+ calibration. Ye percentage sensitivity curve ki expected control compatibility hai, measured bullet-recoil reduction ya guaranteed headshot rate nahi.</div>
+    <div class="small"><b>Target:</b> 90%+ internal calibration. <b>Important:</b> Ye actual game mein sensitivity kitne % kaam karegi ya recoil kitne % kam hoga, uska measured percentage nahi hai.</div>
     <div class="recoil-grid">
-      <div><b>${a.score}%</b><span>Overall Sensitivity Work</span></div>
+      <div><b>${a.score}%</b><span>Calibration Compatibility</span></div>
       <div><b>${a.close}%</b><span>Close-Range Control</span></div>
       <div><b>${a.mid}%</b><span>Mid-Range Recoil Control</span></div>
       <div><b>${a.long}%</b><span>Long-Range Control</span></div>
       <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
     </div>
     <div class="notice ${a.score>=90?'ok':'warn'}"><b>Calibration: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4× और Sniper ko independently check kiya gaya hai; ek fixed ratio ko success metric nahi banaya gaya. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}.</div>
+    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4× और Sniper ko independently check kiya gaya hai. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}. <b>Real-game measurement:</b> abhi available nahi hai.</div>
   </div>`;
 }
 
@@ -926,7 +935,7 @@ function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,
   const labels=[["General",s.general],["Red Dot",s.red_dot],["2× Scope",s.scope_2x],["4× Scope",s.scope_4x],["Sniper Scope",s.sniper],["Free Look",s.free_look]];
   const focus=guns.length?guns:GUNS;
   const weaponRows=focus.map(g=>{const w=weaponProfile(g,s,style,mode);return `<div class="weapon-row"><b>${esc(g)}</b><span>Gen ${w.g}</span><span>Red ${w.r}</span><span>2× ${w.x2}</span><span>4× ${w.x4}</span><span>Sniper ${w.sn}</span></div>`}).join('');
-  return `<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • Mode: ${esc(style)} • Style: ${esc(playerStyle)} • ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
+  return `<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • <b>Player Mode:</b> ${esc(style)} • <b>Player Style:</b> ${esc(playerStyle)} • <b>Game Mode:</b> ${esc(mode)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)}</div></div></div>
   <div class="cards">${labels.map(([k,v])=>`<div class="card"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
   ${showCode?renderCodeBox():''}
   <div class="section"><h3>Why this profile?</h3><div class="pill">${esc(cls.name)}</div><div class="pill">${esc(platform)}</div><div class="pill">Player Mode: ${esc(style)}</div><div class="pill">Player Style: ${esc(playerStyle)}</div><div class="pill">Game Mode: ${esc(mode)}</div><div class="pill">${esc(preset)} sensitivity</div><div class="pill">${gameplayAIAnalysis?"Gameplay evidence":"No gameplay video"}</div><div class="small note">${esc(p.desc)}</div></div>
@@ -1115,7 +1124,14 @@ function render(device,style,mode,ram,fingers,hud,guns,preset){
     allPlayerStyles?'Player Style: ALL → every Player Style separately':`Player Style: ${playerStyleEl.value}`,
     allModes?'Game Mode: ALL → BR + CS, Battle Royale and Clash Squad separately':`Game Mode: ${mode}`
   ].join(' • ');
-  let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(selectionNote)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)} • Device age ${esc(deviceAgeEl?.value.trim()||'Not specified')} • OB ${esc($('#obVersion')?.value||'OB55')} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div><div class="small" style="margin-top:8px;color:#7deaff"><b>✓ ${totalProfiles} separate analysis profile${totalProfiles===1?'':'s'} generated.</b> Each profile uses its own selected Player Mode + Player Style + Game Mode; no All selection is converted into the first option.</div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
+  let html=`<div class="section result-head"><div><h2>VG MENT4L SETTINGS</h2><div class="small">${esc(device)} • ${esc(selectionNote)} • ${esc(preset)} • ${esc(fingers)} • RAM ${esc(ram)} • Device age ${esc(deviceAgeEl?.value.trim()||'Not specified')} • OB ${esc($('#obVersion')?.value||'OB55')} • ${guns.length?esc(guns.join(', ')):'All Guns'}</div><div class="small" style="margin-top:8px;color:#7deaff"><b>✓ ${totalProfiles} separate analysis profile${totalProfiles===1?'':'s'} generated.</b> Each profile uses its own selected Player Mode + Player Style + Game Mode. <b>ALL is never converted to Balanced/Freestyle.</b></div></div><button class="copy" id="copy">COPY ALL SETTINGS</button></div>`;
+  if(allStyles||allPlayerStyles||allModes){
+    html+=`<div class="section" style="border-color:rgba(91,210,255,.35);background:linear-gradient(135deg,rgba(12,38,70,.55),rgba(72,25,100,.28))">
+      <h3>🧠 ALL-SELECTION ANALYSIS</h3>
+      <div class="small">Tumne ALL select kiya hai, isliye engine ne <b>${styles.length} Player Modes × ${playerStyles.length} Player Styles × ${modes.length} Game Modes = ${totalProfiles}</b> separate combinations analyze kiye hain.</div>
+      <div class="small" style="margin-top:8px">Neeche har combination ka apna sensitivity curve hai. Pehla card sirf preview hai; use ALL selection ka final single result mat samjho.</div>
+    </div>`; 
+  }
   let firstProfile=true; styles.forEach(st=>playerStyles.forEach(ps=>modes.forEach(md=>{html+=renderSingle(device,st,ps,md,ram,fingers,hud,guns,preset,firstProfile); firstProfile=false;})));
   html+=issuePanelHTML();
   resultsEl.classList.remove('hidden'); resultsEl.innerHTML=html; window.__profileSavePromise=saveProfile(); bindCodeActions(); bindIssueFix();
