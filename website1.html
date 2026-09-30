@@ -953,7 +953,7 @@ function adjustmentGuide(device,style,mode,s,ram,fingers,hud,guns){
     <div><b>5. Free Look</b><p>Does not need to match General. Raise for faster scanning; lower if camera movement feels too quick.</p></div>
     <div><b>6. Test rule</b><p>Change one category at a time, test 5–10 minutes in Training, then keep the setting that gives the most repeatable drag and tracking.</p></div>
   </div>
-  <div class="section"><h3>Device-specific adjustment</h3><div class="small">${esc(cls.guide)}</div><div class="hud-analysis"><b>HUD priority:</b> ${esc(hud.desc)} ${hud.uploaded?"Use the uploaded HUD as the first reference before changing values." : "Upload your HUD screenshot for more targeted tuning."}</div><div class="small"><b>Finger:</b> ${esc(fingers)} • <b>RAM:</b> ${esc(ram)} • <b>Focus guns:</b> ${guns.length?esc(guns.join(", ")):"All guns / none selected"}</div></div>`;
+  <div class="section"><h3>Device-specific adjustment</h3><div class="small">${esc(cls.guide)}</div><div class="hud-analysis"><b>HUD priority:</b> ${esc(hud.desc)} ${hud.uploaded?"Use the uploaded HUD as the first reference before changing values." : "Upload your HUD screenshot for more targeted tuning."}</div><div class="small"><b>Finger:</b> ${esc(fingers)} • <b>Focus guns:</b> ${guns.length?esc(guns.join(", ")):"All guns / none selected"}</div></div>`;
 }
 
 function renderSingle(device,style,playerStyle,mode,ram,fingers,hud,guns,preset,showCode=false,profileIndex=1,totalProfiles=1){
