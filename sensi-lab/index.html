@@ -16,7 +16,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 .result{display:none;margin-top:14px}.result.show{display:block}.status{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 13px;border-radius:12px;background:#08101e;border:1px solid #263552;margin-bottom:12px;font-size:12px}.badge{color:var(--ok);font-weight:800}
 .sensi{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.axis{background:#080e1b;border:1px solid #263552;border-radius:14px;padding:12px 8px;text-align:center}.axis small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.axis strong{font-size:25px}.bar{height:5px;background:#1d2941;border-radius:5px;margin-top:9px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));border-radius:5px}
 .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.mini{padding:11px;background:#080e1b;border:1px solid #263552;border-radius:12px}.mini b{display:block;font-size:13px}.mini span{color:var(--muted);font-size:10px}
-.modebox{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modepick{border:1px solid #2b3a5c;background:#080e1c;border-radius:13px;padding:12px;cursor:pointer}.modepick.on{border-color:var(--a);background:#0b2934}.modepick b{display:block;font-size:13px}.modepick span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.upload{border:1px dashed #33476e;border-radius:13px;padding:14px;background:#080e1c;color:var(--muted);font-size:12px}.upload input{margin-top:8px;padding:8px}.preview{display:none;max-width:100%;max-height:150px;border-radius:10px;margin-top:9px}.note{margin-top:12px;padding:13px;border-left:3px solid var(--a);background:#091322;color:#bdc9df;font-size:12px;line-height:1.55;border-radius:10px}.code{font-family:ui-monospace,monospace;letter-spacing:2px;color:#fff}
+.modebox{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modepick{border:1px solid #2b3a5c;background:#080e1c;border-radius:13px;padding:12px;cursor:pointer}.modepick.on{border-color:var(--a);background:#0b2934}.modepick b{display:block;font-size:13px}.modepick span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.upload{border:1px dashed #33476e;border-radius:13px;padding:14px;background:#080e1c;color:var(--muted);font-size:12px}.upload input{margin-top:8px;padding:8px}.preview{display:none;max-width:100%;max-height:150px;border-radius:10px;margin-top:9px}.note{margin-top:12px;padding:13px;border-left:3px solid var(--a);background:#091322;color:#bdc9df;font-size:12px;line-height:1.55;border-radius:10px}.code{font-family:ui-monospace,monospace;letter-spacing:2px;color:#fff}.rangegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.range{padding:11px;background:#080e1b;border:1px solid #263552;border-radius:12px}.range b{display:block;font-size:12px}.range span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.rbar{height:5px;background:#1d2941;border-radius:5px;margin-top:8px;overflow:hidden}.rbar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b))}.feedback{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.feedback .chip{padding:8px 10px}.feedback .chip.on{border-color:var(--ok);background:#0b3028}.refine{margin-top:10px;background:linear-gradient(100deg,#b8a5ff,#62e6ff);color:#07101b}.micro{font-size:10px;color:var(--muted);margin-top:7px}@media(max-width:720px){.rangegrid{grid-template-columns:1fr 1fr}}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.sensi{grid-template-columns:repeat(3,1fr)}.meta{grid-template-columns:1fr 1fr}.hero h1{font-size:43px}}
 @media(max-width:380px){.sensi{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -96,6 +96,8 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <div class="sensi" id="sensi"></div>
 <div class="meta" id="meta"></div>
 <div class="note" id="explain"></div>
+<div class="rangegrid" id="ranges"></div>
+<div class="note"><b>Quick test feedback</b><div class="micro">After Training, select what you actually felt. The lab will make a small evidence-based refinement instead of rebuilding everything.</div><div class="feedback" id="feedback"><span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span></div><button class="refine" id="refine">REFINE FROM TEST FEEDBACK</button></div>
 <div class="note"><b>Profile ID:</b> <span class="code" id="code"></span><br><span style="color:#8d9ab7">This ID represents this input profile; it is not a claim of universal sensitivity.</span></div>
 </div>
 </section>
@@ -111,80 +113,145 @@ document.querySelectorAll('.chips').forEach(box=>box.addEventListener('click',e=
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)}
 function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
 function selected(id){return [...$(id).querySelectorAll('.chip.on')].map(x=>x.textContent)}
-function build(){
- const device=$('device').value.trim()||'Generic Touch Device',dpi=+$('dpi').value||480,hz=+$('hz').value||60,touch=+$('touch').value||120;
- const fingers=+$('fingers').value,mode=$('mode').value,style=$('style').value,preset=$('preset').value,fire=+$('fire').value||45,ob=$('ob').value.trim()||'Unknown',age=+$('age').value||0;
- const guns=selected('guns'),issues=selected('issues');
- let seed=hash([device,dpi,hz,touch,fingers,mode,style,preset,sensitivityMode,fire,age,ob,guns.join(','),issues.join(',')].join('|'));
- const r=()=>((seed=Math.imul(seed^seed>>>13,1274126177)>>>0)%1000)/1000;
- let v=[140,105,82,64,38,70];
- // Device/touch fingerprint: deliberately small; no universal high-sensitivity floor.
- const model=device.toLowerCase();
- if(/iphone|pixel|oneplus|iqoo|vivo|realme|oppo|samsung|xiaomi|redmi|poco|asus/.test(model)) v=v.map((x,i)=>x+[-2,0,1,1,0,0][i]);
- v[0]+=Math.log2(dpi/480)*6; v[1]+=Math.log2(dpi/480)*5;
- v[0]+=(hz-90)/35; v[1]+=(touch-180)/90;
- v[2]+=(touch-180)/150; v[3]+=(hz-90)/55;
- v[5]+=(fingers-3)*2;
- if(sensitivityMode==='High') v=[v[0]+4,v[1]+4,v[2]+3,v[3]+2,v[4]+1,v[5]+2];
- if(sensitivityMode==='Default') v=[v[0],v[1],v[2],v[3],v[4],v[5]];
- if(preset==='Fast Response') v=[v[0]+7,v[1]+6,v[2]+4,v[3]+3,v[4]+1,v[5]+3];
- if(preset==='Controlled') v=[v[0]-7,v[1]-5,v[2]-5,v[3]-4,v[4]-3,v[5]-2];
- if(preset==='Precision') v=[v[0]-3,v[1]-8,v[2]-8,v[3]-7,v[4]-5,v[5]-4];
- if(style==='Brazilian Freestyle') v=[v[0]+9,v[1]+8,v[2]+5,v[3]+3,v[4],v[5]+2];
- if(style==='One-Tap / Drag') v=[v[0]+5,v[1]+2,v[2]-2,v[3]-4,v[4]-4,v[5]];
- if(style==='Tracking') v=[v[0]-3,v[1]+3,v[2]+4,v[3]+3,v[4]+1,v[5]+4];
- if(style==='Spray Control') v=[v[0]-4,v[1]-4,v[2]-8,v[3]-9,v[4]-7,v[5]-2];
- if(mode==='Clash Squad') v[0]+=3,v[1]+=3,v[2]+=1;
- if(mode==='Battle Royale') v[3]-=2,v[4]-=2;
- if(fire<35) v[0]+=2,v[1]+=1; if(fire>50) v[0]-=2,v[1]-=2;
- // Gun coverage model: every build is calibrated against multiple weapon classes.
+function getInputs(){
+ const device=$('device').value.trim()||'Generic Touch Device';
+ const dpi=Math.max(100,+$('dpi').value||480),hz=Math.max(30,+$('hz').value||60),touch=Math.max(60,+$('touch').value||120);
+ const fingers=+$('fingers').value,mode=$('mode').value,style=$('style').value,preset=$('preset').value;
+ const fire=Math.max(1,+$('fire').value||45),ob=$('ob').value.trim()||'Unknown',age=Math.max(0,+$('age').value||0);
+ return {device,dpi,hz,touch,fingers,mode,style,preset,fire,ob,age,guns:selected('guns'),issues:selected('issues')};
+}
+function vecAdd(a,b,w=1){return a.map((x,i)=>x+b[i]*w)}
+function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
+function weightedAverage(arr){return arr.reduce((s,x)=>s+x,0)/Math.max(1,arr.length)}
+function rangeGoal(p){
+ // These are calibration targets, not measured performance claims.
+ const goal={close:150,mid:105,long:75,precision:48,camera:72};
+ const model=p.device.toLowerCase();
+ if(/iphone|pixel|oneplus|iqoo|vivo|realme|oppo|samsung|xiaomi|redmi|poco|asus/.test(model)) goal.close+=2;
+ const dpiFactor=Math.log2(p.dpi/480);
+ goal.close+=dpiFactor*7; goal.mid+=dpiFactor*3;
+ goal.close+=(p.hz-90)/28+(p.touch-180)/95;
+ goal.mid+=(p.touch-180)/150+(p.hz-90)/60;
+ goal.long+=(p.hz-90)/120;
+ goal.camera+=(p.fingers-3)*2;
+ if(p.sensitivityMode==='High'){goal.close+=5;goal.mid+=4;goal.long+=3;goal.precision+=2;goal.camera+=2}
+ if(p.preset==='Fast Response'){goal.close+=8;goal.mid+=5;goal.long+=2}
+ if(p.preset==='Controlled'){goal.close-=8;goal.mid-=5;goal.long-=4;goal.precision-=3}
+ if(p.preset==='Precision'){goal.close-=4;goal.mid-=7;goal.long-=6;goal.precision-=5}
+ if(p.style==='Brazilian Freestyle'){goal.close+=9;goal.mid+=6;goal.long+=3}
+ if(p.style==='One-Tap / Drag'){goal.close+=7;goal.mid+=1;goal.long-=2;goal.precision-=3}
+ if(p.style==='Tracking'){goal.close-=2;goal.mid+=4;goal.long+=4}
+ if(p.style==='Spray Control'){goal.close-=5;goal.mid-=4;goal.long-=7;goal.precision-=5}
+ if(p.mode==='Clash Squad'){goal.close+=4;goal.mid+=2}
+ if(p.mode==='Battle Royale'){goal.long-=2;goal.precision-=2}
+ if(p.fire<35)goal.close+=3;if(p.fire>50)goal.close-=3;
+ if(p.age>24){goal.close-=2;goal.mid-=2;goal.long-=1}
+ const issueMap={
+  'Overshoot':[-9,-5,-2,-1,-1],'Chest Hit':[9,5,1,0,0],'Slow Drag':[7,4,1,0,0],
+  'Fast Drag':[-7,-4,-1,0,0],'Recoil / Shake':[-1,-2,-5,-5,0],'Close Range':[6,3,0,0,0],
+  'Long Range':[-1,-1,-2,-4,0],'Scope Shake':[0,-2,-5,-5,0],'Aim Drift':[-4,-3,-2,-2,-1],
+  'Tracking':[3,4,3,2,2],'Chest / Neck Lock':[12,7,0,0,0],
+  'Close-Range Head Transfer':[11,6,0,0,0],'Crosshair Stops Low':[9,5,0,0,0]
+ };
+ p.issues.forEach(k=>{const d=issueMap[k];if(d){goal.close+=d[0];goal.mid+=d[1];goal.long+=d[2];goal.precision+=d[3];goal.camera+=d[4]}});
+ // Weapon-class coverage: every class participates in the baseline.
  const gunClass={
   'Desert Eagle':'pistol','M500':'pistol','G18':'pistol','USP':'pistol',
   'M1014':'shotgun','M1887':'shotgun',
   'MP40':'smg','UMP':'smg','MAC10':'smg','MP5':'smg','Vector':'smg','Thompson':'smg','P90':'smg',
   'M4A1':'ar','AK47':'ar','GROZA':'ar','XM8':'ar','SCAR':'ar',
-  'SKS':'dmr','AC80':'dmr','M14':'dmr','Woodpecker':'dmr',
-  'SVD':'marksman','M82B':'marksman',
+  'SKS':'dmr','AC80':'dmr','M14':'dmr','Woodpecker':'dmr','SVD':'marksman','M82B':'marksman',
   'AWM':'sniper','Kar98K':'sniper'
  };
- const classProfile={
-  pistol:[6,5,0,-1,-2,0],shotgun:[7,6,-2,-2,-3,0],smg:[6,5,0,-1,-1,1],
-  ar:[1,1,2,1,0,0],dmr:[-1,0,1,0,-2,0],marksman:[-1,0,0,-2,-3,0],sniper:[-2,-1,-1,-3,-5,0]
+ const classBias={
+  pistol:[5,3,0,0],shotgun:[7,4,-2,0],smg:[6,4,0,0],ar:[0,1,2,1],
+  dmr:[-1,0,2,1],marksman:[-1,0,0,-2],sniper:[-2,-1,-1,-4]
  };
- const classes=['pistol','shotgun','smg','ar','dmr','marksman','sniper'];
- const coverage=[0,0,0,0,0,0];
- classes.forEach(k=>classProfile[k].forEach((n,i)=>coverage[i]+=n/classes.length));
- v=v.map((x,i)=>x+coverage[i]);
- // Selected guns are focus signals only; the rest of the loadout still contributes.
- guns.filter(g=>g!=='All Guns').forEach(g=>{const k=gunClass[g];if(k)classProfile[k].forEach((n,i)=>v[i]+=n*0.28);});
- const closeGunSelected=guns.includes('Desert Eagle')||guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014');
- if(closeGunSelected){v[0]+=2;v[1]+=2;}
- if(guns.includes('All Guns')){v[2]+=1;v[3]-=1;}
- if(guns.some(g=>['M1014','M1887'].includes(g)))v[0]+=2,v[1]+=2,v[2]-=1;
- if(guns.some(g=>['MP40','UMP','MAC10','MP5','Vector','Thompson','P90'].includes(g)))v[0]+=2,v[1]+=2;
- if(guns.some(g=>['M4A1','AK47','GROZA','XM8','SCAR'].includes(g)))v[2]+=1,v[3]+=1;
- if(guns.some(g=>['SKS','AC80','M14','Woodpecker','SVD','M82B'].includes(g)))v[3]-=1,v[4]-=1;
- if(guns.some(g=>['AWM','Kar98K'].includes(g)))v[3]-=2,v[4]-=2;
- if(age>24) v=[v[0]-1,v[1]-1,v[2]-1,v[3]-1,v[4],v[5]];
- issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2;if(x==='Chest / Neck Lock')v[0]+=8,v[1]+=7;if(x==='Close-Range Head Transfer')v[0]+=7,v[1]+=7;if(x==='Crosshair Stops Low')v[0]+=6,v[1]+=5});
- v=v.map(x=>clamp(x+(r()-.5)*4));
- // Unlike many presets, this engine allows unusual curves and even zero on a scope when evidence pushes there.
- v=v.map((x,i)=>clamp(x));
- const names=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
- return {v,names,device,dpi,hz,touch,fingers,mode,style,preset,sensitivityMode,fire,age,guns,issues,ob};
+ const allClasses=Object.keys(classBias);
+ const avg=[0,0,0,0];
+ allClasses.forEach(k=>classBias[k].forEach((n,i)=>avg[i]+=n/allClasses.length));
+ goal.close+=avg[0];goal.mid+=avg[1];goal.long+=avg[2];goal.precision+=avg[3];
+ p.guns.filter(g=>g!=='All Guns').forEach(g=>{
+  const k=gunClass[g];if(k){const b=classBias[k];goal.close+=b[0]*.32;goal.mid+=b[1]*.32;goal.long+=b[2]*.32;goal.precision+=b[3]*.32}
+ });
+ if(p.guns.includes('All Guns')){goal.long+=1;goal.precision-=1}
+ return goal;
 }
-function render(){
- const p=build(), names=p.names;
+function targetVector(g){
+ // The six axes are deliberately allowed to have non-monotonic relationships.
+ return [
+  clamp(g.close),
+  clamp(g.close*0.72 + g.mid*0.28),
+  clamp(g.mid),
+  clamp(g.long),
+  clamp(g.precision),
+  clamp(g.camera)
+ ];
+}
+function scoreCandidate(x,target,axis){
+ const spread=[18,16,15,14,12,20][axis];
+ let s=Math.abs(x-target)/spread;
+ // Penalize only implausible extremes very lightly; 0 and 200 remain valid outcomes.
+ if(x===0||x===200)s+=.04;
+ return s;
+}
+function searchAxis(target,axis,seed){
+ let best=0,bestScore=Infinity;
+ for(let x=0;x<=200;x++){
+  const jitter=((hash(seed+'|'+axis+'|'+x)%17)-8)*.012;
+  const s=scoreCandidate(x,target,axis)+jitter;
+  if(s<bestScore){bestScore=s;best=x}
+ }
+ return best;
+}
+function build(){
+ const p=getInputs();
+ p.sensitivityMode=sensitivityMode;
+ const g=rangeGoal(p),target=targetVector(g);
+ const seedBase=[p.device,p.dpi,p.hz,p.touch,p.fingers,p.mode,p.style,p.preset,p.sensitivityMode,p.fire,p.age,p.ob,p.guns.join(','),p.issues.join(',')].join('|');
+ const v=target.map((t,i)=>searchAxis(t,i,seedBase));
+ // Small deterministic separation prevents every axis from collapsing into a copied template.
+ const seed=hash(seedBase);
+ v[1]=clamp(v[1]+((seed%5)-2));v[2]=clamp(v[2]+(((seed>>>3)%5)-2));v[5]=clamp(v[5]+(((seed>>>7)%5)-2));
+ return {...p,g,target,seedBase,v,names:['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look']};
+}
+function render(p=build(),message='RESPONSE CURVE OPTIMIZED'){
  $('result').classList.add('show');
- $('status').textContent='RESPONSE CURVE BUILT FROM '+p.device.toUpperCase();
- let score=76 + Math.min(18,Math.round((p.touch/240)*5+(p.hz/120)*4+(p.fingers>=3?3:0)));
- $('score').textContent='CALIBRATION '+Math.min(94,score)+'%';
- $('sensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+names[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
+ $('status').textContent=message+' · '+p.device.toUpperCase();
+ const hardwareEvidence=Math.min(1,(p.touch/240))*.35+Math.min(1,p.hz/120)*.25+(p.fingers>=3?.2:.1)+.2;
+ const issueEvidence=Math.min(.18,p.issues.length*.025);
+ const score=Math.round(78+hardwareEvidence*14+issueEvidence*100);
+ $('score').textContent='CALIBRATION TARGET '+Math.min(94,score)+'%';
+ $('sensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+p.names[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
+ const close=Math.round((p.v[0]+p.v[1])/2),mid=Math.round((p.v[1]+p.v[2])/2),long=Math.round((p.v[2]+p.v[3])/2),precision=Math.round((p.v[3]+p.v[4])/2);
+ const ranges=[['CLOSE RANGE',close],['MID RANGE',mid],['LONG RANGE',long],['PRECISION',precision]];
+ $('ranges').innerHTML=ranges.map(r=>'<div class="range"><b>'+r[0]+'</b><span>calibration center '+r[1]+'/200</span><div class="rbar"><i style="width:'+r[1]/2+'%"></i></div></div>').join('');
  $('meta').innerHTML='<div class="mini"><b>'+p.sensitivityMode+'</b><span>Free Fire mode</span></div><div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div>';
- $('explain').innerHTML='<b>Why this curve?</b> The engine first creates a device/touch response fingerprint and explicitly accounts for the selected Default/High in-game sensitivity mode. It now separates close-range chest→head transfer from generic weapon tuning: Desert Eagle, M1014, M1887 and MP40 receive a dedicated close-range response check, while Chest / Neck Lock, Close-Range Head Transfer and Crosshair Stops Low can be selected together when the reticle repeatedly stops below the head. It searches the full 0–200 range instead of assuming that higher is always better. Test the result in Training and adjust in small steps if your actual drag response disagrees.';
- $('code').textContent='ACSL-'+hash(JSON.stringify(p)).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
- $('result').scrollIntoView({behavior:'smooth',block:'start'});
+ $('explain').innerHTML='<b>Best-version engine:</b> Instead of starting from a fixed high-sensitivity template, AIMCRAFT now builds five response zones — close, mid, long, precision and camera — then searches the full 0–200 space independently for each sensitivity axis. Weapon classes all contribute to the baseline; selected guns are only limited focus signals, so a Desert Eagle result does not become a Deagle-only profile. Problem selections shift the relevant range rather than blindly moving every value. The percentage above is an internal calibration target, not a measured headshot or recoil percentage.';
+ $('code').textContent='ACSL-'+hash(JSON.stringify({v:p.v,...p})).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
+ window.__aimcraft=p;
 }
-$('generate').addEventListener('click',()=>{ $('status').textContent='CALIBRATING RESPONSE CURVE…'; $('result').classList.add('show'); setTimeout(render,450);});
+function feedbackVector(){
+ const f=selected('feedback');
+ const d=[0,0,0,0,0,0];
+ f.forEach(x=>{
+  if(x==='Head goes over'){d[0]-=4;d[1]-=4;d[2]-=2}
+  if(x==='Stays on chest'){d[0]+=5;d[1]+=4}
+  if(x==='Drag feels slow'){d[0]+=4;d[1]+=3}
+  if(x==='Drag feels fast'){d[0]-=4;d[1]-=3}
+  if(x==='Scope shakes'){d[2]-=3;d[3]-=4;d[4]-=3}
+  if(x==='Recoil climbs'){d[2]-=2;d[3]-=4;d[4]-=3}
+  if(x==='Aim drifts'){d[0]-=2;d[1]-=2;d[2]-=1;d[3]-=1}
+ });
+ return d;
+}
+document.querySelectorAll('#feedback .chip').forEach(x=>x.addEventListener('click',()=>x.classList.toggle('on')));
+$('refine').addEventListener('click',()=>{
+ const p=window.__aimcraft||build(),d=feedbackVector();
+ if(!d.some(Boolean)){render(p,'NO TEST FEEDBACK SELECTED');return}
+ p.v=p.v.map((x,i)=>clamp(x+d[i]));
+ render(p,'REFINED FROM YOUR TRAINING FEEDBACK');
+});
+$('generate').addEventListener('click',()=>{ $('status').textContent='SEARCHING 0–200 RESPONSE SPACE…'; $('result').classList.add('show'); setTimeout(()=>render(build(),'RESPONSE CURVE OPTIMIZED'),250);});
 </script>
 </body></html>
