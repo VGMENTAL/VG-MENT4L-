@@ -40,6 +40,31 @@ label{display:block;font-weight:800;margin:11px 0 6px}.input,select,textarea{wid
     <div id="gateMsg" class="notice" style="margin-top:12px">कोड डालकर आगे बढ़ें।</div>
   </div>
 </div>
+<script>
+(function(){
+  var code='#NBACB2027';
+  var gate=document.getElementById('gate');
+  var app=document.getElementById('app');
+  var input=document.getElementById('accessCode');
+  var btn=document.getElementById('openBtn');
+  var msg=document.getElementById('gateMsg');
+  function openNow(){
+    var v=(input.value||'').replace(/\s+/g,'').toUpperCase();
+    if(v===code){
+      gate.classList.add('hidden');
+      app.classList.remove('hidden');
+      try{localStorage.setItem('dptAccess','1')}catch(e){}
+      window.scrollTo(0,0);
+    }else{
+      msg.textContent='कोड गलत है। सही प्रवेश कोड डालें: #NBACB2027';
+      msg.className='notice error';
+      input.focus();
+    }
+  }
+  btn.addEventListener('click',openNow);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();openNow();}});
+})();
+</script>
 
 <div id="app" class="hidden">
 <header class="top"><div class="nav"><div class="brand">DREAM POINT TARGET 2027<small>BIHARI BHAI.AI</small></div><div class="nav-actions">
