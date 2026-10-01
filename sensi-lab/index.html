@@ -184,16 +184,29 @@ updateGunCount();
 
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
-function setupIssueChips(){
- const box=$('issues'); if(!box)return;
+function setupSelectableChips(id){
+ const box=$(id); if(!box)return;
  box.querySelectorAll('.chip').forEach(chip=>{
   chip.setAttribute('role','button');
   chip.setAttribute('tabindex','0');
-  chip.onclick=()=>{chip.classList.toggle('on');};
-  chip.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chip.classList.toggle('on')}};
+  chip.setAttribute('aria-pressed',chip.classList.contains('on')?'true':'false');
+  const toggle=()=>{
+   chip.classList.toggle('on');
+   chip.setAttribute('aria-pressed',chip.classList.contains('on')?'true':'false');
+   if(id==='feedback') updateRefineState();
+  };
+  chip.onclick=toggle;
+  chip.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}};
  });
 }
-setupIssueChips();
+function updateRefineState(){
+ const btn=$('refine'); if(!btn)return;
+ const has=selected('feedback').length>0;
+ btn.disabled=!has;
+ btn.textContent=has?'CALCULATE & APPLY ADJUSTMENT':'SELECT PROBLEM(S) FIRST';
+}
+setupSelectableChips('issues');
+setupSelectableChips('feedback');
 function selected(id){return [...$(id).querySelectorAll('.chip.on')].map(x=>x.textContent)}
 function obNumber(s){const m=String(s).toUpperCase().match(/OB\s*(\d+)/);return m?+m[1]:0}
 function obContext(ob){
@@ -300,7 +313,7 @@ function feedbackVector(){
  const d=[0,0,0,0,0,0];selected('feedback').forEach(x=>{if(x==='Head goes over'){d[0]-=4;d[1]-=4;d[2]-=2}if(x==='Stays on chest'){d[0]+=5;d[1]+=4}if(x==='Drag feels slow'){d[0]+=4;d[1]+=3}if(x==='Drag feels fast'){d[0]-=4;d[1]-=3}if(x==='Scope shakes'){d[2]-=3;d[3]-=4;d[4]-=3}if(x==='Recoil climbs'){d[2]-=2;d[3]-=4;d[4]-=3}if(x==='Aim drifts'){d[0]-=2;d[1]-=2;d[2]-=1;d[3]-=1}});return d}
 function refine(){
  if(!current)return;
- const fb=selected('feedback');if(!fb.length){render(current,'NO TEST FEEDBACK SELECTED');return}
+ const fb=selected('feedback');if(!fb.length){updateRefineState();render(current,'NO TEST FEEDBACK SELECTED');return}
  const range=$('testRange').value,gun=$('testGun').value,d=feedbackVector(),w=range==='Close Range'?[1,.8,.2,0,0,0]:range==='Mid Range'?[.35,.7,1,.65,.2,0]:range==='Long Range'?[0,.15,.45,1,.85,0]:[0,0,.15,.8,1,0];
  const nv=current.v.map((x,i)=>calibrationState.locked[i]?x:clamp(x+d[i]*w[i]));
  if(['Desert Eagle','M1014','M1887','MP40'].includes(gun)&&!calibrationState.locked[0])nv[0]=clamp(nv[0]+1);
@@ -374,6 +387,7 @@ $('clearHistory').onclick=()=>{localStorage.removeItem(HISTORY);calibrationState
 $('makeAB').onclick=()=>{if(!current)return alert('Build a profile first.');const i=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'].indexOf($('abAxis').value),d=+$('abDelta').value,v=current.v[i],a=clamp(v-d),b=clamp(v+d);calibrationState.ab={axis:i,a,b};$('abbox').innerHTML='<div class="candidate"><h3>A · LOWER</h3><div class="cv">'+a+'</div><p>Keep every other value the same. Test the same gun and distance.</p><button class="secondary" onclick="pickAB(\'a\')">USE A</button></div><div class="candidate"><h3>B · HIGHER</h3><div class="cv">'+b+'</div><p>Keep every other value the same. Test the same gun and distance.</p><button class="secondary" onclick="pickAB(\'b\')">USE B</button></div>'};
 window.pickAB=which=>{if(!current||!calibrationState.ab)return;const z=calibrationState.ab;current.v[z.axis]=which==='a'?z.a:z.b;calibrationState.lastValues=[...current.v];persist();render(current,'A/B PREFERENCE SAVED · '+(which==='a'?'LOWER':'HIGHER'))};
 showHistory();
+updateRefineState();
 </script>
 </body>
 </html>
