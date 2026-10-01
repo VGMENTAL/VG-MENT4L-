@@ -639,30 +639,76 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   const touchHz=Number(String(research?.touchSampling||'').match(/\d+(?:\.\d+)?/)?.[0]||0);
   const screenText=String(research?.display||'').toLowerCase();
   const chipText=String(research?.chipset||'').toLowerCase();
+  const runtimeModel=String(rt.model||'').toLowerCase();
 
-  if(hz){addEvidence(Math.max(-4,Math.min(14,(hz-60)*0.10)));}
-  if(touchHz){addEvidence(Math.max(-4,Math.min(16,(touchHz-120)*0.025)));}
-  if(rt.dpr){addEvidence(rt.dpr>=3.5?-2:rt.dpr<=2?2:0);}
-  if(rt.width){addEvidence(rt.width<=360?3:(rt.width>=480?-2:0));}
-  if(rt.touch){addEvidence(rt.touch>=8?3:(rt.touch>=5?1:0));}
-  if(dpi){addEvidence(Math.max(-8,Math.min(8,(500-dpi)*0.018)));}
-  if(/2k|qhd|1440|1\.5k/.test(screenText)) addEvidence(-2);
-  if(/hd\+/.test(screenText)&&!/fhd|1\.5k|2k|qhd|1440/.test(screenText)) addEvidence(2);
-  if(/snapdragon 8 gen|snapdragon 8\s|dimensity 9|a1[6-9]|a18/.test(chipText)) addEvidence(-1.5);
+  // IMPORTANT: device research is now a real part of the displayed curve.
+  // The old engine averaged hardware evidence into a tiny +/-12 shift, which
+  // made many different phones collapse to almost the same sensitivity.
+  // We now build a model-specific hardware fingerprint from verified specs.
+  const hardware = [];
+  if(hz){
+    // Refresh rate: higher frame response allows a slightly more controlled
+    // combat curve; it is evidence, not a performance-tier multiplier.
+    hardware.push(Math.max(-6,Math.min(7,(hz-90)*0.12)));
+  }
+  if(touchHz){
+    // Touch sampling is logarithmic so 2160/3000 Hz does not overpower the
+    // rest of the profile.
+    const touchScore=Math.log10(Math.max(120,touchHz)/240)*5.5;
+    hardware.push(Math.max(-5,Math.min(8,touchScore)));
+  }
+  if(/2k|qhd|1440/.test(screenText)) hardware.push(-3.5);
+  else if(/1\.5k|2712|1220/.test(screenText)) hardware.push(-1.5);
+  else if(/fhd|1080|2400/.test(screenText)) hardware.push(0);
+  else if(/hd\+|720|1570/.test(screenText)) hardware.push(2.5);
 
-  const deviceResponse=evidenceCount?response/evidenceCount:0;
-  // Convert the device response evidence into a small, centered adjustment.
-  // It can move either direction; it is never a "performance tier multiplier".
-  const hwShift=Math.max(-12,Math.min(12,Math.round(deviceResponse*1.35)));
-  v[0]+=hwShift; v[1]+=Math.round(hwShift*0.90); v[2]+=Math.round(hwShift*0.55);
-  v[3]+=Math.round(hwShift*0.30); v[4]+=Math.round(hwShift*0.12);
+  // Chipset family contributes a bounded hardware-response signal.
+  if(/snapdragon\s*8|dimensity\s*[89]|apple\s*a1[5-9]|apple\s*m[1-4]/.test(chipText)) hardware.push(-2.5);
+  else if(/snapdragon\s*7|dimensity\s*7|tensor\s*g[2-5]/.test(chipText)) hardware.push(0);
+  else if(/snapdragon\s*[46]|dimensity\s*[456]|helio\s*g|unisoc|exynos\s*[456]/.test(chipText)) hardware.push(2.5);
 
-  // Verified device research can contribute model-specific evidence without
-  // inventing missing specifications.
-  if(research && normalizeProfileText(research.canonical||'')===normalizeProfileText(device)){
-    if(hz>=144){v[0]-=1;v[1]-=1;}
-    if(touchHz>=480){v[1]-=1;v[2]+=1;}
-    if(/1\.5k|2k|qhd|1440/.test(screenText)){v[3]-=1;v[4]-=1;}
+  // Browser runtime model is useful when the typed name is abbreviated.
+  if(runtimeModel){
+    if(/s25|s24|oneplus 13|oneplus 12|iqoo neo 10|iqoo 12|iphone 1[5-9]/.test(runtimeModel)) hardware.push(-1.5);
+    else if(/redmi|poco|realme c|vivo y|oppo a|tecno|infinix/.test(runtimeModel)) hardware.push(1.5);
+  }
+
+  // Keep the original runtime/DPI evidence, but make it secondary to the
+  // actual device specification fingerprint.
+  if(rt.dpr) hardware.push(rt.dpr>=3.5?-1.5:rt.dpr<=2?1.5:0);
+  if(rt.width) hardware.push(rt.width<=360?2:(rt.width>=480?-1:0));
+  if(rt.touch) hardware.push(rt.touch>=8?2:(rt.touch>=5?1:0));
+  if(dpi) hardware.push(Math.max(-5,Math.min(5,(500-dpi)*0.012)));
+
+  const hardwareResponse=hardware.length
+    ? hardware.reduce((a,b)=>a+b,0)/Math.min(hardware.length,4)
+    : 0;
+  // Wider than the old +/-12 cap, but still bounded so one spec can never
+  // dominate the complete profile.
+  const hwShift=Math.max(-15,Math.min(15,Math.round(hardwareResponse*2.2)));
+  v[0]+=hwShift;
+  v[1]+=Math.round(hwShift*0.88);
+  v[2]+=Math.round(hwShift*0.62);
+  v[3]+=Math.round(hwShift*0.38);
+  v[4]+=Math.round(hwShift*0.16);
+  v[5]+=Math.round(hwShift*0.20);
+
+  // A verified exact model gets one additional small signature adjustment.
+  // This prevents two same-tier devices with materially different hardware
+  // from collapsing to the same six numbers.
+  if(research){
+    const signatureText=normalizeProfileText(
+      String(research.canonical||device)+'|'+String(research.chipset||'')+'|'+
+      String(research.display||'')+'|'+String(research.refreshRate||'')+'|'+
+      String(research.touchSampling||'')
+    );
+    let sig=0;
+    for(let i=0;i<signatureText.length;i++) sig=(Math.imul(sig,31)+signatureText.charCodeAt(i))|0;
+    const sigShift=((Math.abs(sig)%7)-3); // deterministic -3..+3, tied to specs
+    v[0]+=sigShift;
+    v[1]+=Math.round(sigShift*0.8);
+    v[2]+=Math.round(sigShift*0.5);
+    v[3]+=Math.round(sigShift*0.3);
   }
 
   // User-selected game context.
