@@ -62,7 +62,12 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="card wide"><div class="sectionTitle"><h2>Problems to Correct</h2><span>multiple selections allowed</span></div>
 <div class="chips" id="issues"><span class="chip">Overshoot</span><span class="chip">Chest Hit</span><span class="chip">Slow Drag</span><span class="chip">Fast Drag</span><span class="chip">Recoil / Shake</span><span class="chip">Close Range</span><span class="chip">Long Range</span><span class="chip">Scope Shake</span><span class="chip">Aim Drift</span><span class="chip">Tracking</span><span class="chip">Chest / Neck Lock</span><span class="chip">Close-Range Head Transfer</span><span class="chip">Crosshair Stops Low</span><span class="chip">No Known Problem</span></div></div>
 
-<div class="card wide"><div class="buttonRow"><button type="button" id="generate" onclick="generate()">BUILD / REBUILD SENSITIVITY</button><button type="button" class="secondary" id="loadSaved">LOAD SAVED PROFILE</button></div>
+<div class="card wide">
+<div class="sectionTitle"><h2>Profile Code — Load / Continue</h2><span>same profile can be moved to another phone</span></div>
+<div class="two"><div><label>PROFILE TRANSFER CODE</label><input id="profileCodeInput" placeholder="Paste AIMCRAFT profile code here"></div><div style="display:flex;align-items:end"><button type="button" class="secondary" id="loadCode" style="margin-top:auto">LOAD CODE & ADJUST</button></div></div>
+<div class="hint">Paste a complete profile code here to restore the person's inputs, sensitivity and selected problems on this phone.</div>
+</div>
+<div class="card wide"><div class="buttonRow"><button type="button" id="generate" onclick="generate()">BUILD / REBUILD SENSITIVITY</button><button type="button" class="secondary" id="loadSaved">OPEN SAVED PROFILES</button></div>
 <div class="progress" id="progress"><div class="progressTrack"><div class="progressBar" id="progressBar"></div></div><div class="progressText" id="progressText">Preparing calibration…</div></div>
 <div class="sub">The calculation is local. No cheat, aimbot, memory edit or game modification is used.</div></div>
 </div>
@@ -76,12 +81,13 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="rangegrid" id="ranges"></div>
 <div class="note" id="explain"></div>
 
-<div class="note">
-<b>Profile ID: <span class="code" id="code"></span></b>
-<div class="micro">Same saved input profile + same calibration state produces the same ID in this browser. Refined test rounds are included in the profile state.</div>
-<div class="smallActions"><button class="secondary" id="saveProfile">SAVE PROFILE</button><button class="secondary" id="copyCode">COPY ID</button><button class="secondary" id="exportProfile">EXPORT JSON</button><button class="secondary" id="importProfileBtn">IMPORT JSON</button><button class="danger" id="resetProfile">RESET</button></div>
+<div class="note"><b>Profile Transfer Code</b>
+<div class="code" id="code" style="word-break:break-all;display:block;margin-top:7px"></div>
+<div class="micro">The code carries the core profile data. Copy it to another phone and use LOAD CODE & ADJUST. A changed sensitivity produces a new code.</div>
+<div class="smallActions"><button class="secondary" id="saveProfile">SAVE PROFILE</button><button class="secondary" id="copyCode">COPY CODE</button><button class="secondary" id="loadThisCode">LOAD THIS CODE</button><button class="secondary" id="exportProfile">EXPORT FULL JSON</button><button class="secondary" id="importProfileBtn">IMPORT JSON</button><button class="danger" id="resetProfile">RESET CURRENT</button></div>
 <input id="importProfile" type="file" accept="application/json" style="display:none">
 </div>
+<div class="note"><b>Saved Profile Vault</b><div class="micro">Multiple people can be saved separately in this browser. A new person no longer overwrites the previous person's profile.</div><div id="profileVault" class="empty">No profiles saved yet.</div></div>
 
 <div class="note"><b>Calibration Lab — Round Test</b>
 <div class="micro">Choose the real test gun + distance, select every observed symptom, then refine. The engine changes only the axes relevant to that range and respects locked axes.</div>
@@ -105,8 +111,9 @@ button:disabled{opacity:.65;cursor:wait}</style>
 
 <script>
 const $=id=>document.getElementById(id);
-const STORE='aimcraft_sensi_lab_v5';
-const HISTORY='aimcraft_calibration_history_v5';
+const STORE='aimcraft_sensi_lab_v6';
+const HISTORY='aimcraft_calibration_history_v6';
+const PROFILE_VAULT='aimcraft_profile_vault_v6';
 let sensitivityMode='Default', hudEvidence=null, calibrationState={locked:[false,false,false,false,false,false],rounds:[],ab:null};
 let current=null;
 
@@ -281,8 +288,13 @@ function baseState(){
  calibrationState.lastValues=[...v];
  return {...p,g,target:tv,v,seed};
 }
-function profilePayload(p){return{version:5,input:p,values:p.v,locked:calibrationState.locked,rounds:calibrationState.rounds,hud:hudEvidence,ab:calibrationState.ab}}
-function profileId(payload){return'ACSL-'+hash(JSON.stringify(payload)).toString(36).toUpperCase().padStart(7,'0').slice(0,7)}
+function profilePayload(p){return{version:6,input:p,values:p.v,locked:calibrationState.locked,rounds:calibrationState.rounds,hud:hudEvidence,ab:calibrationState.ab}}
+function transferPayload(p){return{v:1,input:{device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,fingers:p.fingers,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob,guns:p.guns,issues:p.issues,sensitivityMode:p.sensitivityMode},values:[...p.v],locked:[...calibrationState.locked]}}
+function bytesToB64(str){const bytes=new TextEncoder().encode(str);let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function b64ToBytes(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),pad=b+'='.repeat((4-b.length%4)%4),bin=atob(pad),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new TextDecoder().decode(bytes)}
+function makeTransferCode(p){return'ACX1-'+bytesToB64(JSON.stringify(transferPayload(p)))}
+function decodeTransferCode(code){const s=String(code||'').trim().replace(/\s+/g,'');if(!s.startsWith('ACX1-'))throw new Error('Invalid profile code');const x=JSON.parse(b64ToBytes(s.slice(5)));if(!x.input||!Array.isArray(x.values))throw new Error('Invalid profile data');return x}
+function profileId(payload){return makeTransferCode(payload.input)}
 function confidence(p){
  let c=52;c+=p.touch>=180?8:3;c+=p.hz>=90?7:3;c+=p.dpi>=250?5:2;c+=p.guns.length>0?6:0;c+=p.issues.includes('No Known Problem')?0:Math.min(8,p.issues.length*2);c+=hudEvidence?8:0;c+=Math.min(12,calibrationState.rounds.length*3);return Math.max(0,Math.min(96,Math.round(c)));
 }
@@ -296,9 +308,12 @@ function render(p,message='RESPONSE CURVE OPTIMIZED'){
  $('ranges').innerHTML=rg.map(r=>'<div class="range"><b>'+r[0]+'</b><span>'+r[1]+'/200 center</span><div class="rbar"><i style="width:'+r[1]/2+'%"></i></div></div>').join('');
  const oc=obContext(p.ob);$('meta').innerHTML='<div class="mini"><b>'+p.sensitivityMode+'</b><span>Free Fire sensitivity mode</span></div><div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div><div class="mini"><b>'+oc.label+'</b><span>version context · '+(oc.delta>=0?'+':'')+oc.delta.toFixed(1)+'</span></div>';
  $('explain').innerHTML='<b>How this result was built:</b> AIMCRAFT first builds five response zones (close, mid, long, precision, camera), adds device/touch/control context, applies a small OB-context signal, blends all weapon classes, then searches each sensitivity axis across the complete 0–200 range. Selected guns are limited focus signals. Multiple problem selections affect only relevant zones. Locked axes are preserved during rebuild/refinement. <b>The confidence number is evidence completeness, not a measured headshot or recoil percentage.</b>';
- const payload=profilePayload(p);$('code').textContent=profileId(payload);showHistory();
+ const payload=profilePayload(p);$('code').textContent=makeTransferCode(p);$('profileCodeInput').value=$('code').textContent;showHistory();renderVault();
 }
-function persist(){if(!current)return;try{localStorage.setItem(STORE,JSON.stringify(profilePayload(current)))}catch(e){}}
+function vaultKey(code){return'p_'+hash(code).toString(36)}
+function saveToVault(p){if(!p)return;const code=makeTransferCode(p),full=profilePayload(p);try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}');vault[vaultKey(code)]={code,profile:full,savedAt:new Date().toISOString()};localStorage.setItem(PROFILE_VAULT,JSON.stringify(vault));localStorage.setItem(STORE,JSON.stringify(full))}catch(e){}renderVault()}
+function persist(){if(!current)return;saveToVault(current)}
+function renderVault(){const box=$('profileVault');if(!box)return;try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}'),items=Object.values(vault).sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));if(!items.length){box.innerHTML='No profiles saved yet.';return}box.innerHTML=items.map((x,i)=>'<div class="mini" style="margin-top:7px"><b>PROFILE '+(i+1)+'</b><span>'+((x.profile.input&&x.profile.input.device)||'Unknown Device')+' · '+((x.profile.input&&x.profile.input.mode)||'Unknown Mode')+' · '+new Date(x.savedAt).toLocaleString()+'</span><div class="smallActions"><button type="button" class="secondary" data-vault="'+x.code+'">LOAD</button><button type="button" class="secondary" data-vault-copy="'+x.code+'">COPY CODE</button></div></div>').join('');box.querySelectorAll('[data-vault]').forEach(b=>b.onclick=()=>loadTransferCode(b.dataset.vault));box.querySelectorAll('[data-vault-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.vaultCopy);b.textContent='COPIED'}catch(e){alert(b.dataset.vaultCopy)}})}catch(e){box.textContent='Profile vault unavailable in this browser.'}}
 function saveHistory(round){
  try{let h=JSON.parse(localStorage.getItem(HISTORY)||'[]');h.push(round);h=h.slice(-12);localStorage.setItem(HISTORY,JSON.stringify(h));calibrationState.rounds=h}catch(e){}
  showHistory();
@@ -340,14 +355,9 @@ function generate(){
   }
  },100);
 }
-function loadSaved(){
- try{const x=JSON.parse(localStorage.getItem(STORE)||'null');if(!x?.input)return alert('No saved AIMCRAFT profile found on this browser.');
- const p=x.input;Object.entries({device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob}).forEach(([k,v])=>{if($(k))$(k).value=v});
- $('fingers').value=p.fingers||3;sensitivityMode=p.sensitivityMode||'Default';document.querySelectorAll('.modepick').forEach(x=>x.classList.toggle('on',x.dataset.mode===sensitivityMode));
- ['guns','issues'].forEach(id=>$(id).querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',(p[id]||[]).includes(c.textContent))));
- calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.lastValues=x.values||null;calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;render({...p,v:x.values||p.v,g:rangeGoal(p)},'SAVED PROFILE LOADED');showHistory();
- }catch(e){alert('Saved profile could not be loaded.')}
-}
+function applyLoadedProfile(x,message='PROFILE LOADED'){const p=x.input||x;Object.entries({device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob}).forEach(([k,v])=>{if($(k))$(k).value=v});$('fingers').value=p.fingers||3;sensitivityMode=p.sensitivityMode||'Default';document.querySelectorAll('.modepick').forEach(x=>x.classList.toggle('on',x.dataset.mode===sensitivityMode));['guns','issues'].forEach(id=>$(id).querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',(p[id]||[]).includes(c.textContent.trim()))));calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.lastValues=x.values||null;calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;const restored={...p,v:x.values||p.v,g:rangeGoal(p)};current=restored;render(restored,message);persist();$('profileCodeInput').value=makeTransferCode(restored)}
+function loadTransferCode(code){try{const x=decodeTransferCode(code);applyLoadedProfile(x,'TRANSFER CODE LOADED');$('result').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){alert('Profile code is invalid or incomplete. Copy the complete code and try again.')}}
+function loadSaved(){try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}'),items=Object.values(vault).sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));if(items.length){renderVault();$('profileVault')?.scrollIntoView({behavior:'smooth',block:'center'});return}const x=JSON.parse(localStorage.getItem(STORE)||'null');if(!x?.input)return alert('No saved AIMCRAFT profiles found on this browser.');applyLoadedProfile(x,'SAVED PROFILE LOADED')}catch(e){alert('Saved profiles could not be loaded.')}}
 function handleHud(input){
  const f=input.files&&input.files[0]; if(!f)return;
  const meta=$('hudMeta');
@@ -377,17 +387,19 @@ function handleHud(input){
 
 
 $('generate').onclick=generate;$('loadSaved').onclick=loadSaved;$('refine').onclick=refine;
-$('saveProfile').onclick=()=>{persist();alert('Profile saved in this browser.')};
-$('copyCode').onclick=async()=>{if(!current)return;try{await navigator.clipboard.writeText($('code').textContent);$('copyCode').textContent='COPIED';setTimeout(()=>$('copyCode').textContent='COPY ID',1000)}catch(e){alert($('code').textContent)}};
+$('loadCode').onclick=()=>loadTransferCode($('profileCodeInput').value);
+$('profileCodeInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();loadTransferCode(e.target.value)}};
+$('loadThisCode').onclick=()=>loadTransferCode($('code').textContent);
+$('saveProfile').onclick=()=>{persist();alert('Profile saved. Copy the transfer code for another phone.')};
+$('copyCode').onclick=async()=>{if(!current)return;try{await navigator.clipboard.writeText($('code').textContent);$('copyCode').textContent='COPIED';setTimeout(()=>$('copyCode').textContent='COPY CODE',1000)}catch(e){alert($('code').textContent)}};
 $('exportProfile').onclick=()=>{if(!current)return;const blob=new Blob([JSON.stringify(profilePayload(current),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='aimcraft-profile-'+$('code').textContent+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
 $('importProfileBtn').onclick=()=>$('importProfile').click();
-$('importProfile').onchange=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.input||!Array.isArray(x.values))throw 0;const p=x.input;Object.entries({device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob}).forEach(([k,v])=>{if($(k))$(k).value=v});$('fingers').value=p.fingers||3;sensitivityMode=p.sensitivityMode||'Default';calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;current={...p,v:x.values};persist();render(current,'PROFILE IMPORTED')}catch(err){alert('Invalid AIMCRAFT profile JSON.')}};r.readAsText(f)};
+$('importProfile').onchange=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.input||!Array.isArray(x.values))throw 0;const p=x.input;applyLoadedProfile(x,'PROFILE IMPORTED')}catch(err){alert('Invalid AIMCRAFT profile JSON.')}};r.readAsText(f)};
 $('resetProfile').onclick=()=>{if(!confirm('Reset this AIMCRAFT profile and local calibration state?'))return;localStorage.removeItem(STORE);localStorage.removeItem(HISTORY);calibrationState={locked:[false,false,false,false,false,false],rounds:[]};current=null;$('result').classList.remove('show');showHistory()};
 $('clearHistory').onclick=()=>{localStorage.removeItem(HISTORY);calibrationState.rounds=[];showHistory()};
 $('makeAB').onclick=()=>{if(!current)return alert('Build a profile first.');const i=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'].indexOf($('abAxis').value),d=+$('abDelta').value,v=current.v[i],a=clamp(v-d),b=clamp(v+d);calibrationState.ab={axis:i,a,b};$('abbox').innerHTML='<div class="candidate"><h3>A · LOWER</h3><div class="cv">'+a+'</div><p>Keep every other value the same. Test the same gun and distance.</p><button class="secondary" onclick="pickAB(\'a\')">USE A</button></div><div class="candidate"><h3>B · HIGHER</h3><div class="cv">'+b+'</div><p>Keep every other value the same. Test the same gun and distance.</p><button class="secondary" onclick="pickAB(\'b\')">USE B</button></div>'};
 window.pickAB=which=>{if(!current||!calibrationState.ab)return;const z=calibrationState.ab;current.v[z.axis]=which==='a'?z.a:z.b;calibrationState.lastValues=[...current.v];persist();render(current,'A/B PREFERENCE SAVED · '+(which==='a'?'LOWER':'HIGHER'))};
-showHistory();
-updateRefineState();
+showHistory();renderVault();updateRefineState();
 </script>
 </body>
 </html>
