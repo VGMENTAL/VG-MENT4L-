@@ -280,9 +280,24 @@ function refine(){
  current.v=nv;calibrationState.lastValues=[...nv];
  const round={at:new Date().toISOString(),gun,range,feedback:fb,values:[...nv]};saveHistory(round);persist();render(current,'REFINED · '+gun.toUpperCase()+' · '+range.toUpperCase());selected('feedback').forEach(t=>{});
 }
+let buildTimer=null;
 function generate(){
+ if(buildTimer)return;
+ const btn=$('generate');btn.disabled=true;btn.textContent='BUILDING…';
  $('progress').classList.add('on');$('progressBar').style.width='0%';$('progressText').textContent='Building device + touch fingerprint…';
- let step=0;const timer=setInterval(()=>{step+=1;$('progressBar').style.width=Math.min(100,step*14)+'%';const msgs=['Building device + touch fingerprint…','Mapping close/mid/long response…','Blending weapon classes…','Applying problem constraints…','Searching full 0–200 space…','Checking locked axes…','Finalizing calibration profile…'];$('progressText').textContent=msgs[Math.min(msgs.length-1,Math.floor(step/1.2))];if(step>=7){clearInterval(timer);try{const p=baseState();calibrationState.rounds=JSON.parse(localStorage.getItem(HISTORY)||'[]');render(p);persist()}catch(e){alert(e.message)}setTimeout(()=>$('progress').classList.remove('on'),250)}}},85);
+ let step=0;
+ buildTimer=setInterval(()=>{
+  step++;
+  $('progressBar').style.width=Math.min(100,Math.round(step*100/7))+'%';
+  const msgs=['Building device + touch fingerprint…','Mapping close/mid/long response…','Blending weapon classes…','Applying problem constraints…','Searching full 0–200 space…','Checking locked axes…','Finalizing calibration profile…'];
+  $('progressText').textContent=msgs[Math.min(msgs.length-1,step-1)];
+  if(step>=7){
+   clearInterval(buildTimer);buildTimer=null;
+   try{const p=baseState();calibrationState.rounds=JSON.parse(localStorage.getItem(HISTORY)||'[]');render(p);persist();$('progressText').textContent='Sensitivity built successfully.'}
+   catch(e){console.error(e);$('progressText').textContent=e.message||'Build failed.';alert(e.message||'Build failed.')}
+   setTimeout(()=>{$('progress').classList.remove('on');btn.disabled=false;btn.textContent='BUILD / REBUILD SENSITIVITY'},350);
+  }
+ },100);
 }
 function loadSaved(){
  try{const x=JSON.parse(localStorage.getItem(STORE)||'null');if(!x?.input)return alert('No saved AIMCRAFT profile found on this browser.');
