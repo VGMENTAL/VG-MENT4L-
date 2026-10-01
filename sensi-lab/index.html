@@ -72,7 +72,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <div class="card wide">
 <label>Focus Guns — choose up to 3</label>
 <div class="chips" id="guns">
-<span class="chip on">All Guns</span><span class="chip">M1014</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">M4A1</span><span class="chip">AK47</span><span class="chip">GROZA</span><span class="chip">UMP</span><span class="chip">MAC10</span><span class="chip">AWM</span><span class="chip">Woodpecker</span><span class="chip">SVD</span><span class="chip">M82B</span>
+<span class="chip on">All Guns</span><span class="chip">M1014</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">M4A1</span><span class="chip">AK47</span><span class="chip">GROZA</span><span class="chip">UMP</span><span class="chip">MAC10</span><span class="chip">AWM</span><span class="chip">Woodpecker</span><span class="chip">SVD</span><span class="chip">M82B</span><span class="chip">SKS</span><span class="chip">AC80</span><span class="chip">M14</span><span class="chip">Kar98K</span><span class="chip">MP5</span><span class="chip">Vector</span><span class="chip">Thompson</span><span class="chip">P90</span><span class="chip">M500</span><span class="chip">G18</span><span class="chip">USP</span>
 </div><div class="hint">All Guns uses a broad weapon mix. Select up to 3 for focused calibration. Close-range guns get a separate chest→head transfer check.</div>
 </div>
 <div class="card wide">
@@ -137,12 +137,34 @@ function build(){
  if(mode==='Clash Squad') v[0]+=3,v[1]+=3,v[2]+=1;
  if(mode==='Battle Royale') v[3]-=2,v[4]-=2;
  if(fire<35) v[0]+=2,v[1]+=1; if(fire>50) v[0]-=2,v[1]-=2;
- // Close-range weapon response is separated from the generic gun boost so a Desert Eagle profile is not mistaken for a complete close-range head-transfer profile.\n const closeGunSelected=guns.includes('Desert Eagle')||guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014');\n if(guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014')) v[0]+=4,v[1]+=3;\n if(guns.includes('Desert Eagle')) v[0]+=5,v[1]+=6;\n if(closeGunSelected){v[0]+=2;v[1]+=2;}
- if(guns.includes('M1014')) v[2]-=2;
- if(guns.includes('M4A1')||guns.includes('AK47')||guns.includes('GROZA')) v[2]-=2;
- if(guns.includes('SVD')||guns.includes('M82B')) v[3]-=3,v[4]-=2;
- if(guns.includes('AWM')||guns.includes('Woodpecker')) v[3]-=4,v[4]-=3;
- if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}
+ // Gun coverage model: every build is calibrated against multiple weapon classes.
+ const gunClass={
+  'Desert Eagle':'pistol','M500':'pistol','G18':'pistol','USP':'pistol',
+  'M1014':'shotgun','M1887':'shotgun',
+  'MP40':'smg','UMP':'smg','MAC10':'smg','MP5':'smg','Vector':'smg','Thompson':'smg','P90':'smg',
+  'M4A1':'ar','AK47':'ar','GROZA':'ar','XM8':'ar','SCAR':'ar',
+  'SKS':'dmr','AC80':'dmr','M14':'dmr','Woodpecker':'dmr',
+  'SVD':'marksman','M82B':'marksman',
+  'AWM':'sniper','Kar98K':'sniper'
+ };
+ const classProfile={
+  pistol:[6,5,0,-1,-2,0],shotgun:[7,6,-2,-2,-3,0],smg:[6,5,0,-1,-1,1],
+  ar:[1,1,2,1,0,0],dmr:[-1,0,1,0,-2,0],marksman:[-1,0,0,-2,-3,0],sniper:[-2,-1,-1,-3,-5,0]
+ };
+ const classes=['pistol','shotgun','smg','ar','dmr','marksman','sniper'];
+ const coverage=[0,0,0,0,0,0];
+ classes.forEach(k=>classProfile[k].forEach((n,i)=>coverage[i]+=n/classes.length));
+ v=v.map((x,i)=>x+coverage[i]);
+ // Selected guns are focus signals only; the rest of the loadout still contributes.
+ guns.filter(g=>g!=='All Guns').forEach(g=>{const k=gunClass[g];if(k)classProfile[k].forEach((n,i)=>v[i]+=n*0.28);});
+ const closeGunSelected=guns.includes('Desert Eagle')||guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014');
+ if(closeGunSelected){v[0]+=2;v[1]+=2;}
+ if(guns.includes('All Guns')){v[2]+=1;v[3]-=1;}
+ if(guns.some(g=>['M1014','M1887'].includes(g)))v[0]+=2,v[1]+=2,v[2]-=1;
+ if(guns.some(g=>['MP40','UMP','MAC10','MP5','Vector','Thompson','P90'].includes(g)))v[0]+=2,v[1]+=2;
+ if(guns.some(g=>['M4A1','AK47','GROZA','XM8','SCAR'].includes(g)))v[2]+=1,v[3]+=1;
+ if(guns.some(g=>['SKS','AC80','M14','Woodpecker','SVD','M82B'].includes(g)))v[3]-=1,v[4]-=1;
+ if(guns.some(g=>['AWM','Kar98K'].includes(g)))v[3]-=2,v[4]-=2;
  if(age>24) v=[v[0]-1,v[1]-1,v[2]-1,v[3]-1,v[4],v[5]];
  issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2;if(x==='Chest / Neck Lock')v[0]+=8,v[1]+=7;if(x==='Close-Range Head Transfer')v[0]+=7,v[1]+=7;if(x==='Crosshair Stops Low')v[0]+=6,v[1]+=5});
  v=v.map(x=>clamp(x+(r()-.5)*4));
