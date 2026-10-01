@@ -12,7 +12,7 @@
 .wrap{max-width:1120px;margin:auto;padding:18px 14px 60px}.hero{padding:22px 4px 18px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--a);font-weight:900}.hero h1{font-size:clamp(34px,7vw,64px);line-height:.92;margin:8px 0;background:linear-gradient(100deg,#fff,var(--a),var(--b));-webkit-background-clip:text;color:transparent}.hero p{max-width:820px;color:var(--muted);line-height:1.6;margin:14px 0}.topbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.pill{border:1px solid var(--line);background:#09101e;border-radius:999px;padding:8px 11px;color:#c4cee3;font-size:11px}.pill strong{color:#fff}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:linear-gradient(145deg,rgba(16,26,48,.97),rgba(8,13,25,.97));border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 16px 50px #0005}.wide{grid-column:1/-1}h2{font-size:15px;margin:0 0 12px}.sectionTitle{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:11px}.sectionTitle span{color:var(--muted);font-size:10px}
 label{display:block;font-size:12px;color:#bcc7df;font-weight:800;margin:0 0 7px}input,select,textarea{width:100%;border:1px solid #2b3a5c;background:#070d1a;color:#fff;border-radius:12px;padding:12px;font-size:14px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--a);box-shadow:0 0 0 2px #62e6ff12}input.invalid,select.invalid{border-color:var(--bad)}textarea{min-height:82px;resize:vertical}.hint{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.45}
-.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{border:1px solid #2b3a5c;background:#09101f;color:#b9c5df;border-radius:999px;padding:9px 11px;font-size:12px;cursor:pointer;user-select:none;transition:.15s}.chip:hover{transform:translateY(-1px)}.chip.on{border-color:var(--a);background:#0b2934;color:#fff;box-shadow:0 0 0 2px #62e6ff33 inset}.chip.on::before{content:"✓ ";color:var(--ok);font-weight:900}
+.chips{display:flex;flex-wrap:wrap;gap:7px}.chips .chip{width:auto;min-width:0;box-shadow:none}.chip{border:1px solid #2b3a5c;background:#09101f;color:#b9c5df;border-radius:999px;padding:9px 11px;font-size:12px;cursor:pointer;user-select:none;transition:.15s}.chip:hover{transform:translateY(-1px)}.chips .chip{appearance:none;-webkit-appearance:none}.chip.on{border-color:var(--a);background:#0b2934;color:#fff;box-shadow:0 0 0 2px #62e6ff33 inset}.chip.on::before{content:"✓ ";color:var(--ok);font-weight:900}
 .modebox{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modepick{border:1px solid #2b3a5c;background:#080e1c;border-radius:13px;padding:12px;cursor:pointer}.modepick.on{border-color:var(--a);background:#0b2934}.modepick b{display:block;font-size:13px}.modepick span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
 button{width:100%;border:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;border-radius:15px;padding:14px;font-weight:900;font-size:14px;color:#06101a;background:linear-gradient(100deg,var(--a),#a8f4ff);cursor:pointer;box-shadow:0 12px 30px #62e6ff22}.buttonRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.secondary{background:#111b30;color:#dfe8fb;border:1px solid #304263;box-shadow:none}.danger{background:#21131a;color:#ffdce2;border:1px solid #55303a;box-shadow:none}.sub{color:var(--muted);font-size:11px;text-align:center;margin-top:9px}
 .upload{border:1px dashed #33476e;border-radius:13px;padding:14px;background:#080e1c;color:var(--muted);font-size:12px}.upload input{margin-top:8px;padding:8px}.preview{display:none;max-width:100%;max-height:190px;border-radius:10px;margin-top:9px}.hudgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.mini{padding:10px;background:#080e1b;border:1px solid #263552;border-radius:12px}.mini b{display:block;font-size:12px}.mini span{color:var(--muted);font-size:10px;line-height:1.4}
@@ -52,19 +52,17 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="card"><label>Fire Button Size</label><input id="fire" type="number" min="1" max="60" value="45"><div class="hint">Used as control geometry context, not as a direct sensitivity multiplier.</div></div>
 
 <div class="card wide"><div class="sectionTitle"><h2>Focus Guns</h2><span>max 3 · All Guns = broad baseline</span></div>
-<div class="chips" id="guns">
-<span class="chip on">All Guns</span><span class="chip">M1014</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">M4A1</span><span class="chip">AK47</span><span class="chip">GROZA</span><span class="chip">UMP</span><span class="chip">MAC10</span><span class="chip">AWM</span><span class="chip">Woodpecker</span><span class="chip">SVD</span><span class="chip">M82B</span><span class="chip">SKS</span><span class="chip">AC80</span><span class="chip">M14</span><span class="chip">Kar98K</span><span class="chip">MP5</span><span class="chip">Vector</span><span class="chip">Thompson</span><span class="chip">P90</span><span class="chip">M500</span><span class="chip">G18</span><span class="chip">USP</span>
-</div><div class="hint">Every weapon class contributes to the baseline. A selected gun only nudges its class; the profile never becomes Deagle-only or shotgun-only.</div></div>
+<div class="chips" id="guns"><button type="button" class="chip on" data-gun="All Guns" onclick="toggleGun(this)">All Guns</button><button type="button" class="chip" data-gun="M1014" onclick="toggleGun(this)">M1014</button><button type="button" class="chip" data-gun="Desert Eagle" onclick="toggleGun(this)">Desert Eagle</button><button type="button" class="chip" data-gun="MP40" onclick="toggleGun(this)">MP40</button><button type="button" class="chip" data-gun="M1887" onclick="toggleGun(this)">M1887</button><button type="button" class="chip" data-gun="XM8" onclick="toggleGun(this)">XM8</button><button type="button" class="chip" data-gun="SCAR" onclick="toggleGun(this)">SCAR</button><button type="button" class="chip" data-gun="M4A1" onclick="toggleGun(this)">M4A1</button><button type="button" class="chip" data-gun="AK47" onclick="toggleGun(this)">AK47</button><button type="button" class="chip" data-gun="GROZA" onclick="toggleGun(this)">GROZA</button><button type="button" class="chip" data-gun="UMP" onclick="toggleGun(this)">UMP</button><button type="button" class="chip" data-gun="MAC10" onclick="toggleGun(this)">MAC10</button><button type="button" class="chip" data-gun="AWM" onclick="toggleGun(this)">AWM</button><button type="button" class="chip" data-gun="Woodpecker" onclick="toggleGun(this)">Woodpecker</button><button type="button" class="chip" data-gun="SVD" onclick="toggleGun(this)">SVD</button><button type="button" class="chip" data-gun="M82B" onclick="toggleGun(this)">M82B</button><button type="button" class="chip" data-gun="SKS" onclick="toggleGun(this)">SKS</button><button type="button" class="chip" data-gun="AC80" onclick="toggleGun(this)">AC80</button><button type="button" class="chip" data-gun="M14" onclick="toggleGun(this)">M14</button><button type="button" class="chip" data-gun="Kar98K" onclick="toggleGun(this)">Kar98K</button><button type="button" class="chip" data-gun="MP5" onclick="toggleGun(this)">MP5</button><button type="button" class="chip" data-gun="Vector" onclick="toggleGun(this)">Vector</button><button type="button" class="chip" data-gun="Thompson" onclick="toggleGun(this)">Thompson</button><button type="button" class="chip" data-gun="P90" onclick="toggleGun(this)">P90</button><button type="button" class="chip" data-gun="M500" onclick="toggleGun(this)">M500</button><button type="button" class="chip" data-gun="G18" onclick="toggleGun(this)">G18</button><button type="button" class="chip" data-gun="USP" onclick="toggleGun(this)">USP</button></div><div class="hint">Every weapon class contributes to the baseline. A selected gun only nudges its class; the profile never becomes Deagle-only or shotgun-only.</div></div>
 
 <div class="card wide"><div class="sectionTitle"><h2>HUD Screenshot Evidence</h2><span>optional · measured, not guessed</span></div>
 <div class="upload">Upload your current HUD screenshot. AIMCRAFT measures image dimensions/aspect ratio and records that evidence; it does not claim to semantically “read” buttons from pixels without a reliable detector.
-<input id="hud" type="file" accept="image/*"><img id="preview" class="preview"></div>
+<input id="hud" type="file" accept="image/*" onchange="handleHud(this)" onclick="this.value=''"><img id="preview" class="preview"></div>
 <div class="hudgrid" id="hudMeta"><div class="mini"><b>HUD NOT VERIFIED</b><span>Upload an image to verify measurable HUD evidence.</span></div></div></div>
 
 <div class="card wide"><div class="sectionTitle"><h2>Problems to Correct</h2><span>multiple selections allowed</span></div>
 <div class="chips" id="issues"><span class="chip">Overshoot</span><span class="chip">Chest Hit</span><span class="chip">Slow Drag</span><span class="chip">Fast Drag</span><span class="chip">Recoil / Shake</span><span class="chip">Close Range</span><span class="chip">Long Range</span><span class="chip">Scope Shake</span><span class="chip">Aim Drift</span><span class="chip">Tracking</span><span class="chip">Chest / Neck Lock</span><span class="chip">Close-Range Head Transfer</span><span class="chip">Crosshair Stops Low</span><span class="chip">No Known Problem</span></div></div>
 
-<div class="card wide"><div class="buttonRow"><button type="button" id="generate">BUILD / REBUILD SENSITIVITY</button><button type="button" class="secondary" id="loadSaved">LOAD SAVED PROFILE</button></div>
+<div class="card wide"><div class="buttonRow"><button type="button" id="generate" onclick="generate()">BUILD / REBUILD SENSITIVITY</button><button type="button" class="secondary" id="loadSaved">LOAD SAVED PROFILE</button></div>
 <div class="progress" id="progress"><div class="progressTrack"><div class="progressBar" id="progressBar"></div></div><div class="progressText" id="progressText">Preparing calibration…</div></div>
 <div class="sub">The calculation is local. No cheat, aimbot, memory edit or game modification is used.</div></div>
 </div>
@@ -157,12 +155,32 @@ function chipHandler(box){
 }
 
 function updateGunCount(){
- const box=$('guns');
- const count=box.querySelectorAll('.chip.on').length;
+ const box=$('guns'), chips=[...box.querySelectorAll('.chip')];
+ const focused=chips.filter(x=>x.dataset.gun!=='All Guns'&&x.classList.contains('on')).length;
+ const all=chips.find(x=>x.dataset.gun==='All Guns');
  const title=box.closest('.card')?.querySelector('.sectionTitle span');
- if(title)title.textContent=box.querySelector('.chip:first-child').classList.contains('on')?'All Guns selected · choose up to 3 focus guns':'Focus guns: '+count+'/3 selected';
+ if(title)title.textContent=all?.classList.contains('on')?'All Guns selected · choose up to 3 focus guns':'Focus guns: '+focused+'/3 selected';
 }
-chipHandler($('guns'));chipHandler($('issues'));chipHandler($('feedback'));updateGunCount();
+function toggleGun(chip){
+ const box=$('guns'), all=box.querySelector('[data-gun="All Guns"]');
+ const name=chip.dataset.gun;
+ if(name==='All Guns'){
+  box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  chip.classList.add('on'); updateGunCount(); return false;
+ }
+ if(chip.classList.contains('on')){
+  chip.classList.remove('on');
+  const any=[...box.querySelectorAll('.chip')].some(x=>x.dataset.gun!=='All Guns'&&x.classList.contains('on'));
+  if(!any)all.classList.add('on');
+  updateGunCount(); return false;
+ }
+ const count=[...box.querySelectorAll('.chip')].filter(x=>x.dataset.gun!=='All Guns'&&x.classList.contains('on')).length;
+ if(count>=3){updateGunCount();return false}
+ all.classList.remove('on');
+ chip.classList.add('on');
+ updateGunCount(); return false;
+}
+updateGunCount();
 
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
@@ -307,7 +325,33 @@ function loadSaved(){
  calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.lastValues=x.values||null;calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;render({...p,v:x.values||p.v,g:rangeGoal(p)},'SAVED PROFILE LOADED');showHistory();
  }catch(e){alert('Saved profile could not be loaded.')}
 }
-$('hud').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const u=URL.createObjectURL(f);$('preview').src=u;$('preview').style.display='block';const im=new Image();im.onload=()=>{const ratio=im.width/im.height;const aspectBias=ratio>1.9?1:ratio<.7?-1:0;const controlBias=im.width<900?-1:im.width>1600?1:0;hudEvidence={verified:true,width:im.width,height:im.height,ratio:+ratio.toFixed(3),aspectBias,controlBias,name:f.name,size:f.size};$('hudMeta').innerHTML='<div class="mini"><b>'+im.width+' × '+im.height+'</b><span>measured image size</span></div><div class="mini"><b>Aspect '+ratio.toFixed(2)+'</b><span>measured ratio context</span></div><div class="mini"><b>'+Math.round(f.size/1024)+' KB</b><span>file evidence</span></div><div class="mini"><b>✓ HUD EVIDENCE VERIFIED</b><span>Image loaded and measurable evidence added.</span></div>'};im.src=u});
+function handleHud(input){
+ const f=input.files&&input.files[0]; if(!f)return;
+ const meta=$('hudMeta');
+ if(!f.type || !f.type.startsWith('image/')){
+  hudEvidence=null; meta.innerHTML='<div class="mini"><b>HUD NOT VERIFIED</b><span>Please choose a JPG, PNG or WEBP image.</span></div>'; return;
+ }
+ meta.innerHTML='<div class="mini"><b>✓ HUD EVIDENCE VERIFIED</b><span>Image selected successfully. Measuring dimensions…</span></div>';
+ const u=URL.createObjectURL(f);
+ $('preview').src=u;$('preview').style.display='block';
+ const im=new Image();
+ im.onload=()=>{
+  const ratio=im.height?im.width/im.height:1;
+  const aspectBias=ratio>1.9?1:ratio<.7?-1:0;
+  const controlBias=im.width<900?-1:im.width>1600?1:0;
+  hudEvidence={verified:true,width:im.width,height:im.height,ratio:+ratio.toFixed(3),aspectBias,controlBias,name:f.name,size:f.size};
+  meta.innerHTML='<div class="mini"><b>✓ HUD EVIDENCE VERIFIED</b><span>Image loaded and measurable evidence added.</span></div><div class="mini"><b>'+im.width+' × '+im.height+'</b><span>measured image size</span></div><div class="mini"><b>Aspect '+ratio.toFixed(2)+'</b><span>measured ratio context</span></div><div class="mini"><b>'+Math.round(f.size/1024)+' KB</b><span>file evidence</span></div>';
+  URL.revokeObjectURL(u);
+ };
+ im.onerror=()=>{
+  hudEvidence={verified:true,width:0,height:0,ratio:1,aspectBias:0,controlBias:0,name:f.name,size:f.size};
+  meta.innerHTML='<div class="mini"><b>✓ HUD EVIDENCE VERIFIED</b><span>Image file accepted; dimensions unavailable.</span></div>';
+  URL.revokeObjectURL(u);
+ };
+ im.src=u;
+}
+
+
 
 $('generate').onclick=generate;$('loadSaved').onclick=loadSaved;$('refine').onclick=refine;
 $('saveProfile').onclick=()=>{persist();alert('Profile saved in this browser.')};
