@@ -36,6 +36,10 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 </div>
 <div class="card">
 <label>Game Version / OB</label><input id="ob" value="OB55" placeholder="OB55">
+<div class="hint">Version is a context signal; it is not a universal conversion.</div>
+</div>
+<div class="card">
+<label>Device Age</label><input id="age" type="number" min="0" max="120" value="12"><div class="hint">Months since purchase; stability context only.</div>
 </div>
 <div class="card">
 <label>DPI</label><input id="dpi" type="number" min="100" max="2000" value="480">
@@ -56,7 +60,11 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <label>Player Style</label><select id="style"><option>Freestyle</option><option>Brazilian Freestyle</option><option>One-Tap / Drag</option><option>Tracking</option><option>Spray Control</option><option>Balanced</option></select>
 </div>
 <div class="card">
-<label>Sensitivity Profile</label><select id="preset"><option>Adaptive</option><option>High Response</option><option>Controlled</option><option>Precision</option></select>
+<label>Response Profile</label><select id="preset"><option>Adaptive</option><option>Fast Response</option><option>Controlled</option><option>Precision</option></select>
+</div>
+<div class="card">
+<label>Free Fire Sensitivity Mode</label>
+<div class="modebox" id="sensmode"><div class="modepick on" data-mode="Default"><b>DEFAULT</b><span>Standard in-game sensitivity behavior</span></div><div class="modepick" data-mode="High"><b>HIGH</b><span>High in-game sensitivity behavior</span></div></div>
 </div>
 <div class="card">
 <label>Fire Button Size</label><input id="fire" type="number" min="1" max="60" value="45">
@@ -64,8 +72,11 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <div class="card wide">
 <label>Focus Guns — choose up to 3</label>
 <div class="chips" id="guns">
-<span class="chip on">All Guns</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">AWM</span><span class="chip">Woodpecker</span>
+<span class="chip on">All Guns</span><span class="chip">M1014</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">M4A1</span><span class="chip">AK47</span><span class="chip">GROZA</span><span class="chip">UMP</span><span class="chip">MAC10</span><span class="chip">AWM</span><span class="chip">Woodpecker</span><span class="chip">SVD</span><span class="chip">M82B</span>
+</div><div class="hint">All Guns uses a broad weapon mix. Select up to 3 for focused calibration.</div>
 </div>
+<div class="card wide">
+<label>HUD Screenshot (optional)</label><div class="upload">Upload a HUD screenshot for control-layout evidence.<input id="hud" type="file" accept="image/*"><img id="preview" class="preview"></div>
 </div>
 <div class="card wide">
 <label>What are you trying to correct?</label>
@@ -91,7 +102,10 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 </div>
 
 <script>
-const $=id=>document.getElementById(id);\nlet sensitivityMode='Default';\ndocument.querySelectorAll('.modepick').forEach(x=>x.addEventListener('click',()=>{document.querySelectorAll('.modepick').forEach(y=>y.classList.remove('on'));x.classList.add('on');sensitivityMode=x.dataset.mode;}));\n$('hud').addEventListener('change',e=>{const f=e.target.files?.[0];if(f){const u=URL.createObjectURL(f);$('preview').src=u;$('preview').style.display='block';}});
+const $=id=>document.getElementById(id);
+let sensitivityMode='Default';
+document.querySelectorAll('.modepick').forEach(x=>x.addEventListener('click',()=>{document.querySelectorAll('.modepick').forEach(y=>y.classList.remove('on'));x.classList.add('on');sensitivityMode=x.dataset.mode;}));
+$('hud').addEventListener('change',e=>{const f=e.target.files?.[0];if(f){const u=URL.createObjectURL(f);$('preview').src=u;$('preview').style.display='block';}});
 document.querySelectorAll('.chips').forEach(box=>box.addEventListener('click',e=>{if(!e.target.classList.contains('chip'))return;const all=e.target.textContent==='All Guns'||e.target.textContent==='No Known Problem';if(box.id==='guns'&&all){box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));e.target.classList.add('on')}else{box.querySelector('.chip:first-child')?.classList.remove('on');e.target.classList.toggle('on')}}));
 
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)}
@@ -111,7 +125,9 @@ function build(){
  v[0]+=(hz-90)/35; v[1]+=(touch-180)/90;
  v[2]+=(touch-180)/150; v[3]+=(hz-90)/55;
  v[5]+=(fingers-3)*2;
- if(sensitivityMode==='High') v=[v[0]+4,v[1]+4,v[2]+3,v[3]+2,v[4]+1,v[5]+2];\n if(sensitivityMode==='Default') v=[v[0],v[1],v[2],v[3],v[4],v[5]];\n if(preset==='Fast Response') v=[v[0]+7,v[1]+6,v[2]+4,v[3]+3,v[4]+1,v[5]+3];
+ if(sensitivityMode==='High') v=[v[0]+4,v[1]+4,v[2]+3,v[3]+2,v[4]+1,v[5]+2];
+ if(sensitivityMode==='Default') v=[v[0],v[1],v[2],v[3],v[4],v[5]];
+ if(preset==='Fast Response') v=[v[0]+7,v[1]+6,v[2]+4,v[3]+3,v[4]+1,v[5]+3];
  if(preset==='Controlled') v=[v[0]-7,v[1]-5,v[2]-5,v[3]-4,v[4]-3,v[5]-2];
  if(preset==='Precision') v=[v[0]-3,v[1]-8,v[2]-8,v[3]-7,v[4]-5,v[5]-4];
  if(style==='Brazilian Freestyle') v=[v[0]+9,v[1]+8,v[2]+5,v[3]+3,v[4],v[5]+2];
@@ -121,9 +137,13 @@ function build(){
  if(mode==='Clash Squad') v[0]+=3,v[1]+=3,v[2]+=1;
  if(mode==='Battle Royale') v[3]-=2,v[4]-=2;
  if(fire<35) v[0]+=2,v[1]+=1; if(fire>50) v[0]-=2,v[1]-=2;
- if(guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014')) v[0]+=4,v[1]+=3;\n if(guns.includes('M1014')) v[2]-=2;\n if(guns.includes('M4A1')||guns.includes('AK47')||guns.includes('GROZA')) v[2]-=2;\n if(guns.includes('SVD')||guns.includes('M82B')) v[3]-=3,v[4]-=2;
+ if(guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014')) v[0]+=4,v[1]+=3;
+ if(guns.includes('M1014')) v[2]-=2;
+ if(guns.includes('M4A1')||guns.includes('AK47')||guns.includes('GROZA')) v[2]-=2;
+ if(guns.includes('SVD')||guns.includes('M82B')) v[3]-=3,v[4]-=2;
  if(guns.includes('AWM')||guns.includes('Woodpecker')) v[3]-=4,v[4]-=3;
- if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}\n if(age>24) v=[v[0]-1,v[1]-1,v[2]-1,v[3]-1,v[4],v[5]];
+ if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}
+ if(age>24) v=[v[0]-1,v[1]-1,v[2]-1,v[3]-1,v[4],v[5]];
  issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2});
  v=v.map(x=>clamp(x+(r()-.5)*4));
  // Unlike many presets, this engine allows unusual curves and even zero on a scope when evidence pushes there.
