@@ -138,12 +138,10 @@ function chipHandler(box){
    }
 
    const count=box.querySelectorAll('.chip.on').length;
-   if(all.classList.contains('on') || count>=3){
+   if(all.classList.contains('on')){
     all.classList.remove('on');
    }
-   if(box.querySelectorAll('.chip.on').length<3){
-    chip.classList.add('on');
-   }
+   if(box.querySelectorAll('.chip.on').length<3){chip.classList.add('on');}
    updateGunCount();
    return;
   }
