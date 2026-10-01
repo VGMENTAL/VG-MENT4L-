@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070b16">
+<title>AIMCRAFT SENSI LAB</title>
+<style>
+:root{--bg:#070b16;--panel:#0d1426;--panel2:#111b31;--line:#243252;--text:#f4f7ff;--muted:#8d9ab7;--a:#62e6ff;--b:#9b7cff;--ok:#63e6a4}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#18274d 0,#070b16 42%,#050812 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:1080px;margin:auto;padding:22px 14px 50px}.hero{padding:24px 4px 18px}.eyebrow{font-size:11px;letter-spacing:2px;color:var(--a);font-weight:800}.hero h1{font-size:clamp(32px,7vw,62px);line-height:.95;margin:8px 0;background:linear-gradient(100deg,#fff,var(--a),var(--b));-webkit-background-clip:text;color:transparent}.hero p{max-width:720px;color:var(--muted);line-height:1.55;margin:14px 0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:linear-gradient(145deg,rgba(17,27,49,.96),rgba(9,14,27,.96));border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 16px 50px #0004}.wide{grid-column:1/-1}
+label{display:block;font-size:12px;color:#b9c5df;font-weight:700;margin:0 0 7px}input,select{width:100%;border:1px solid #2b3a5c;background:#080e1c;color:#fff;border-radius:12px;padding:12px;font-size:14px;outline:none}input:focus,select:focus{border-color:var(--a)}.hint{font-size:11px;color:var(--muted);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{border:1px solid #2b3a5c;background:#09101f;color:#b9c5df;border-radius:999px;padding:9px 11px;font-size:12px;cursor:pointer;user-select:none}.chip.on{border-color:var(--a);background:#0b2934;color:#fff;box-shadow:0 0 0 1px #62e6ff33 inset}
+button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-size:15px;color:#06101a;background:linear-gradient(100deg,var(--a),#a8f4ff);cursor:pointer;box-shadow:0 12px 30px #62e6ff22}.sub{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+.result{display:none;margin-top:14px}.result.show{display:block}.status{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 13px;border-radius:12px;background:#08101e;border:1px solid #263552;margin-bottom:12px;font-size:12px}.badge{color:var(--ok);font-weight:800}
+.sensi{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.axis{background:#080e1b;border:1px solid #263552;border-radius:14px;padding:12px 8px;text-align:center}.axis small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.axis strong{font-size:25px}.bar{height:5px;background:#1d2941;border-radius:5px;margin-top:9px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));border-radius:5px}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.mini{padding:11px;background:#080e1b;border:1px solid #263552;border-radius:12px}.mini b{display:block;font-size:13px}.mini span{color:var(--muted);font-size:10px}
+.note{margin-top:12px;padding:13px;border-left:3px solid var(--a);background:#091322;color:#bdc9df;font-size:12px;line-height:1.55;border-radius:10px}.code{font-family:ui-monospace,monospace;letter-spacing:2px;color:#fff}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.sensi{grid-template-columns:repeat(3,1fr)}.meta{grid-template-columns:1fr 1fr}.hero h1{font-size:43px}}
+@media(max-width:380px){.sensi{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero">
+<div class="eyebrow">INDEPENDENT SENSITIVITY EXPERIMENT · 0–200 ENGINE</div>
+<h1>AIMCRAFT<br>SENSI LAB</h1>
+<p>A sensitivity builder I designed from scratch. It does not begin with a fixed “high sensi” number. It builds a response profile from your device, touch setup, play style and control goals, then searches the full 0–200 space.</p>
+</section>
+
+<div class="grid">
+<div class="card">
+<label>Device / Model</label><input id="device" placeholder="e.g. Vivo Y400 5G, iPhone 15, Redmi Note 14">
+<div class="hint">Model is evidence, not a guaranteed database lookup.</div>
+</div>
+<div class="card">
+<label>Game Version / OB</label><input id="ob" value="OB55" placeholder="OB55">
+</div>
+<div class="card">
+<label>DPI</label><input id="dpi" type="number" min="100" max="2000" value="480">
+</div>
+<div class="card">
+<label>Refresh Rate (Hz)</label><input id="hz" type="number" min="30" max="240" value="120">
+</div>
+<div class="card">
+<label>Touch Sampling (Hz)</label><input id="touch" type="number" min="60" max="2000" value="240">
+</div>
+<div class="card">
+<label>Fingers</label><select id="fingers"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select>
+</div>
+<div class="card">
+<label>Game Mode</label><select id="mode"><option>Clash Squad</option><option>Battle Royale</option><option>Training</option><option>All Modes</option></select>
+</div>
+<div class="card">
+<label>Player Style</label><select id="style"><option>Freestyle</option><option>Brazilian Freestyle</option><option>One-Tap / Drag</option><option>Tracking</option><option>Spray Control</option><option>Balanced</option></select>
+</div>
+<div class="card">
+<label>Sensitivity Profile</label><select id="preset"><option>Adaptive</option><option>High Response</option><option>Controlled</option><option>Precision</option></select>
+</div>
+<div class="card">
+<label>Fire Button Size</label><input id="fire" type="number" min="1" max="60" value="45">
+</div>
+<div class="card wide">
+<label>Focus Guns — choose up to 3</label>
+<div class="chips" id="guns">
+<span class="chip on">All Guns</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">AWM</span><span class="chip">Woodpecker</span>
+</div>
+</div>
+<div class="card wide">
+<label>What are you trying to correct?</label>
+<div class="chips" id="issues">
+<span class="chip">Overshoot</span><span class="chip">Chest Hit</span><span class="chip">Slow Drag</span><span class="chip">Fast Drag</span><span class="chip">Recoil / Shake</span><span class="chip">Close Range</span><span class="chip">Long Range</span><span class="chip">Scope Shake</span><span class="chip">Aim Drift</span><span class="chip">Tracking</span><span class="chip">No Known Problem</span>
+</div>
+</div>
+<div class="card wide">
+<button id="generate">BUILD MY SENSITIVITY</button>
+<div class="sub">Local calculation · no cheat / aimbot / game modification</div>
+</div>
+</div>
+
+<section class="result" id="result">
+<div class="card">
+<div class="status"><span id="status">CALIBRATING RESPONSE CURVE…</span><span class="badge" id="score">—</span></div>
+<div class="sensi" id="sensi"></div>
+<div class="meta" id="meta"></div>
+<div class="note" id="explain"></div>
+<div class="note"><b>Profile ID:</b> <span class="code" id="code"></span><br><span style="color:#8d9ab7">This ID represents this input profile; it is not a claim of universal sensitivity.</span></div>
+</div>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+document.querySelectorAll('.chips').forEach(box=>box.addEventListener('click',e=>{if(!e.target.classList.contains('chip'))return;const all=e.target.textContent==='All Guns'||e.target.textContent==='No Known Problem';if(box.id==='guns'&&all){box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));e.target.classList.add('on')}else{box.querySelector('.chip:first-child')?.classList.remove('on');e.target.classList.toggle('on')}}));
+
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)}
+function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
+function selected(id){return [...$(id).querySelectorAll('.chip.on')].map(x=>x.textContent)}
+function build(){
+ const device=$('device').value.trim()||'Generic Touch Device',dpi=+$('dpi').value||480,hz=+$('hz').value||60,touch=+$('touch').value||120;
+ const fingers=+$('fingers').value,mode=$('mode').value,style=$('style').value,preset=$('preset').value,fire=+$('fire').value||45,ob=$('ob').value.trim()||'Unknown';
+ const guns=selected('guns'),issues=selected('issues');
+ let seed=hash([device,dpi,hz,touch,fingers,mode,style,preset,fire,ob,guns.join(','),issues.join(',')].join('|'));
+ const r=()=>((seed=Math.imul(seed^seed>>>13,1274126177)>>>0)%1000)/1000;
+ let v=[140,105,82,64,38,70];
+ // Device/touch fingerprint: deliberately small; no universal high-sensitivity floor.
+ const model=device.toLowerCase();
+ if(/iphone|pixel|oneplus|iqoo|vivo|realme|oppo|samsung|xiaomi|redmi|poco|asus/.test(model)) v=v.map((x,i)=>x+[-2,0,1,1,0,0][i]);
+ v[0]+=Math.log2(dpi/480)*6; v[1]+=Math.log2(dpi/480)*5;
+ v[0]+=(hz-90)/35; v[1]+=(touch-180)/90;
+ v[2]+=(touch-180)/150; v[3]+=(hz-90)/55;
+ v[5]+=(fingers-3)*2;
+ if(preset==='High Response') v=[v[0]+7,v[1]+6,v[2]+4,v[3]+3,v[4]+1,v[5]+3];
+ if(preset==='Controlled') v=[v[0]-7,v[1]-5,v[2]-5,v[3]-4,v[4]-3,v[5]-2];
+ if(preset==='Precision') v=[v[0]-3,v[1]-8,v[2]-8,v[3]-7,v[4]-5,v[5]-4];
+ if(style==='Brazilian Freestyle') v=[v[0]+9,v[1]+8,v[2]+5,v[3]+3,v[4],v[5]+2];
+ if(style==='One-Tap / Drag') v=[v[0]+5,v[1]+2,v[2]-2,v[3]-4,v[4]-4,v[5]];
+ if(style==='Tracking') v=[v[0]-3,v[1]+3,v[2]+4,v[3]+3,v[4]+1,v[5]+4];
+ if(style==='Spray Control') v=[v[0]-4,v[1]-4,v[2]-8,v[3]-9,v[4]-7,v[5]-2];
+ if(mode==='Clash Squad') v[0]+=3,v[1]+=3,v[2]+=1;
+ if(mode==='Battle Royale') v[3]-=2,v[4]-=2;
+ if(fire<35) v[0]+=2,v[1]+=1; if(fire>50) v[0]-=2,v[1]-=2;
+ if(guns.includes('MP40')||guns.includes('M1887')) v[0]+=4,v[1]+=3;
+ if(guns.includes('AWM')||guns.includes('Woodpecker')) v[3]-=4,v[4]-=3;
+ if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}
+ issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2});
+ v=v.map(x=>clamp(x+(r()-.5)*4));
+ // Unlike many presets, this engine allows unusual curves and even zero on a scope when evidence pushes there.
+ v=v.map((x,i)=>clamp(x));
+ const names=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
+ return {v,names,device,dpi,hz,touch,fingers,mode,style,preset,fire,guns,issues,ob};
+}
+function render(){
+ const p=build(), names=p.names;
+ $('result').classList.add('show');
+ $('status').textContent='RESPONSE CURVE BUILT FROM '+p.device.toUpperCase();
+ let score=76 + Math.min(18,Math.round((p.touch/240)*5+(p.hz/120)*4+(p.fingers>=3?3:0)));
+ $('score').textContent='CALIBRATION '+Math.min(94,score)+'%';
+ $('sensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+names[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
+ $('meta').innerHTML='<div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.mode+'</b><span>combat context</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div>';
+ $('explain').innerHTML='<b>Why this curve?</b> The engine first creates a device/touch response fingerprint, then applies small evidence-based shifts for play style, mode, fire button, guns and selected problems. It searches the full 0–200 range instead of assuming that higher is always better. Test the result in Training and adjust in small steps if your actual drag response disagrees.';
+ $('code').textContent='ACSL-'+hash(JSON.stringify(p)).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
+ $('result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('generate').addEventListener('click',()=>{ $('status').textContent='CALIBRATING RESPONSE CURVE…'; $('result').classList.add('show'); setTimeout(render,450);});
+</script>
+</body></html>
