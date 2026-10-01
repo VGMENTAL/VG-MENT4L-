@@ -184,6 +184,16 @@ updateGunCount();
 
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
+function setupIssueChips(){
+ const box=$('issues'); if(!box)return;
+ box.querySelectorAll('.chip').forEach(chip=>{
+  chip.setAttribute('role','button');
+  chip.setAttribute('tabindex','0');
+  chip.onclick=()=>{chip.classList.toggle('on');};
+  chip.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chip.classList.toggle('on')}};
+ });
+}
+setupIssueChips();
 function selected(id){return [...$(id).querySelectorAll('.chip.on')].map(x=>x.textContent)}
 function obNumber(s){const m=String(s).toUpperCase().match(/OB\s*(\d+)/);return m?+m[1]:0}
 function obContext(ob){
