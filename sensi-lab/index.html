@@ -116,19 +116,55 @@ document.querySelectorAll('.modepick').forEach(x=>x.addEventListener('click',()=
 
 function chipHandler(box){
  box.addEventListener('click',e=>{
-  if(!e.target.classList.contains('chip'))return;
-  const t=e.target.textContent;
+  const chip=e.target.closest('.chip');
+  if(!chip || !box.contains(chip))return;
+  const t=chip.textContent.trim();
+
   if(box.id==='guns'){
-   if(t==='All Guns'){box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));e.target.classList.add('on');return}
-   box.querySelector('.chip')?.classList.remove('on');
-   if(!e.target.classList.contains('on') && box.querySelectorAll('.chip.on').length>=3)return;
+   const all=box.querySelector('.chip:first-child');
+   if(t==='All Guns'){
+    box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    chip.classList.add('on');
+    updateGunCount();
+    return;
+   }
+
+   // A focused gun can always be toggled OFF, even when three are already selected.
+   if(chip.classList.contains('on')){
+    chip.classList.remove('on');
+    if(box.querySelectorAll('.chip.on').length===0) all.classList.add('on');
+    updateGunCount();
+    return;
+   }
+
+   const count=box.querySelectorAll('.chip.on').length;
+   if(all.classList.contains('on') || count>=3){
+    all.classList.remove('on');
+   }
+   if(box.querySelectorAll('.chip.on').length<3){
+    chip.classList.add('on');
+   }
+   updateGunCount();
+   return;
   }
-  if(t==='No Known Problem'){box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));e.target.classList.add('on');return}
-  box.querySelector('.chip:first-child')?.classList.remove('on');
-  e.target.classList.toggle('on');
+
+  if(t==='No Known Problem'){
+   box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+   chip.classList.add('on');
+   return;
+  }
+  if(box.id==='issues')box.querySelector('.chip:first-child')?.classList.remove('on');
+  chip.classList.toggle('on');
  });
 }
-chipHandler($('guns'));chipHandler($('issues'));chipHandler($('feedback'));
+
+function updateGunCount(){
+ const box=$('guns');
+ const count=box.querySelectorAll('.chip.on').length;
+ const title=box.closest('.card')?.querySelector('.sectionTitle span');
+ if(title)title.textContent=box.querySelector('.chip:first-child').classList.contains('on')?'All Guns selected · choose up to 3 focus guns':'Focus guns: '+count+'/3 selected';
+}
+chipHandler($('guns'));chipHandler($('issues'));chipHandler($('feedback'));updateGunCount();
 
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
