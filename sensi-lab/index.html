@@ -73,7 +73,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <label>Focus Guns — choose up to 3</label>
 <div class="chips" id="guns">
 <span class="chip on">All Guns</span><span class="chip">M1014</span><span class="chip">Desert Eagle</span><span class="chip">MP40</span><span class="chip">M1887</span><span class="chip">XM8</span><span class="chip">SCAR</span><span class="chip">M4A1</span><span class="chip">AK47</span><span class="chip">GROZA</span><span class="chip">UMP</span><span class="chip">MAC10</span><span class="chip">AWM</span><span class="chip">Woodpecker</span><span class="chip">SVD</span><span class="chip">M82B</span>
-</div><div class="hint">All Guns uses a broad weapon mix. Select up to 3 for focused calibration.</div>
+</div><div class="hint">All Guns uses a broad weapon mix. Select up to 3 for focused calibration. Close-range guns get a separate chest→head transfer check.</div>
 </div>
 <div class="card wide">
 <label>HUD Screenshot (optional)</label><div class="upload">Upload a HUD screenshot for control-layout evidence.<input id="hud" type="file" accept="image/*"><img id="preview" class="preview"></div>
@@ -81,7 +81,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <div class="card wide">
 <label>What are you trying to correct?</label>
 <div class="chips" id="issues">
-<span class="chip">Overshoot</span><span class="chip">Chest Hit</span><span class="chip">Slow Drag</span><span class="chip">Fast Drag</span><span class="chip">Recoil / Shake</span><span class="chip">Close Range</span><span class="chip">Long Range</span><span class="chip">Scope Shake</span><span class="chip">Aim Drift</span><span class="chip">Tracking</span><span class="chip">No Known Problem</span>
+<span class="chip">Overshoot</span><span class="chip">Chest Hit</span><span class="chip">Slow Drag</span><span class="chip">Fast Drag</span><span class="chip">Recoil / Shake</span><span class="chip">Close Range</span><span class="chip">Long Range</span><span class="chip">Scope Shake</span><span class="chip">Aim Drift</span><span class="chip">Tracking</span><span class="chip">Chest / Neck Lock</span><span class="chip">Close-Range Head Transfer</span><span class="chip">Crosshair Stops Low</span><span class="chip">No Known Problem</span>
 </div>
 </div>
 <div class="card wide">
@@ -137,14 +137,14 @@ function build(){
  if(mode==='Clash Squad') v[0]+=3,v[1]+=3,v[2]+=1;
  if(mode==='Battle Royale') v[3]-=2,v[4]-=2;
  if(fire<35) v[0]+=2,v[1]+=1; if(fire>50) v[0]-=2,v[1]-=2;
- if(guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014')) v[0]+=4,v[1]+=3;
+ // Close-range weapon response is separated from the generic gun boost so a Desert Eagle profile is not mistaken for a complete close-range head-transfer profile.\n const closeGunSelected=guns.includes('Desert Eagle')||guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014');\n if(guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014')) v[0]+=4,v[1]+=3;\n if(guns.includes('Desert Eagle')) v[0]+=5,v[1]+=6;\n if(closeGunSelected){v[0]+=2;v[1]+=2;}
  if(guns.includes('M1014')) v[2]-=2;
  if(guns.includes('M4A1')||guns.includes('AK47')||guns.includes('GROZA')) v[2]-=2;
  if(guns.includes('SVD')||guns.includes('M82B')) v[3]-=3,v[4]-=2;
  if(guns.includes('AWM')||guns.includes('Woodpecker')) v[3]-=4,v[4]-=3;
  if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}
  if(age>24) v=[v[0]-1,v[1]-1,v[2]-1,v[3]-1,v[4],v[5]];
- issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2});
+ issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2;if(x==='Chest / Neck Lock')v[0]+=8,v[1]+=7;if(x==='Close-Range Head Transfer')v[0]+=7,v[1]+=7;if(x==='Crosshair Stops Low')v[0]+=6,v[1]+=5});
  v=v.map(x=>clamp(x+(r()-.5)*4));
  // Unlike many presets, this engine allows unusual curves and even zero on a scope when evidence pushes there.
  v=v.map((x,i)=>clamp(x));
@@ -159,7 +159,7 @@ function render(){
  $('score').textContent='CALIBRATION '+Math.min(94,score)+'%';
  $('sensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+names[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
  $('meta').innerHTML='<div class="mini"><b>'+p.sensitivityMode+'</b><span>Free Fire mode</span></div><div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div>';
- $('explain').innerHTML='<b>Why this curve?</b> The engine first creates a device/touch response fingerprint and explicitly accounts for the selected Default/High in-game sensitivity mode, then applies small evidence-based shifts for play style, mode, fire button, guns and selected problems. It searches the full 0–200 range instead of assuming that higher is always better. Test the result in Training and adjust in small steps if your actual drag response disagrees.';
+ $('explain').innerHTML='<b>Why this curve?</b> The engine first creates a device/touch response fingerprint and explicitly accounts for the selected Default/High in-game sensitivity mode. It now separates close-range chest→head transfer from generic weapon tuning: Desert Eagle, M1014, M1887 and MP40 receive a dedicated close-range response check, while Chest / Neck Lock, Close-Range Head Transfer and Crosshair Stops Low can be selected together when the reticle repeatedly stops below the head. It searches the full 0–200 range instead of assuming that higher is always better. Test the result in Training and adjust in small steps if your actual drag response disagrees.';
  $('code').textContent='ACSL-'+hash(JSON.stringify(p)).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
  $('result').scrollIntoView({behavior:'smooth',block:'start'});
 }
