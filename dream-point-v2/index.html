@@ -212,7 +212,7 @@ $('openBtn').onclick=()=>{if(normalize($('accessCode').value)===normalize(ACCESS
 $('accessCode').onkeydown=e=>{if(e.key==='Enter')$('openBtn').click()}
 $('saveProfile').onclick=saveProfile;
 renderSubjects();renderNotes();bindNav();setupCamera();updateStats();
-if(localStorage.getItem('dptAccess')==='1')openApp();
+try{if(localStorage.getItem('dptAccess')==='1')openApp();}catch(e){show('home');}
 })();
 </script>
 </body>
