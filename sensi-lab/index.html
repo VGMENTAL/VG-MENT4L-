@@ -16,7 +16,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 .result{display:none;margin-top:14px}.result.show{display:block}.status{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 13px;border-radius:12px;background:#08101e;border:1px solid #263552;margin-bottom:12px;font-size:12px}.badge{color:var(--ok);font-weight:800}
 .sensi{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.axis{background:#080e1b;border:1px solid #263552;border-radius:14px;padding:12px 8px;text-align:center}.axis small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.axis strong{font-size:25px}.bar{height:5px;background:#1d2941;border-radius:5px;margin-top:9px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));border-radius:5px}
 .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.mini{padding:11px;background:#080e1b;border:1px solid #263552;border-radius:12px}.mini b{display:block;font-size:13px}.mini span{color:var(--muted);font-size:10px}
-.note{margin-top:12px;padding:13px;border-left:3px solid var(--a);background:#091322;color:#bdc9df;font-size:12px;line-height:1.55;border-radius:10px}.code{font-family:ui-monospace,monospace;letter-spacing:2px;color:#fff}
+.modebox{display:grid;grid-template-columns:1fr 1fr;gap:8px}.modepick{border:1px solid #2b3a5c;background:#080e1c;border-radius:13px;padding:12px;cursor:pointer}.modepick.on{border-color:var(--a);background:#0b2934}.modepick b{display:block;font-size:13px}.modepick span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.upload{border:1px dashed #33476e;border-radius:13px;padding:14px;background:#080e1c;color:var(--muted);font-size:12px}.upload input{margin-top:8px;padding:8px}.preview{display:none;max-width:100%;max-height:150px;border-radius:10px;margin-top:9px}.note{margin-top:12px;padding:13px;border-left:3px solid var(--a);background:#091322;color:#bdc9df;font-size:12px;line-height:1.55;border-radius:10px}.code{font-family:ui-monospace,monospace;letter-spacing:2px;color:#fff}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.sensi{grid-template-columns:repeat(3,1fr)}.meta{grid-template-columns:1fr 1fr}.hero h1{font-size:43px}}
 @media(max-width:380px){.sensi{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -91,7 +91,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 </div>
 
 <script>
-const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);\nlet sensitivityMode='Default';\ndocument.querySelectorAll('.modepick').forEach(x=>x.addEventListener('click',()=>{document.querySelectorAll('.modepick').forEach(y=>y.classList.remove('on'));x.classList.add('on');sensitivityMode=x.dataset.mode;}));\n$('hud').addEventListener('change',e=>{const f=e.target.files?.[0];if(f){const u=URL.createObjectURL(f);$('preview').src=u;$('preview').style.display='block';}});
 document.querySelectorAll('.chips').forEach(box=>box.addEventListener('click',e=>{if(!e.target.classList.contains('chip'))return;const all=e.target.textContent==='All Guns'||e.target.textContent==='No Known Problem';if(box.id==='guns'&&all){box.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));e.target.classList.add('on')}else{box.querySelector('.chip:first-child')?.classList.remove('on');e.target.classList.toggle('on')}}));
 
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)}
@@ -99,9 +99,9 @@ function clamp(v){return Math.max(0,Math.min(200,Math.round(v)))}
 function selected(id){return [...$(id).querySelectorAll('.chip.on')].map(x=>x.textContent)}
 function build(){
  const device=$('device').value.trim()||'Generic Touch Device',dpi=+$('dpi').value||480,hz=+$('hz').value||60,touch=+$('touch').value||120;
- const fingers=+$('fingers').value,mode=$('mode').value,style=$('style').value,preset=$('preset').value,fire=+$('fire').value||45,ob=$('ob').value.trim()||'Unknown';
+ const fingers=+$('fingers').value,mode=$('mode').value,style=$('style').value,preset=$('preset').value,fire=+$('fire').value||45,ob=$('ob').value.trim()||'Unknown',age=+$('age').value||0;
  const guns=selected('guns'),issues=selected('issues');
- let seed=hash([device,dpi,hz,touch,fingers,mode,style,preset,fire,ob,guns.join(','),issues.join(',')].join('|'));
+ let seed=hash([device,dpi,hz,touch,fingers,mode,style,preset,sensitivityMode,fire,age,ob,guns.join(','),issues.join(',')].join('|'));
  const r=()=>((seed=Math.imul(seed^seed>>>13,1274126177)>>>0)%1000)/1000;
  let v=[140,105,82,64,38,70];
  // Device/touch fingerprint: deliberately small; no universal high-sensitivity floor.
@@ -111,7 +111,7 @@ function build(){
  v[0]+=(hz-90)/35; v[1]+=(touch-180)/90;
  v[2]+=(touch-180)/150; v[3]+=(hz-90)/55;
  v[5]+=(fingers-3)*2;
- if(preset==='High Response') v=[v[0]+7,v[1]+6,v[2]+4,v[3]+3,v[4]+1,v[5]+3];
+ if(sensitivityMode==='High') v=[v[0]+4,v[1]+4,v[2]+3,v[3]+2,v[4]+1,v[5]+2];\n if(sensitivityMode==='Default') v=[v[0],v[1],v[2],v[3],v[4],v[5]];\n if(preset==='Fast Response') v=[v[0]+7,v[1]+6,v[2]+4,v[3]+3,v[4]+1,v[5]+3];
  if(preset==='Controlled') v=[v[0]-7,v[1]-5,v[2]-5,v[3]-4,v[4]-3,v[5]-2];
  if(preset==='Precision') v=[v[0]-3,v[1]-8,v[2]-8,v[3]-7,v[4]-5,v[5]-4];
  if(style==='Brazilian Freestyle') v=[v[0]+9,v[1]+8,v[2]+5,v[3]+3,v[4],v[5]+2];
@@ -121,15 +121,15 @@ function build(){
  if(mode==='Clash Squad') v[0]+=3,v[1]+=3,v[2]+=1;
  if(mode==='Battle Royale') v[3]-=2,v[4]-=2;
  if(fire<35) v[0]+=2,v[1]+=1; if(fire>50) v[0]-=2,v[1]-=2;
- if(guns.includes('MP40')||guns.includes('M1887')) v[0]+=4,v[1]+=3;
+ if(guns.includes('MP40')||guns.includes('M1887')||guns.includes('M1014')) v[0]+=4,v[1]+=3;\n if(guns.includes('M1014')) v[2]-=2;\n if(guns.includes('M4A1')||guns.includes('AK47')||guns.includes('GROZA')) v[2]-=2;\n if(guns.includes('SVD')||guns.includes('M82B')) v[3]-=3,v[4]-=2;
  if(guns.includes('AWM')||guns.includes('Woodpecker')) v[3]-=4,v[4]-=3;
- if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}
+ if(guns.includes('All Guns')) {v[2]+=1;v[3]-=1}\n if(age>24) v=[v[0]-1,v[1]-1,v[2]-1,v[3]-1,v[4],v[5]];
  issues.forEach(x=>{if(x==='Overshoot')v[0]-=4,v[1]-=4;if(x==='Chest Hit')v[0]+=4,v[1]+=3;if(x==='Slow Drag')v[0]+=3,v[1]+=3;if(x==='Fast Drag')v[0]-=3,v[1]-=2;if(x==='Recoil / Shake')v[2]-=5,v[3]-=6,v[4]-=4;if(x==='Close Range')v[0]+=3,v[1]+=2;if(x==='Long Range')v[3]-=4,v[4]-=4;if(x==='Scope Shake')v[2]-=3,v[3]-=4,v[4]-=3;if(x==='Aim Drift')v[0]-=2,v[1]-=2;if(x==='Tracking')v[0]+=2,v[1]+=2,v[2]+=2});
  v=v.map(x=>clamp(x+(r()-.5)*4));
  // Unlike many presets, this engine allows unusual curves and even zero on a scope when evidence pushes there.
  v=v.map((x,i)=>clamp(x));
  const names=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
- return {v,names,device,dpi,hz,touch,fingers,mode,style,preset,fire,guns,issues,ob};
+ return {v,names,device,dpi,hz,touch,fingers,mode,style,preset,sensitivityMode,fire,age,guns,issues,ob};
 }
 function render(){
  const p=build(), names=p.names;
@@ -138,8 +138,8 @@ function render(){
  let score=76 + Math.min(18,Math.round((p.touch/240)*5+(p.hz/120)*4+(p.fingers>=3?3:0)));
  $('score').textContent='CALIBRATION '+Math.min(94,score)+'%';
  $('sensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+names[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
- $('meta').innerHTML='<div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.mode+'</b><span>combat context</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div>';
- $('explain').innerHTML='<b>Why this curve?</b> The engine first creates a device/touch response fingerprint, then applies small evidence-based shifts for play style, mode, fire button, guns and selected problems. It searches the full 0–200 range instead of assuming that higher is always better. Test the result in Training and adjust in small steps if your actual drag response disagrees.';
+ $('meta').innerHTML='<div class="mini"><b>'+p.sensitivityMode+'</b><span>Free Fire mode</span></div><div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div>';
+ $('explain').innerHTML='<b>Why this curve?</b> The engine first creates a device/touch response fingerprint and explicitly accounts for the selected Default/High in-game sensitivity mode, then applies small evidence-based shifts for play style, mode, fire button, guns and selected problems. It searches the full 0–200 range instead of assuming that higher is always better. Test the result in Training and adjust in small steps if your actual drag response disagrees.';
  $('code').textContent='ACSL-'+hash(JSON.stringify(p)).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
  $('result').scrollIntoView({behavior:'smooth',block:'start'});
 }
