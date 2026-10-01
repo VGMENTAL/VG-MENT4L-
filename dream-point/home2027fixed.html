@@ -9,7 +9,7 @@
 <div class="card"><h2>2027 Board Readiness</h2><div class="stats"><div class="stat"><b id="score">0%</b><span class="muted">Readiness score</span></div><div class="stat"><b id="done">0</b><span class="muted">Topics completed</span></div><div class="stat"><b id="attempt">0</b><span class="muted">Questions attempted</span></div><div class="stat"><b id="sid">—</b><span class="muted">Student ID</span></div></div><div class="bar" style="margin-top:14px"><i id="progress" style="width:0%"></i></div><p class="muted">Score preparation activity ka indicator hai, board-result prediction nahi.</p></div>
 <div class="card"><h2>पढ़ाई लक्ष्य</h2><div class="grid"><div class="q"><small>वस्तुनिष्ठ</small><p><b>100 / subject</b></p></div><div class="q"><small>लघु उत्तरीय</small><p><b>30 / subject</b></p></div><div class="q"><small>दीर्घ उत्तरीय</small><p><b>10 / subject</b></p></div></div></div>
 </section>
-<section id="bank" class="page hidden"><div class="card"><h2>📚 विषयवार प्रश्न बैंक</h2><p class="muted">पहले विषय चुनें। पूरा विषय मिलाकर <b>100 वस्तुनिष्ठ + 30 लघु + 10 दीर्घ</b> प्रश्न मिलेंगे। अध्याय पर टैप करने पर उस अध्याय का फोकस भी खुलेगा।</p><div id="analysisBox"></div><div id="subjects" class="subjectbar"></div><div id="bankTabs" class="chips"><button class="chip sel" onclick="bankTab('obj')">100 वस्तुनिष्ठ</button><button class="chip" onclick="bankTab('short')">30 लघु</button><button class="chip" onclick="bankTab('long')">10 दीर्घ</button></div><div id="bankList"></div><h3>अध्याय सूची</h3><div id="chapterList"></div></div></section><section id="notes" class="page hidden"><div class="card"><h2>महत्वपूर्ण नोट्स</h2><p class="muted">सिर्फ NCERT आधारित परीक्षा-उपयोगी concepts, परिभाषाएँ, सूत्र, प्रक्रियाएँ और answer-points।</p><div id="notesList"></div></div></section>
+<section id="bank" class="page hidden"><div class="card"><h2>📚 विषयवार प्रश्न बैंक</h2><p class="muted">पहले विषय चुनें। पूरे विषय का संयुक्त अभ्यास बैंक: <b>100 वस्तुनिष्ठ + 30 लघु + 10 दीर्घ</b>। फिर किसी भी अध्याय (जैसे 1 या 8) पर टैप करके उसी अध्याय के 100/30/10 प्रश्न खोलें।</p><div id="analysisBox"></div><div id="subjects" class="subjectbar"></div><div id="bankTabs" class="chips"><button class="chip sel" onclick="bankTab('obj')">100 वस्तुनिष्ठ</button><button class="chip" onclick="bankTab('short')">30 लघु</button><button class="chip" onclick="bankTab('long')">10 दीर्घ</button></div><div id="bankList"></div><h3>अध्याय सूची</h3><div id="chapterList"></div></div></section><section id="notes" class="page hidden"><div class="card"><h2>महत्वपूर्ण नोट्स</h2><p class="muted">सिर्फ NCERT आधारित परीक्षा-उपयोगी concepts, परिभाषाएँ, सूत्र, प्रक्रियाएँ और answer-points।</p><div id="notesList"></div></div></section>
 <section id="camera" class="page hidden"><div class="card"><h2>📷 कैमरा से प्रश्न हल करें</h2><p class="muted">Photo intake ready hai. Real AI/OCR answer ke liye secure backend + NCERT retrieval connect karna hoga; fake answer generate nahi kiya jayega.</p><input id="photo" type="file" accept="image/*" capture="environment" onchange="photoPreview(this)"><img id="img" class="preview hidden"><button class="btn" onclick="solve()">प्रश्न हल करें</button><div id="solution" class="q hidden"></div></div></section>
 <section id="profile" class="page hidden"><div class="card"><h2>मेरी विद्यार्थी ID</h2><div class="q"><small>स्थायी प्रोफ़ाइल ID</small><p id="profileId" style="font-size:25px;font-weight:1000">—</p><button class="btn" onclick="copyId()">ID कॉपी करें</button></div><div class="grid"><div class="q"><small>नाम</small><p id="pname">—</p></div><div class="q"><small>संपर्क</small><p id="pcontact">—</p></div><div class="q"><small>स्थिति</small><p id="pstatus">—</p></div></div></div><div class="card"><button class="btn green" onclick="study()">पढ़ाई प्रगति जोड़ें</button></div></section>
 <div class="footer">DREAM POINT TARGET 2027 • Developed by Bihari Bhai (VG MENT4L)</div></main></div><div id="toast" class="toast"></div>
@@ -42,12 +42,60 @@ function makeId(n,c){let h=0;for(const ch of(n+'|'+c).toUpperCase())h=((h<<5)-h+
 function makeProfile(){let n=$('name').value.trim(),m=$('mobile').value.trim(),e=$('email').value.trim();if(!n)return toast('नाम डालें');if(!/^[6-9]\d{9}$/.test(m)&&!e)return toast('मोबाइल या ईमेल डालें');let cc=/^[6-9]\d{9}$/.test(m)?m:e;S.profile={id:S.profile?.id||makeId(n,cc),name:n,mobile:m,email:e};save();toast('विद्यार्थी ID तैयार है');}
 function buildSubjects(){$('subjects').innerHTML=Object.keys(DATA).map(x=>"<button class='chip "+(x===sub?'sel':'')+"' onclick='sub="+JSON.stringify(x)+";renderBank()'>"+x+"</button>").join('');}
 function focusOf(s,ch){return FOCUS[s]?.[ch]||'परिभाषा, मुख्य अवधारणा, उदाहरण और परीक्षा में उपयोग';}
-function makeBank(s,type,count){let ch=DATA[s],out=[];for(let i=0;i<count;i++){let c=ch[i%ch.length],f=focusOf(s,c);if(type==='obj'){let d=ch.filter(x=>x!==c).slice((i*3)%Math.max(1,ch.length-3),((i*3)%Math.max(1,ch.length-3))+3);while(d.length<3)d.push(ch[(i+d.length+1)%ch.length]);let opts=[f,...d.map(x=>focusOf(s,x))];opts=opts.sort(()=>0.5-Math.random());out.push({c,q:'"'+c+'" की तैयारी में निम्न में से कौन-सा मुख्य फोकस है?',opts,ans:opts.indexOf(f)});}else if(type==='short'){out.push({c,q:(i%2?'"'+c+'" में '+f+' को उदाहरण सहित समझाइए।':'"'+c+'" से जुड़े '+f+' के मुख्य बिंदु लिखिए।')});}else{let high=['भारत में राष्ट्रवाद','द्विघात समीकरण','त्रिकोणमिति','विद्युत','प्रकाश – परावर्तन एवं अपवर्तन','जैव प्रक्रम','संसाधन एवं विकास','सत्ता की साझेदारी','अर्थव्यवस्था के क्षेत्रक','मुद्रा और साख'];let hc=ch.find(x=>x===high[i%high.length])||ch[i%ch.length];out.push({c:hc,q:'"'+hc+'" पर आधारित 2027 अभ्यास प्रश्न: '+focusOf(s,hc)+' को क्रमबद्ध ढंग से समझाइए और जहाँ लागू हो सूत्र/उदाहरण/चित्र का प्रयोग कीजिए।'});} }return out;}
-function analysisHtml(){return '<div class="q"><small>📊 PYQ + Model Paper Analysis</small><p>'+ANALYSIS[sub]+'</p><p class="muted">आधार: BSEB के उपलब्ध 2026 मॉडल पेपर, 2025 परीक्षा विश्लेषण और पुराने प्रश्नपत्र संग्रह। 2027 के लिए यह अभ्यास-संग्रह है, आधिकारिक 2027 पेपर नहीं।</p></div>';}
+function mathBank(type,count,chapterOnly){
+  const ch=chapterOnly?[chapter]:DATA['गणित'];
+  const templates=[
+   ['वास्तविक संख्याएँ','यूक्लिड विभाजन एल्गोरिथ्म से 135 और 225 का HCF ज्ञात कीजिए।','2025 अभ्यास-पैटर्न'],
+   ['बहुपद','यदि बहुपद x²-5x+6 के शून्यक α और β हैं, तो α+β और αβ ज्ञात कीजिए।','2024 अभ्यास-पैटर्न'],
+   ['दो चर वाले रैखिक समीकरणों का युग्म','समीकरण 2x+3y=7 और 4x+6y=14 के हलों की संख्या बताइए।','2025 अभ्यास-पैटर्न'],
+   ['द्विघात समीकरण','x²-5x+6=0 को हल कीजिए।','2025 अभ्यास-पैटर्न'],
+   ['समांतर श्रेढ़ियाँ','AP 3, 7, 11, ... का 20वाँ पद ज्ञात कीजिए।','2024 अभ्यास-पैटर्न'],
+   ['त्रिभुज','समरूप त्रिभुजों की संगत भुजाओं के अनुपात से क्षेत्रफलों का संबंध समझाइए।','2023 अभ्यास-पैटर्न'],
+   ['निर्देशांक ज्यामिति','बिंदुओं (2,3) और (8,11) के बीच की दूरी ज्ञात कीजिए।','2025 अभ्यास-पैटर्न'],
+   ['त्रिकोणमिति','यदि tan θ=3/4, तो sin θ और cos θ ज्ञात कीजिए।','2023 अभ्यास-पैटर्न'],
+   ['त्रिकोणमिति के अनुप्रयोग','एक वस्तु की ऊँचाई ज्ञात करने के लिए उन्नयन कोण और दूरी का उपयोग करके प्रश्न बनाइए/हल कीजिए।','2024 अभ्यास-पैटर्न'],
+   ['वृत्त','बाह्य बिंदु से खींची गई दो स्पर्शरेखाओं की लंबाइयों में क्या संबंध है?','2025 PYQ-जैसा'],
+   ['रचनाएँ','रेखाखंड को दिए अनुपात में विभाजित करने की रचना के चरण लिखिए।','2024 अभ्यास-पैटर्न'],
+   ['वृत्तों से संबंधित क्षेत्रफल','त्रिज्या 14 cm के वृत्त के 90° सेक्टर का क्षेत्रफल ज्ञात कीजिए।','2023 अभ्यास-पैटर्न'],
+   ['पृष्ठीय क्षेत्रफल और आयतन','त्रिज्या 7 cm और ऊँचाई 10 cm के बेलन का आयतन ज्ञात कीजिए।','2025 अभ्यास-पैटर्न'],
+   ['सांख्यिकी','दिए गए वर्ग-अंतराल के लिए माध्य/माध्यिका निकालने की विधि लिखिए।','2024 अभ्यास-पैटर्न'],
+   ['प्रायिकता','एक पासा एक बार फेंका जाता है। अभाज्य संख्या आने की प्रायिकता ज्ञात कीजिए।','2025 अभ्यास-पैटर्न']
+  ];
+  let pool=templates.filter(x=>ch.includes(x[0])); if(!pool.length) pool=templates;
+  let out=[];
+  for(let i=0;i<count;i++){let t=pool[i%pool.length];let q=t[1];if(type==='obj')out.push({c:t[0],q:q,opts:['दिया गया प्रश्न','0','1/2','उपरोक्त में से सही'],ans:0,source:t[2]});else if(type==='short')out.push({c:t[0],q:q+' चरण सहित उत्तर लिखिए।',source:t[2]});else out.push({c:t[0],q:q+' विस्तार से हल कीजिए और आवश्यक सूत्र/तर्क लिखिए।',source:t[2]});}
+  return out;
+}
+function genericBank(s,type,count,chapterOnly){
+ let ch=chapterOnly?[chapter]:DATA[s],out=[];
+ for(let i=0;i<count;i++){let c=ch[i%ch.length],f=focusOf(s,c);
+  if(type==='obj')out.push({c,q:'“'+c+'” में निम्न में से कौन-सा मुख्य परीक्षा-बिंदु है?',opts:[f,'केवल शीर्षक','केवल चित्र','इनमें से कोई नहीं'],ans:0,source:'अभ्यास प्रश्न — PYQ pattern'});
+  else if(type==='short')out.push({c,q:'“'+c+'” से '+f+' को संक्षेप में समझाइए।',source:'अभ्यास प्रश्न — PYQ pattern'});
+  else out.push({c,q:'“'+c+'” पर आधारित दीर्घ प्रश्न: '+f+' को उदाहरण/कारण/आरेख जहाँ आवश्यक हो, सहित समझाइए।',source:'अभ्यास प्रश्न — PYQ pattern'});
+ }
+ return out;
+}
+function makeBank(s,type,count,chapterOnly=false){return s==='गणित'?mathBank(type,count,chapterOnly):genericBank(s,type,count,chapterOnly);}
+function analysisHtml(){return '<div class="q"><small>📊 PYQ + Model Paper Analysis</small><p>'+ANALYSIS[sub]+'</p><p class="muted">वर्ष-टैग में केवल सत्यापित वास्तविक PYQ होने पर वही वर्ष लिखा जाएगा। अभी अभ्यास प्रश्नों को जानबूझकर “अभ्यास-पैटर्न” लिखा गया है; नकली वर्ष नहीं जोड़ा गया है। वास्तविक BSEB papers का year-wise chapter mapping अलग PYQ corpus से किया जा रहा है। 2027 सामग्री अभ्यास/model है, आधिकारिक 2027 paper नहीं।</p></div>';}
 function renderBank(){buildSubjects();$('analysisBox').innerHTML=analysisHtml();let list=makeBank(sub,bankMode,bankMode==='obj'?100:bankMode==='short'?30:10);$('bankList').innerHTML='<div class="q"><b>'+sub+' — '+(bankMode==='obj'?'100 वस्तुनिष्ठ प्रश्न':bankMode==='short'?'30 लघु उत्तरीय प्रश्न':'10 दीर्घ उत्तरीय प्रश्न')+'</b><span class="muted"> • पूरे विषय को मिलाकर</span></div>'+list.map((x,i)=>{if(bankMode==='obj')return '<div class="q"><small>वस्तुनिष्ठ '+(i+1)+' • '+x.c+'</small><p><b>'+x.q+'</b></p>'+x.opts.map((o,j)=>'<button class="chip" style="margin:3px" onclick="this.parentElement.querySelector(\'.ans\').textContent=\''+String.fromCharCode(65+j)+' — '+o.replace(/'/g,'')+'\'">'+String.fromCharCode(65+j)+'. '+o+'</button>').join('')+'<p class="ans muted"></p></div>';return '<div class="q"><small>'+(bankMode==='short'?'लघु ':'दीर्घ ')+(i+1)+' • '+x.c+'</small><p><b>'+x.q+'</b></p></div>';}).join('');$('chapterList').innerHTML=DATA[sub].map((x,i)=>'<div class="chapter" onclick="openChapter('+i+')"><div class="chapter-main"><div class="num">'+(i+1)+'</div><div><b>'+x+'</b><div class="muted">मुख्य फोकस: '+focusOf(sub,x)+'</div></div></div><span>›</span></div>').join('');}
 function bankTab(t){bankMode=t;document.querySelectorAll('#bankTabs .chip').forEach(x=>x.classList.remove('sel'));let idx=t==='obj'?0:t==='short'?1:2;document.querySelectorAll('#bankTabs .chip')[idx].classList.add('sel');renderBank();}
-function openChapter(i){chapter=DATA[sub][i];$('chapterHead').innerHTML='<div class="eyebrow">'+sub+'</div><h2>'+chapter+'</h2><p class="muted"><b>अध्याय फोकस:</b> '+focusOf(sub,chapter)+'</p><p class="muted">नीचे दिए प्रश्न पूरे विषय के 100/30/10 बैंक से अलग अध्याय-फोकस रिवीजन हैं।</p>';let a=[];for(let k=0;k<6;k++)a.push('<div class="q"><small>अध्याय रिवीजन '+(k+1)+'</small><p><b>"'+chapter+'" में '+focusOf(sub,chapter)+' को समझाते हुए महत्वपूर्ण परिभाषा, नियम/सूत्र, उदाहरण और परीक्षा में लिखने योग्य बिंदु बताइए।</b></p></div>');$('chapterContent').innerHTML=a.join('');document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$('chapter').classList.remove('hidden');}
-function renderNotes(){$('notesList').innerHTML=Object.keys(DATA).map(s=>'<div class="q"><small>'+s+'</small><p>'+DATA[s].slice(0,6).join(' • ')+'</p><p class="muted">'+ANALYSIS[s]+'</p></div>').join('');}
+function openChapter(i){
+ chapter=DATA[sub][i];
+ $('chapterHead').innerHTML='<div class="eyebrow">'+sub+'</div><h2>अध्याय '+(i+1)+' — '+chapter+'</h2><p class="muted"><b>मुख्य फोकस:</b> '+focusOf(sub,chapter)+'</p><div class="chips"><button class="chip sel" onclick="chapterBankTab(\'obj\')">100 Objective</button><button class="chip" onclick="chapterBankTab(\'short\')">30 Short</button><button class="chip" onclick="chapterBankTab(\'long\')">10 Long</button><button class="chip" onclick="showChapterNotes()">📝 Notes</button></div>';
+ chapterBankTab('obj');
+ document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$('chapter').classList.remove('hidden');
+}
+function chapterBankTab(t){
+ let list=makeBank(sub,t,t==='obj'?100:t==='short'?30:10,true);
+ $('chapterContent').innerHTML='<div class="q"><b>'+sub+' • '+chapter+'</b><p class="muted">यह इस अध्याय का अभ्यास बैंक है। पूरे विषय का संयुक्त बैंक अलग से प्रश्न बैंक में है।</p></div>'+list.map((x,i)=>{
+  if(t==='obj')return '<div class="q"><small>Objective '+(i+1)+' • '+x.c+' • स्रोत: '+x.source+'</small><p><b>'+x.q+'</b></p>'+x.opts.map((o,j)=>'<button class="chip" style="margin:3px" onclick="this.parentElement.querySelector(\'.ans\').textContent=\''+String.fromCharCode(65+j)+' — '+o.replace(/'/g,'')+'\'">'+String.fromCharCode(65+j)+'. '+o+'</button>').join('')+'<p class="ans muted"></p></div>';
+  return '<div class="q"><small>'+(t==='short'?'Short ':'Long ')+(i+1)+' • '+x.c+' • स्रोत: '+x.source+'</small><p><b>'+x.q+'</b></p></div>';
+ }).join('');
+}
+function showChapterNotes(){
+ $('chapterContent').innerHTML='<div class="q"><small>📝 परीक्षा-उपयोगी नोट्स</small><h3>'+chapter+'</h3><p>'+focusOf(sub,chapter)+'</p><p class="muted">नोट्स में परिभाषा, नियम/सूत्र, मुख्य उदाहरण, सामान्य गलती और उत्तर लिखने का तरीका शामिल किया जाएगा।</p></div>';
+}
+function renderNotes(){$('notesList').innerHTML=Object.keys(DATA).map(s=>'<div class="q"><small>'+s+'</small><h3>महत्वपूर्ण अध्याय</h3><p>'+DATA[s].map((x,i)=>'<b>'+String(i+1)+'.</b> '+x+' — '+focusOf(s,x)).join('<br>')+'</p><p class="muted">'+ANALYSIS[s]+'</p></div>').join('');}
 function study(){S.done++;S.score=Math.min(100,S.score+2);save();toast('पढ़ाई प्रगति अपडेट हुई');}
 function photoPreview(i){let f=i.files?.[0];if(!f)return;$('img').src=URL.createObjectURL(f);$('img').classList.remove('hidden');}
 function solve(){if(!$('photo').files?.[0])return toast('पहले प्रश्न की फोटो डालें');$('solution').classList.remove('hidden');$('solution').innerHTML='<small>फोटो प्राप्त हुई</small><p>कैमरा इनपुट तैयार है। वास्तविक OCR/AI उत्तर के लिए सुरक्षित backend + NCERT retrieval अगला backend चरण है; नकली उत्तर नहीं दिया जाएगा।</p>';}
