@@ -246,6 +246,27 @@ function rangeGoal(p){
  const g={close:150,mid:105,long:75,precision:48,camera:72};
  const fam=modelFamily(p.device), family={apple:1,vivo:2,oneplus:2,bbk:1,samsung:0,xiaomi:1,pixel:2,asus:2,generic:0}[fam]||0;
  g.close+=family;g.mid+=family*.5;
+
+ // Device model must create a meaningful, deterministic fingerprint.
+ // Previously only the broad brand family changed the target by ~0–2 points,
+ // so different models from the same brand could collapse to nearly identical
+ // sensitivity. The fingerprint is intentionally bounded and does not pretend
+ // to know an exact touch panel from a model name alone.
+ const modelText=String(p.device||'generic').trim().toLowerCase().replace(/\\s+/g,' ');
+ const dh=hash(modelText);
+ const modelShift=[
+   ((dh%25)-12)*0.55,
+   (((dh>>>5)%21)-10)*0.42,
+   (((dh>>>10)%17)-8)*0.36,
+   (((dh>>>15)%15)-7)*0.30,
+   (((dh>>>20)%13)-6)*0.24
+ ];
+ g.close+=modelShift[0];
+ g.mid+=modelShift[1];
+ g.long+=modelShift[2];
+ g.precision+=modelShift[3];
+ g.camera+=modelShift[4];
+
  const dpi=Math.log2(p.dpi/480);g.close+=dpi*7;g.mid+=dpi*3;g.long+=dpi*1.5;
  g.close+=(p.hz-90)/28+(p.touch-180)/95;g.mid+=(p.touch-180)/150+(p.hz-90)/60;g.long+=(p.hz-90)/120;
  g.camera+=(p.fingers-3)*2;
