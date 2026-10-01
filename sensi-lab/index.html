@@ -97,7 +97,7 @@ button{width:100%;border:0;border-radius:15px;padding:15px;font-weight:900;font-
 <div class="meta" id="meta"></div>
 <div class="note" id="explain"></div>
 <div class="rangegrid" id="ranges"></div>
-<div class="note"><b>Quick test feedback</b><div class="micro">After Training, select what you actually felt. The lab will make a small evidence-based refinement instead of rebuilding everything.</div><div class="feedback" id="feedback"><span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span></div><button class="refine" id="refine">REFINE FROM TEST FEEDBACK</button></div>
+<div class="note"><b>Calibration Lab — Round Test</b><div class="micro">Do one controlled Training test, then record what actually happened. The lab keeps the current profile and makes only targeted changes.</div><div class="modebox" style="margin-top:9px"><select id="testGun"><option>All Guns</option><option>Desert Eagle</option><option>M1014</option><option>M1887</option><option>MP40</option><option>XM8</option><option>M4A1</option><option>AK47</option><option>GROZA</option><option>SCAR</option><option>AWM</option><option>Woodpecker</option><option>SKS</option></select><select id="testRange"><option>Close Range</option><option>Mid Range</option><option>Long Range</option></select></div><div class="feedback" id="feedback"><span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span></div><button class="refine" id="refine">REFINE THIS TEST ROUND</button><div class="micro" id="history"></div></div>
 <div class="note"><b>Profile ID:</b> <span class="code" id="code"></span><br><span style="color:#8d9ab7">This ID represents this input profile; it is not a claim of universal sensitivity.</span></div>
 </div>
 </section>
@@ -231,6 +231,17 @@ function render(p=build(),message='RESPONSE CURVE OPTIMIZED'){
  $('code').textContent='ACSL-'+hash(JSON.stringify({v:p.v,...p})).toString(36).toUpperCase().padStart(6,'0').slice(0,6);
  window.__aimcraft=p;
 }
+function saveCalibration(p,feedback){
+ const key='aimcraft_calibration_history_v2';
+ let h=[];try{h=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
+ h.push({at:new Date().toISOString(),gun:$('testGun').value,range:$('testRange').value,feedback,values:p.v});
+ h=h.slice(-8);try{localStorage.setItem(key,JSON.stringify(h))}catch(e){}
+ return h;
+}
+function showHistory(){
+ let h=[];try{h=JSON.parse(localStorage.getItem('aimcraft_calibration_history_v2')||'[]')}catch(e){}
+ $('history').textContent=h.length ? ('Saved locally: '+h.length+' calibration round'+(h.length>1?'s':'')+' · latest '+h[h.length-1].gun+' / '+h[h.length-1].range) : 'No calibration rounds saved yet.';
+}
 function feedbackVector(){
  const f=selected('feedback');
  const d=[0,0,0,0,0,0];
@@ -247,11 +258,24 @@ function feedbackVector(){
 }
 document.querySelectorAll('#feedback .chip').forEach(x=>x.addEventListener('click',()=>x.classList.toggle('on')));
 $('refine').addEventListener('click',()=>{
- const p=window.__aimcraft||build(),d=feedbackVector();
+ const p=window.__aimcraft||build(),d=feedbackVector(),gun=$('testGun').value,range=$('testRange').value;
  if(!d.some(Boolean)){render(p,'NO TEST FEEDBACK SELECTED');return}
- p.v=p.v.map((x,i)=>clamp(x+d[i]));
- render(p,'REFINED FROM YOUR TRAINING FEEDBACK');
+ // Range-aware refinement: feedback only moves the axes that matter to this test distance.
+ const rd=[0,0,0,0,0,0];
+ const weight=range==='Close Range'?[1,.8,.2,0,0,0]:range==='Mid Range'?[.35,.7,1,.65,.2,0]:[0,.15,.45,1,.85,0];
+ d.forEach((n,i)=>rd[i]=n*weight[i]);
+ // Weapon class adds a tiny contextual nudge without making the result gun-exclusive.
+ const close=['Desert Eagle','M1014','M1887','MP40'].includes(gun);
+ const precision=['AWM','Woodpecker','SKS'].includes(gun);
+ if(close){rd[0]+=1;rd[1]+=1}
+ if(precision){rd[3]-=1;rd[4]-=1}
+ p.v=p.v.map((x,i)=>clamp(x+rd[i]));
+ p.lastTest={gun,range,feedback:selected('feedback')};
+ saveCalibration(p,p.lastTest.feedback);
+ render(p,'REFINED · '+gun.toUpperCase()+' · '+range.toUpperCase());
+ showHistory();
 });
-$('generate').addEventListener('click',()=>{ $('status').textContent='SEARCHING 0–200 RESPONSE SPACE…'; $('result').classList.add('show'); setTimeout(()=>render(build(),'RESPONSE CURVE OPTIMIZED'),250);});
+$('generate').addEventListener('click',()=>{ $('status').textContent='SEARCHING 0–200 RESPONSE SPACE…'; $('result').classList.add('show'); setTimeout(()=>{render(build(),'RESPONSE CURVE OPTIMIZED');showHistory()},250);});
+showHistory();
 </script>
 </body></html>
