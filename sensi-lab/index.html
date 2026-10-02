@@ -124,7 +124,7 @@ button:disabled{opacity:.65;cursor:wait}</style>
 
 <div class="note"><b id="codeTitle">Profile Transfer Code</b>
 <div class="code" id="code" style="word-break:break-all;display:block;margin-top:7px"></div>
-<div class="micro" id="codeHelp">The code carries the core profile data. Copy it to another phone and use LOAD PROFILE & ANALYZE. Whenever AIMCRAFT changes the sensitivity, a new updated code is generated automatically.</div>
+<div class="micro" id="codeHelp">The code carries the complete profile, including <b>All Guns</b> or the exact saved focus guns. A 3-gun profile will stay a 3-gun profile when loaded on another phone. Whenever AIMCRAFT changes the sensitivity, a new updated code is generated automatically.</div>
 <div class="micro" id="codeUpdateStatus" style="margin-top:6px"></div>
 <div class="smallActions"><button class="secondary" id="saveProfile">SAVE PROFILE</button><button class="secondary" id="copyCode">COPY CODE</button><button class="secondary" id="loadThisCode">LOAD THIS CODE</button><button class="secondary" id="exportProfile">EXPORT FULL JSON</button><button class="secondary" id="importProfileBtn">IMPORT JSON</button><button class="danger" id="resetProfile">RESET CURRENT</button></div>
 <input id="importProfile" type="file" accept="application/json" style="display:none">
@@ -345,11 +345,38 @@ function baseState(){
  return {...p,g,target:tv,v,seed};
 }
 function profilePayload(p){return{version:6,input:p,values:p.v,locked:calibrationState.locked,rounds:calibrationState.rounds,hud:hudEvidence,ab:calibrationState.ab}}
-function transferPayload(p){return{v:1,input:{device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,fingers:p.fingers,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob,guns:p.guns,issues:p.issues,sensitivityMode:p.sensitivityMode},values:[...p.v],locked:[...calibrationState.locked]}}
+function transferPayload(p){
+ const guns=Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'];
+ const gunMode=guns.includes('All Guns')?'ALL_GUNS':'FOCUS_GUNS';
+ return{
+  v:2,
+  gunMode,
+  guns:[...guns],
+  focusGuns:gunMode==='FOCUS_GUNS'?[...guns.filter(x=>x!=='All Guns')]:[],
+  input:{device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,fingers:p.fingers,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob,guns:[...guns],issues:p.issues,sensitivityMode:p.sensitivityMode},
+  values:[...p.v],
+  locked:[...calibrationState.locked]
+ }
+}
 function bytesToB64(str){const bytes=new TextEncoder().encode(str);let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function b64ToBytes(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),pad=b+'='.repeat((4-b.length%4)%4),bin=atob(pad),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new TextDecoder().decode(bytes)}
 function makeTransferCode(p){return'ACX1-'+bytesToB64(JSON.stringify(transferPayload(p)))}
-function decodeTransferCode(code){const s=String(code||'').trim().replace(/\s+/g,'');if(!s.startsWith('ACX1-'))throw new Error('Invalid profile code');const x=JSON.parse(b64ToBytes(s.slice(5)));if(!x.input||!Array.isArray(x.values))throw new Error('Invalid profile data');return x}
+function decodeTransferCode(code){
+ const s=String(code||'').trim().replace(/\s+/g,'');
+ if(!s.startsWith('ACX1-'))throw new Error('Invalid profile code');
+ const x=JSON.parse(b64ToBytes(s.slice(5)));
+ if(!x.input||!Array.isArray(x.values))throw new Error('Invalid profile data');
+ // v2 stores gun information both explicitly and inside input. This prevents
+ // a 3-gun profile from ever being interpreted as an All Guns profile.
+ const storedGuns=Array.isArray(x.guns)&&x.guns.length?x.guns:
+                  Array.isArray(x.focusGuns)&&x.focusGuns.length?x.focusGuns:
+                  Array.isArray(x.input.guns)&&x.input.guns.length?x.input.guns:['All Guns'];
+ x.guns=[...storedGuns];
+ x.focusGuns=x.gunMode==='ALL_GUNS'?[]:[...storedGuns.filter(g=>g!=='All Guns')];
+ x.input.guns=[...storedGuns];
+ x.gunMode=x.guns.includes('All Guns')?'ALL_GUNS':'FOCUS_GUNS';
+ return x
+}
 function profileId(payload){return makeTransferCode(payload.input)}
 function confidence(p){
  let c=52;c+=p.touch>=180?8:3;c+=p.hz>=90?7:3;c+=p.dpi>=250?5:2;c+=p.guns.length>0?6:0;c+=p.issues.includes('No Known Problem')?0:Math.min(8,p.issues.length*2);c+=hudEvidence?8:0;c+=Math.min(12,calibrationState.rounds.length*3);return Math.max(0,Math.min(96,Math.round(c)));
@@ -634,7 +661,13 @@ function generate(){
   }
  },100);
 }
-function applyLoadedProfile(x,message='PROFILE LOADED'){const p=x.input||x;Object.entries({device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob}).forEach(([k,v])=>{if($(k))$(k).value=v});$('fingers').value=p.fingers||3;sensitivityMode=p.sensitivityMode||'Default';document.querySelectorAll('.modepick').forEach(x=>x.classList.toggle('on',x.dataset.mode===sensitivityMode));['guns','issues'].forEach(id=>$(id).querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',(p[id]||[]).includes(c.textContent.trim()))));calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.lastValues=x.values||null;calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;const restored={...p,v:x.values||p.v,g:rangeGoal(p)};current=restored;render(restored,message);persist();$('profileCodeInput').value=makeTransferCode(restored)}
+function applyLoadedProfile(x,message='PROFILE LOADED'){
+ const p={...(x.input||x)};
+ const storedGuns=Array.isArray(x.guns)&&x.guns.length?x.guns:
+                  Array.isArray(x.focusGuns)&&x.focusGuns.length?x.focusGuns:
+                  Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'];
+ p.guns=[...storedGuns];
+ Object.entries({device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob}).forEach(([k,v])=>{if($(k))$(k).value=v});$('fingers').value=p.fingers||3;sensitivityMode=p.sensitivityMode||'Default';document.querySelectorAll('.modepick').forEach(x=>x.classList.toggle('on',x.dataset.mode===sensitivityMode));['guns','issues'].forEach(id=>$(id).querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',(p[id]||[]).includes(c.textContent.trim()))));calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.lastValues=x.values||null;calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;const restored={...p,v:x.values||p.v,g:rangeGoal(p)};current=restored;render(restored,message);persist();$('profileCodeInput').value=makeTransferCode(restored)}
 function loadTransferCode(code){try{const x=decodeTransferCode(code);applyLoadedProfile(x,'PROFILE LOADED · SELECT YOUR PROBLEM');$('result').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){alert('Profile code is invalid or incomplete. Copy the complete code and try again.')}}
 function loadSaved(){try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}'),items=Object.values(vault).sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));if(items.length){renderVault();$('profileVault')?.scrollIntoView({behavior:'smooth',block:'center'});return}const x=JSON.parse(localStorage.getItem(STORE)||'null');if(!x?.input)return alert('No saved AIMCRAFT profiles found on this browser.');applyLoadedProfile(x,'SAVED PROFILE LOADED')}catch(e){alert('Saved profiles could not be loaded.')}}
 function handleHud(input){
