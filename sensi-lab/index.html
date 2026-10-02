@@ -20,7 +20,7 @@ button{width:100%;border:0;touch-action:manipulation;-webkit-tap-highlight-color
 .sensi{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.axis{background:#080e1b;border:1px solid #263552;border-radius:14px;padding:12px 8px;text-align:center;position:relative}.axis.locked{border-color:#63e6a4}.axis small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.axis strong{font-size:25px}.axis .lock{position:absolute;right:7px;top:5px;font-size:9px;color:var(--ok)}.bar{height:5px;background:#1d2941;border-radius:5px;margin-top:9px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b));border-radius:5px}
 .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.rangegrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}.range{padding:11px;background:#080e1b;border:1px solid #263552;border-radius:12px}.range b{display:block;font-size:11px}.range span{display:block;color:var(--muted);font-size:10px;margin-top:3px}.rbar{height:5px;background:#1d2941;border-radius:5px;margin-top:8px;overflow:hidden}.rbar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--b))}
 .note{margin-top:12px;padding:13px;border-left:3px solid var(--a);background:#091322;color:#bdc9df;font-size:11px;line-height:1.6;border-radius:10px}.note.warn{border-left-color:var(--warn)}.code{font-family:ui-monospace,monospace;letter-spacing:2px;color:#fff;font-size:15px}
-.feedback{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.feedback .chip{padding:8px 10px}.feedback .chip.on{border-color:var(--ok);background:#0b3028}.micro{font-size:10px;color:var(--muted);margin-top:7px}.table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}.table th,.table td{padding:8px;border-bottom:1px solid #202d47;text-align:left}.table th{color:#aebbd4}.table td{color:#dbe4f5}.empty{color:var(--muted);font-size:11px;padding:8px 0}
+.feedback{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.feedback .chip{padding:8px 10px}.feedback .chip.on{border-color:var(--ok);background:#0b3028}.feedback .chip.on{border-color:var(--ok);background:#0b3028}.feedback .chip{cursor:pointer}.micro{font-size:10px;color:var(--muted);margin-top:7px}.table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}.table th,.table td{padding:8px;border-bottom:1px solid #202d47;text-align:left}.table th{color:#aebbd4}.table td{color:#dbe4f5}.empty{color:var(--muted);font-size:11px;padding:8px 0}
 .progress{display:none;margin-top:10px}.progress.on{display:block}.progressTrack{height:7px;background:#18233a;border-radius:8px;overflow:hidden}.progressBar{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .12s}.progressText{font-size:10px;color:var(--muted);margin-top:5px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.abbox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.candidate{border:1px solid #2a3b5e;border-radius:14px;padding:12px;background:#080e1b}.candidate h3{font-size:12px;margin:0 0 8px}.candidate .cv{font-size:22px;font-weight:900}.candidate p{font-size:10px;color:var(--muted);line-height:1.45}.candidate button{margin-top:8px;padding:10px;font-size:11px}
 .smallActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.smallActions button{width:auto;padding:9px 11px;font-size:11px}
@@ -83,14 +83,18 @@ button:disabled{opacity:.65;cursor:wait}</style>
 </div>
 <div class="note" id="diagnosisPanel" style="display:none;border-left-color:var(--warn)">
   <b>AB AAPKI PROBLEM SELECT KARO</b>
-  <div class="micro">Jo dikkat game me sach me aa rahi hai, sirf wahi select karo. AIMCRAFT range + gun + symptom ke basis par khud likely sensitivity axis identify karega.</div>
-  <div class="two" style="margin-top:9px">
-    <select id="diagnosisGun">
-      <option>All Guns</option><option>Desert Eagle</option><option>M1014</option><option>M1887</option><option>MP40</option><option>XM8</option><option>M4A1</option><option>AK47</option><option>GROZA</option><option>SCAR</option><option>AWM</option><option>Woodpecker</option><option>SKS</option>
-    </select>
-    <select id="diagnosisRange">
-      <option>Close Range</option><option>Mid Range</option><option>Long Range</option><option>Precision</option><option>Not Sure</option>
-    </select>
+  <div class="micro">Jo dikkat game me sach me aa rahi hai, sirf wahi select karo. Profile me saved gun(s) + selected range(s) + symptom ke basis par AIMCRAFT relevant sensitivity axis khud identify karega. Ek se zyada range select kar sakte ho.</div>
+  <div style="margin-top:9px">
+    <div class="hint" style="margin-bottom:6px">PROFILE KE JO GUNS SAVE HAIN, DIAGNOSIS UNHI PAR HOGI. Agar 3 guns selected hain to neeche unhi 3 me se problem wali gun(s) choose karo. <b>All Guns</b> sirf tab dikhega jab profile me sach me All Guns saved ho.</div>
+    <div class="chips" id="diagnosisGuns"></div>
+    <div class="hint" style="margin:10px 0 6px">Problem kis range me aa rahi hai? Ek se zyada range select kar sakte ho.</div>
+    <div class="chips" id="diagnosisRanges">
+      <span class="chip">Close Range</span>
+      <span class="chip">Mid Range</span>
+      <span class="chip">Long Range</span>
+      <span class="chip">Precision</span>
+      <span class="chip">Not Sure</span>
+    </div>
   </div>
   <div class="feedback" id="diagnosisIssues">
     <span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span>
@@ -362,95 +366,179 @@ function diagnosisSelected(){
   return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
 }
 
-function diagnosisPrimaryAxis(range){
-  if(range==='Mid Range') return 2;
-  if(range==='Long Range') return 3;
-  if(range==='Precision') return 4;
-  return 1; // close-range sighted/drag problems -> Red Dot
+function diagnosisSelected(){
+  const box=$('diagnosisIssues');
+  return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
 }
-
-function diagnosisPlan(range,issues){
-  const primary=diagnosisPrimaryAxis(range);
+function diagnosisSelectedRanges(){
+  const box=$('diagnosisRanges');
+  return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
+}
+function diagnosisSelectedGuns(){
+  const box=$('diagnosisGuns');
+  return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.dataset.gun||x.textContent.trim()) : [];
+}
+function diagnosisRangeAxes(range){
+  if(range==='Close Range') return [1];       // Red Dot: primary close-range sighted/drag test
+  if(range==='Mid Range') return [2];         // 2×
+  if(range==='Long Range') return [3];        // 4×
+  if(range==='Precision') return [4];         // Sniper
+  return [1,2,3];                             // Not Sure: controlled close/mid/long candidates
+}
+function diagnosisPlan(ranges,issues){
+  const chosen=(ranges&&ranges.length)?ranges:['Not Sure'];
   const plan={};
-  const add=(axis,delta,reason)=>{ if(!plan[axis])plan[axis]={delta:0,reasons:[]}; plan[axis].delta+=delta; plan[axis].reasons.push(reason); };
+  const add=(axis,delta,reason)=>{
+    if(!plan[axis])plan[axis]={delta:0,reasons:[]};
+    plan[axis].delta+=delta;
+    plan[axis].reasons.push(reason);
+  };
   issues.forEach(issue=>{
-    if(issue==='Head goes over'){
-      add(primary,-4,'Aim is overshooting the head line, so this axis should be tested lower first.');
-    } else if(issue==='Stays on chest'){
-      add(primary,4,'Drag is stopping low, so this axis should be tested slightly higher first.');
-    } else if(issue==='Drag feels slow'){
-      add(primary,4,'The drag feels slow, so this axis should be tested slightly higher.');
-    } else if(issue==='Drag feels fast'){
-      add(primary,-4,'The drag feels too fast, so this axis should be tested slightly lower.');
-    } else if(issue==='Scope shakes'){
-      add(primary,-4,'Scope movement is unstable, so the relevant scoped axis should be tested lower.');
-    } else if(issue==='Recoil climbs'){
-      add(primary,-3,'The selected scoped aim is climbing during fire; this is treated as a small control test, not as a claim that sensitivity changes the game recoil itself.');
-    } else if(issue==='Aim drifts'){
-      add(primary,-3,'Aim is drifting during the selected range test, so the relevant axis should be tested slightly lower.');
-    }
-  });
-  // If the user is not sure about range, split the test conservatively across close/mid/long
-  // instead of forcing a single guessed slider.
-  if(range==='Not Sure' && issues.length){
-    Object.keys(plan).forEach(k=>delete plan[k]);
-    const labels=[1,2,3];
-    issues.forEach(issue=>{
-      const delta=(issue==='Stays on chest'||issue==='Drag feels slow')?3:-3;
-      labels.forEach((axis,idx)=>add(axis,delta,idx===0?'Close-range candidate':idx===1?'Mid-range candidate':'Long-range candidate'));
+    const delta=(issue==='Stays on chest'||issue==='Drag feels slow')?4:
+                (issue==='Head goes over'||issue==='Drag feels fast'||issue==='Scope shakes')?-4:
+                -3;
+    chosen.forEach(range=>{
+      diagnosisRangeAxes(range).forEach(axis=>{
+        add(axis,delta,range+' · '+(
+          issue==='Head goes over'?'overshoot test lower first':
+          issue==='Stays on chest'?'low drag test higher first':
+          issue==='Drag feels slow'?'slow drag test higher first':
+          issue==='Drag feels fast'?'fast drag test lower first':
+          issue==='Scope shakes'?'stability test lower first':
+          issue==='Recoil climbs'?'recoil-control test lower first':
+          'drift-control test lower first'
+        ));
+      });
     });
-  }
+  });
+  // Avoid a large jump when multiple ranges/problems are selected.
+  Object.values(plan).forEach(z=>{z.delta=Math.max(-6,Math.min(6,z.delta))});
   return plan;
 }
-
+function diagnosisGunLabel(p){
+  const guns=(p.guns||[]).filter(x=>x&&x!=='All Guns');
+  return guns.length?guns.join(', '):'All Guns';
+}
 function renderDiagnosis(p){
   const panel=$('loadedProfilePanel'),diag=$('diagnosisPanel');
   if(!panel||!diag||!p)return;
   panel.style.display='block';diag.style.display='block';
+
   $('loadedProfileMeta').innerHTML=[
     ['Device',p.device],['Game Mode',p.mode],['Player Style',p.style],['Preset',p.preset],
     ['Fingers',p.fingers+' Finger'],['DPI',p.dpi],['Refresh',p.hz+' Hz'],['Touch',p.touch+' Hz'],
-    ['Fire Button',p.fire],['OB',p.ob],['Sensitivity Mode',p.sensitivityMode],['Focus Guns',(p.guns||[]).join(', ')||'All Guns']
+    ['Fire Button',p.fire],['OB',p.ob],['Sensitivity Mode',p.sensitivityMode],['Focus Guns',diagnosisGunLabel(p)]
   ].map(x=>'<div class="mini"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('');
+
   $('loadedProfileSensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+AXIS_NAMES[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
+
+  // Gun choices come strictly from the loaded profile.
+  const profileGuns=(p.guns||[]).filter(x=>x&&x!=='All Guns');
+  const gunBox=$('diagnosisGuns');
+  if(gunBox){
+    const guns=profileGuns.length?profileGuns:['All Guns'];
+    gunBox.innerHTML=guns.map((g,i)=>'<span class="chip '+(i===0?'on':'')+'" data-gun="'+g.replace(/"/g,'&quot;')+'">'+g+'</span>').join('');
+    gunBox.querySelectorAll('.chip').forEach(chip=>chip.onclick=()=>{
+      chip.classList.toggle('on');
+      if(!gunBox.querySelector('.chip.on')){
+        chip.classList.add('on');
+      }
+      update();
+    });
+  }
+
+  // Range is intentionally multi-select. "Not Sure" is mutually exclusive.
+  const rangeBox=$('diagnosisRanges');
+  if(rangeBox){
+    rangeBox.querySelectorAll('.chip').forEach(chip=>{
+      chip.classList.remove('on');
+      chip.onclick=()=>{
+        const name=chip.textContent.trim();
+        if(name==='Not Sure'){
+          rangeBox.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+          chip.classList.add('on');
+        }else{
+          rangeBox.querySelector('.chip:last-child')?.classList.remove('on');
+          chip.classList.toggle('on');
+        }
+        update();
+      };
+    });
+  }
+
   const update=()=>{
-    const issues=diagnosisSelected(),range=$('diagnosisRange').value,plan=diagnosisPlan(range,issues);
-    if(!issues.length){$('diagnosisResult').innerHTML='<b>Abhi problem select nahi hui.</b><br>Jo actual dikkat hai wahi select karo. AIMCRAFT uske baad likely sensitivity khud identify karega.';return}
+    const issues=diagnosisSelected();
+    const ranges=diagnosisSelectedRanges();
+    const guns=diagnosisSelectedGuns();
+    const plan=diagnosisPlan(ranges,issues);
+    if(!issues.length){
+      $('diagnosisResult').innerHTML='<b>Abhi problem select nahi hui.</b><br>Jo actual dikkat hai wahi select karo. Gun/range profile se filter honge aur AIMCRAFT relevant sensitivity test karega.';
+      return;
+    }
+    const gunText=guns.length?guns.join(', '):diagnosisGunLabel(p);
+    const rangeText=ranges.length?ranges.join(', '):'Not Sure';
     const rows=Object.entries(plan).map(([axis,z])=>{
       const a=+axis,old=p.v[a],next=clamp(old+z.delta);
-      return '<div class="mini" style="margin-top:7px"><b>'+AXIS_NAMES[a]+' → '+old+' → '+next+'</b><span>'+z.reasons.join(' ')+'</span></div>';
+      return '<div class="mini" style="margin-top:7px"><b>'+AXIS_NAMES[a]+' → '+old+' → '+next+'</b><span>'+z.reasons.join(' · ')+'</span></div>';
     }).join('');
-    $('diagnosisResult').innerHTML='<b>AI-style problem mapping:</b> '+(range==='Not Sure'?'Range unknown hai, isliye multiple candidate axes ko conservative test diya gaya. ':'')+rows;
+    $('diagnosisResult').innerHTML='<b>PROFILE-AWARE MAPPING</b><br><span class="micro">Gun(s): '+gunText+' · Range(s): '+rangeText+'</span>'+rows;
   };
-  $('diagnosisIssues').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{c.classList.toggle('on');update()});
-  $('diagnosisRange').onchange=update;
-  $('diagnosisGun').onchange=update;
+
+  // Expose update to the gun/range chip handlers created above.
+  $('diagnosisRanges').querySelectorAll('.chip').forEach(x=>{
+    const old=x.onclick;
+    x.onclick=()=>{old();update()};
+  });
   update();
 }
+
 
 function applyDiagnosis(){
   if(!current)return alert('Pehle profile code load karo ya sensitivity build karo.');
   const issues=diagnosisSelected();
   if(!issues.length)return alert('Pehle apni actual problem select karo.');
-  const range=$('diagnosisRange').value,gun=$('diagnosisGun').value,plan=diagnosisPlan(range,issues);
+
+  const ranges=diagnosisSelectedRanges();
+  const guns=diagnosisSelectedGuns();
+  const plan=diagnosisPlan(ranges,issues);
   const before=[...current.v];
+
   Object.entries(plan).forEach(([axis,z])=>{
     const i=+axis;
     if(!calibrationState.locked[i])current.v[i]=clamp(current.v[i]+z.delta);
   });
-  // Weapon context is a small secondary signal only; it never overrides the symptom diagnosis.
-  if(['Desert Eagle','M1014','M1887','MP40'].includes(gun) && !calibrationState.locked[1] && (range==='Close Range'||range==='Not Sure')){
-    current.v[1]=clamp(current.v[1]+1);
+
+  // Weapon context is restricted to guns that belong to the loaded profile.
+  const activeGuns=guns.length?guns:(current.guns||[]);
+  if(activeGuns.includes('All Guns')){
+    // Keep All Guns as a broad profile mode; do not add a fake weapon-specific bonus.
+  }else{
+    const closeGuns=['Desert Eagle','M1014','M1887','MP40','UMP','MP5','Vector','Thompson','P90','MAC10'];
+    const precisionGuns=['AWM','Woodpecker','SKS','SVD','M82B','Kar98K'];
+    if(activeGuns.some(g=>closeGuns.includes(g)) && !calibrationState.locked[1] &&
+       (!ranges.length || ranges.includes('Close Range') || ranges.includes('Not Sure'))){
+      current.v[1]=clamp(current.v[1]+1);
+    }
+    if(activeGuns.some(g=>precisionGuns.includes(g)) && !calibrationState.locked[4] &&
+       (ranges.includes('Precision') || ranges.includes('Not Sure'))){
+      current.v[4]=clamp(current.v[4]-1);
+    }
   }
-  if(['AWM','Woodpecker','SKS'].includes(gun) && range==='Precision' && !calibrationState.locked[4]){
-    current.v[4]=clamp(current.v[4]-1);
-  }
+
   calibrationState.lastValues=[...current.v];
-  const round={at:new Date().toISOString(),gun,range,feedback:issues,values:[...current.v],source:'profile-diagnosis'};
+  const round={
+    at:new Date().toISOString(),
+    gun:activeGuns.join(', ')||'All Guns',
+    range:ranges.join(', ')||'Not Sure',
+    feedback:issues,
+    values:[...current.v],
+    source:'profile-diagnosis'
+  };
   saveHistory(round);persist();
-  render(current,'PROBLEM ANALYZED · '+gun.toUpperCase()+' · '+range.toUpperCase());
+  render(current,'PROBLEM ANALYZED · '+(activeGuns.join(', ')||'ALL GUNS').toUpperCase());
   $('diagnosisPanel').scrollIntoView({behavior:'smooth',block:'center'});
 }
+
 
 function vaultKey(code){return'p_'+hash(code).toString(36)}
 function saveToVault(p){if(!p)return;const code=makeTransferCode(p),full=profilePayload(p);try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}');vault[vaultKey(code)]={code,profile:full,savedAt:new Date().toISOString()};localStorage.setItem(PROFILE_VAULT,JSON.stringify(vault));localStorage.setItem(STORE,JSON.stringify(full))}catch(e){}renderVault()}
