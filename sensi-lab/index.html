@@ -52,7 +52,7 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="card"><label>Fire Button Size</label><input id="fire" type="number" min="1" max="60" value="45"><div class="hint">Used as control geometry context, not as a direct sensitivity multiplier.</div></div>
 
 <div class="card wide"><div class="sectionTitle"><h2>Focus Guns</h2><span>max 3 · All Guns = broad baseline</span></div>
-<div class="chips" id="guns"><button type="button" class="chip on" data-gun="All Guns" onclick="toggleGun(this)">All Guns</button><button type="button" class="chip" data-gun="M1014" onclick="toggleGun(this)">M1014</button><button type="button" class="chip" data-gun="Desert Eagle" onclick="toggleGun(this)">Desert Eagle</button><button type="button" class="chip" data-gun="MP40" onclick="toggleGun(this)">MP40</button><button type="button" class="chip" data-gun="M1887" onclick="toggleGun(this)">M1887</button><button type="button" class="chip" data-gun="XM8" onclick="toggleGun(this)">XM8</button><button type="button" class="chip" data-gun="SCAR" onclick="toggleGun(this)">SCAR</button><button type="button" class="chip" data-gun="M4A1" onclick="toggleGun(this)">M4A1</button><button type="button" class="chip" data-gun="AK47" onclick="toggleGun(this)">AK47</button><button type="button" class="chip" data-gun="GROZA" onclick="toggleGun(this)">GROZA</button><button type="button" class="chip" data-gun="UMP" onclick="toggleGun(this)">UMP</button><button type="button" class="chip" data-gun="MAC10" onclick="toggleGun(this)">MAC10</button><button type="button" class="chip" data-gun="AWM" onclick="toggleGun(this)">AWM</button><button type="button" class="chip" data-gun="Woodpecker" onclick="toggleGun(this)">Woodpecker</button><button type="button" class="chip" data-gun="SVD" onclick="toggleGun(this)">SVD</button><button type="button" class="chip" data-gun="M82B" onclick="toggleGun(this)">M82B</button><button type="button" class="chip" data-gun="SKS" onclick="toggleGun(this)">SKS</button><button type="button" class="chip" data-gun="AC80" onclick="toggleGun(this)">AC80</button><button type="button" class="chip" data-gun="M14" onclick="toggleGun(this)">M14</button><button type="button" class="chip" data-gun="Kar98K" onclick="toggleGun(this)">Kar98K</button><button type="button" class="chip" data-gun="MP5" onclick="toggleGun(this)">MP5</button><button type="button" class="chip" data-gun="Vector" onclick="toggleGun(this)">Vector</button><button type="button" class="chip" data-gun="Thompson" onclick="toggleGun(this)">Thompson</button><button type="button" class="chip" data-gun="P90" onclick="toggleGun(this)">P90</button><button type="button" class="chip" data-gun="M500" onclick="toggleGun(this)">M500</button><button type="button" class="chip" data-gun="G18" onclick="toggleGun(this)">G18</button><button type="button" class="chip" data-gun="USP" onclick="toggleGun(this)">USP</button></div><div class="hint">Every weapon class contributes to the baseline. A selected gun only nudges its class; the profile never becomes Deagle-only or shotgun-only.</div></div>
+<div class="chips" id="guns"><button type="button" class="chip on" data-gun="All Guns" onclick="toggleGun(this)">All Guns</button><button type="button" class="chip" data-gun="M1014" onclick="toggleGun(this)">M1014</button><button type="button" class="chip" data-gun="Desert Eagle" onclick="toggleGun(this)">Desert Eagle</button><button type="button" class="chip" data-gun="MP40" onclick="toggleGun(this)">MP40</button><button type="button" class="chip" data-gun="M1887" onclick="toggleGun(this)">M1887</button><button type="button" class="chip" data-gun="XM8" onclick="toggleGun(this)">XM8</button><button type="button" class="chip" data-gun="SCAR" onclick="toggleGun(this)">SCAR</button><button type="button" class="chip" data-gun="M4A1" onclick="toggleGun(this)">M4A1</button><button type="button" class="chip" data-gun="AK47" onclick="toggleGun(this)">AK47</button><button type="button" class="chip" data-gun="GROZA" onclick="toggleGun(this)">GROZA</button><button type="button" class="chip" data-gun="UMP" onclick="toggleGun(this)">UMP</button><button type="button" class="chip" data-gun="MAC10" onclick="toggleGun(this)">MAC10</button><button type="button" class="chip" data-gun="AWM" onclick="toggleGun(this)">AWM</button><button type="button" class="chip" data-gun="Woodpecker" onclick="toggleGun(this)">Woodpecker</button><button type="button" class="chip" data-gun="SVD" onclick="toggleGun(this)">SVD</button><button type="button" class="chip" data-gun="M82B" onclick="toggleGun(this)">M82B</button><button type="button" class="chip" data-gun="SKS" onclick="toggleGun(this)">SKS</button><button type="button" class="chip" data-gun="AC80" onclick="toggleGun(this)">AC80</button><button type="button" class="chip" data-gun="M14" onclick="toggleGun(this)">M14</button><button type="button" class="chip" data-gun="Kar98K" onclick="toggleGun(this)">Kar98K</button><button type="button" class="chip" data-gun="MP5" onclick="toggleGun(this)">MP5</button><button type="button" class="chip" data-gun="Vector" onclick="toggleGun(this)">Vector</button><button type="button" class="chip" data-gun="Thompson" onclick="toggleGun(this)">Thompson</button><button type="button" class="chip" data-gun="P90" onclick="toggleGun(this)">P90</button><button type="button" class="chip" data-gun="M500" onclick="toggleGun(this)">M500</button><button type="button" class="chip" data-gun="G18" onclick="toggleGun(this)">G18</button><button type="button" class="chip" data-gun="USP" onclick="toggleGun(this)">USP</button></div><div class="hint">3 specific guns choose karoge to diagnosis unhi guns par focus karega. <b>All Guns</b> choose karoge to poora available weapon pool baseline me rahega — ye 3 guns tak limited nahi hoga.</div></div>
 
 <div class="card wide"><div class="sectionTitle"><h2>HUD Screenshot Evidence</h2><span>optional · measured, not guessed</span></div>
 <div class="upload">Upload your current HUD screenshot. AIMCRAFT measures image dimensions/aspect ratio and records that evidence; it does not claim to semantically “read” buttons from pixels without a reliable detector.
@@ -85,7 +85,7 @@ button:disabled{opacity:.65;cursor:wait}</style>
   <b>AB AAPKI PROBLEM SELECT KARO</b>
   <div class="micro">Jo dikkat game me sach me aa rahi hai, sirf wahi select karo. Profile me saved gun(s) + selected range(s) + symptom ke basis par AIMCRAFT relevant sensitivity axis khud identify karega. Ek se zyada range select kar sakte ho.</div>
   <div style="margin-top:9px">
-    <div class="hint" style="margin-bottom:6px">PROFILE KE JO GUNS SAVE HAIN, DIAGNOSIS UNHI PAR HOGI. Agar 3 guns selected hain to neeche unhi 3 me se problem wali gun(s) choose karo. <b>All Guns</b> sirf tab dikhega jab profile me sach me All Guns saved ho.</div>
+    <div class="hint" style="margin-bottom:6px">PROFILE KE HISAB SE DIAGNOSIS HOGI. Agar profile me 3 specific guns saved hain, to unhi 3 guns par diagnosis filter hoga. Agar profile me <b>All Guns</b> saved hai, to <b>poora available weapon pool</b> use hoga — AIMCRAFT tumhe sirf 3 guns tak limit nahi karega.</div>
     <div class="chips" id="diagnosisGuns"></div>
     <div class="hint" style="margin:10px 0 6px">Problem kis range me aa rahi hai? Ek se zyada range select kar sakte ho.</div>
     <div class="chips" id="diagnosisRanges">
@@ -433,11 +433,14 @@ function renderDiagnosis(p){
   $('loadedProfileSensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+AXIS_NAMES[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
 
   // Gun choices come strictly from the loaded profile.
-  const profileGuns=(p.guns||[]).filter(x=>x&&x!=='All Guns');
+  const savedGuns=Array.isArray(p.guns)?p.guns.filter(Boolean):[];
+  const profileIsAllGuns=savedGuns.includes('All Guns')||savedGuns.length===0;
+  const profileGuns=savedGuns.filter(x=>x!=='All Guns');
   const gunBox=$('diagnosisGuns');
   if(gunBox){
-    const guns=profileGuns.length?profileGuns:['All Guns'];
-    gunBox.innerHTML=guns.map((g,i)=>'<span class="chip '+(i===0?'on':'')+'" data-gun="'+g.replace(/"/g,'&quot;')+'">'+g+'</span>').join('');
+    // All Guns means the complete weapon pool, not a hidden 3-gun subset.
+    const guns=profileIsAllGuns?['All Guns']:profileGuns;
+    gunBox.innerHTML=guns.map((g,i)=>'<span class="chip '+(i===0?'on':'')+'" data-gun="'+g.replace(/"/g,'&quot;')+'">'+(g==='All Guns'?'All Guns · Full Weapon Pool':g)+'</span>').join('');
     gunBox.querySelectorAll('.chip').forEach(chip=>chip.onclick=()=>{
       chip.classList.toggle('on');
       if(!gunBox.querySelector('.chip.on')){
@@ -475,7 +478,7 @@ function renderDiagnosis(p){
       $('diagnosisResult').innerHTML='<b>Abhi problem select nahi hui.</b><br>Jo actual dikkat hai wahi select karo. Gun/range profile se filter honge aur AIMCRAFT relevant sensitivity test karega.';
       return;
     }
-    const gunText=guns.length?guns.join(', '):diagnosisGunLabel(p);
+    const gunText=(Array.isArray(p.guns)&&p.guns.includes('All Guns'))?'All Guns · Full Weapon Pool':(guns.length?guns.join(', '):diagnosisGunLabel(p));
     const rangeText=ranges.length?ranges.join(', '):'Not Sure';
     const rows=Object.entries(plan).map(([axis,z])=>{
       const a=+axis,old=p.v[a],next=clamp(old+z.delta);
@@ -509,9 +512,12 @@ function applyDiagnosis(){
   });
 
   // Weapon context is restricted to guns that belong to the loaded profile.
-  const activeGuns=guns.length?guns:(current.guns||[]);
-  if(activeGuns.includes('All Guns')){
-    // Keep All Guns as a broad profile mode; do not add a fake weapon-specific bonus.
+  const savedGuns=Array.isArray(current.guns)?current.guns.filter(Boolean):[];
+  const profileIsAllGuns=savedGuns.includes('All Guns')||savedGuns.length===0;
+  const activeGuns=profileIsAllGuns?['All Guns']:(guns.length?guns:savedGuns);
+  if(profileIsAllGuns){
+    // All Guns is a full-loadout diagnosis: no 3-gun cap and no fake single-weapon bonus.
+    // Range + symptom determine the relevant sensitivity axis across the whole weapon pool.
   }else{
     const closeGuns=['Desert Eagle','M1014','M1887','MP40','UMP','MP5','Vector','Thompson','P90','MAC10'];
     const precisionGuns=['AWM','Woodpecker','SKS','SVD','M82B','Kar98K'];
