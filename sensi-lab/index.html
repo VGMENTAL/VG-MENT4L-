@@ -64,8 +64,8 @@ button:disabled{opacity:.65;cursor:wait}</style>
 
 <div class="card wide">
 <div class="sectionTitle"><h2>Profile Code — Load / Continue</h2><span>same profile can be moved to another phone</span></div>
-<div class="two"><div><label>PROFILE TRANSFER CODE</label><input id="profileCodeInput" placeholder="Paste AIMCRAFT profile code here"></div><div style="display:flex;align-items:end"><button type="button" class="secondary" id="loadCode" style="margin-top:auto">LOAD CODE & ADJUST</button></div></div>
-<div class="hint">Paste a complete profile code here to restore the person's inputs, sensitivity and selected problems on this phone.</div>
+<div class="two"><div><label>PROFILE TRANSFER CODE</label><input id="profileCodeInput" placeholder="Paste AIMCRAFT profile code here"></div><div style="display:flex;align-items:end"><button type="button" class="secondary" id="loadCode" style="margin-top:auto">LOAD PROFILE & ANALYZE</button></div></div>
+<div class="hint">Paste the complete profile code. AIMCRAFT will first restore and show the full profile, then ask only for the problems you actually see.</div>
 </div>
 <div class="card wide"><div class="buttonRow"><button type="button" id="generate" onclick="generate()">BUILD / REBUILD SENSITIVITY</button><button type="button" class="secondary" id="loadSaved">OPEN SAVED PROFILES</button></div>
 <div class="progress" id="progress"><div class="progressTrack"><div class="progressBar" id="progressBar"></div></div><div class="progressText" id="progressText">Preparing calibration…</div></div>
@@ -75,6 +75,29 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <section class="result" id="result">
 <div class="card">
 <div class="status"><span id="status">WAITING FOR CALIBRATION</span><span class="badge" id="score">—</span></div>
+<div class="note" id="loadedProfilePanel" style="display:none;border-left-color:var(--ok)">
+  <b>PROFILE LOADED — FULL INFORMATION</b>
+  <div class="micro">Code se jo profile aayi hai woh neeche verify karo. Ab tumhe General / Red Dot / 2× khud guess karne ki zarurat nahi hai.</div>
+  <div class="meta" id="loadedProfileMeta"></div>
+  <div class="sensi" id="loadedProfileSensi" style="margin-top:10px"></div>
+</div>
+<div class="note" id="diagnosisPanel" style="display:none;border-left-color:var(--warn)">
+  <b>AB AAPKI PROBLEM SELECT KARO</b>
+  <div class="micro">Jo dikkat game me sach me aa rahi hai, sirf wahi select karo. AIMCRAFT range + gun + symptom ke basis par khud likely sensitivity axis identify karega.</div>
+  <div class="two" style="margin-top:9px">
+    <select id="diagnosisGun">
+      <option>All Guns</option><option>Desert Eagle</option><option>M1014</option><option>M1887</option><option>MP40</option><option>XM8</option><option>M4A1</option><option>AK47</option><option>GROZA</option><option>SCAR</option><option>AWM</option><option>Woodpecker</option><option>SKS</option>
+    </select>
+    <select id="diagnosisRange">
+      <option>Close Range</option><option>Mid Range</option><option>Long Range</option><option>Precision</option><option>Not Sure</option>
+    </select>
+  </div>
+  <div class="feedback" id="diagnosisIssues">
+    <span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span>
+  </div>
+  <div class="note" id="diagnosisResult" style="margin-top:10px">Select a problem to see which sensitivity AIMCRAFT will test.</div>
+  <button type="button" id="diagnoseApply" style="margin-top:10px;background:linear-gradient(100deg,#ffd36b,#ff9f68)">ANALYZE PROBLEM & APPLY ADJUSTMENT</button>
+</div>
 <div class="sensi" id="sensi"></div>
 <div class="lockgrid" id="locks"></div>
 <div class="meta" id="meta"></div>
@@ -97,8 +120,8 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="micro" id="history">No calibration rounds saved yet.</div>
 </div>
 
-<div class="note"><b>A/B Micro Test</b>
-<div class="micro">When one axis feels uncertain, AIMCRAFT can create two nearby candidates instead of making a large blind change. Test both in the same distance/gun context and pick the one that feels more controllable. This records preference evidence; it does not claim a measured headshot percentage.</div>
+<div class="note"><b>Advanced A/B Micro Test — Optional</b>
+<div class="micro">Main problem flow ke liye A/B ki zarurat nahi hai. Yeh sirf advanced users ke liye hai jab ek specific axis ko manually compare karna ho. Test both in the same distance/gun context and pick the one that feels more controllable. This records preference evidence; it does not claim a measured headshot percentage.</div>
 <div class="two" style="margin-top:9px"><select id="abAxis"><option>General</option><option>Red Dot</option><option>2× Scope</option><option>4× Scope</option><option>Sniper</option><option>Free Look</option></select><select id="abDelta"><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option></select></div>
 <button class="secondary" id="makeAB" style="margin-top:9px">MAKE TWO CANDIDATES</button>
 <div class="abbox" id="abbox"></div>
@@ -329,8 +352,106 @@ function render(p,message='RESPONSE CURVE OPTIMIZED'){
  $('ranges').innerHTML=rg.map(r=>'<div class="range"><b>'+r[0]+'</b><span>'+r[1]+'/200 center</span><div class="rbar"><i style="width:'+r[1]/2+'%"></i></div></div>').join('');
  const oc=obContext(p.ob);$('meta').innerHTML='<div class="mini"><b>'+p.sensitivityMode+'</b><span>Free Fire sensitivity mode</span></div><div class="mini"><b>'+p.style+'</b><span>style prior</span></div><div class="mini"><b>'+p.dpi+' DPI · '+p.hz+'Hz</b><span>touch fingerprint</span></div><div class="mini"><b>'+oc.label+'</b><span>version context · '+(oc.delta>=0?'+':'')+oc.delta.toFixed(1)+'</span></div>';
  $('explain').innerHTML='<b>How this result was built:</b> AIMCRAFT first builds five response zones (close, mid, long, precision, camera), adds device/touch/control context, applies a small OB-context signal, blends all weapon classes, then searches each sensitivity axis across the complete 0–200 range. Selected guns are limited focus signals. Multiple problem selections affect only relevant zones. Locked axes are preserved during rebuild/refinement. <b>The confidence number is evidence completeness, not a measured headshot or recoil percentage.</b>';
- const payload=profilePayload(p);$('code').textContent=makeTransferCode(p);$('profileCodeInput').value=$('code').textContent;showHistory();renderVault();
+ const payload=profilePayload(p);$('code').textContent=makeTransferCode(p);renderDiagnosis(p);$('profileCodeInput').value=$('code').textContent;showHistory();renderVault();
 }
+
+const AXIS_NAMES=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
+
+function diagnosisSelected(){
+  const box=$('diagnosisIssues');
+  return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
+}
+
+function diagnosisPrimaryAxis(range){
+  if(range==='Mid Range') return 2;
+  if(range==='Long Range') return 3;
+  if(range==='Precision') return 4;
+  return 1; // close-range sighted/drag problems -> Red Dot
+}
+
+function diagnosisPlan(range,issues){
+  const primary=diagnosisPrimaryAxis(range);
+  const plan={};
+  const add=(axis,delta,reason)=>{ if(!plan[axis])plan[axis]={delta:0,reasons:[]}; plan[axis].delta+=delta; plan[axis].reasons.push(reason); };
+  issues.forEach(issue=>{
+    if(issue==='Head goes over'){
+      add(primary,-4,'Aim is overshooting the head line, so this axis should be tested lower first.');
+    } else if(issue==='Stays on chest'){
+      add(primary,4,'Drag is stopping low, so this axis should be tested slightly higher first.');
+    } else if(issue==='Drag feels slow'){
+      add(primary,4,'The drag feels slow, so this axis should be tested slightly higher.');
+    } else if(issue==='Drag feels fast'){
+      add(primary,-4,'The drag feels too fast, so this axis should be tested slightly lower.');
+    } else if(issue==='Scope shakes'){
+      add(primary,-4,'Scope movement is unstable, so the relevant scoped axis should be tested lower.');
+    } else if(issue==='Recoil climbs'){
+      add(primary,-3,'The selected scoped aim is climbing during fire; this is treated as a small control test, not as a claim that sensitivity changes the game recoil itself.');
+    } else if(issue==='Aim drifts'){
+      add(primary,-3,'Aim is drifting during the selected range test, so the relevant axis should be tested slightly lower.');
+    }
+  });
+  // If the user is not sure about range, split the test conservatively across close/mid/long
+  // instead of forcing a single guessed slider.
+  if(range==='Not Sure' && issues.length){
+    Object.keys(plan).forEach(k=>delete plan[k]);
+    const labels=[1,2,3];
+    issues.forEach(issue=>{
+      const delta=(issue==='Stays on chest'||issue==='Drag feels slow')?3:-3;
+      labels.forEach((axis,idx)=>add(axis,delta,idx===0?'Close-range candidate':idx===1?'Mid-range candidate':'Long-range candidate'));
+    });
+  }
+  return plan;
+}
+
+function renderDiagnosis(p){
+  const panel=$('loadedProfilePanel'),diag=$('diagnosisPanel');
+  if(!panel||!diag||!p)return;
+  panel.style.display='block';diag.style.display='block';
+  $('loadedProfileMeta').innerHTML=[
+    ['Device',p.device],['Game Mode',p.mode],['Player Style',p.style],['Preset',p.preset],
+    ['Fingers',p.fingers+' Finger'],['DPI',p.dpi],['Refresh',p.hz+' Hz'],['Touch',p.touch+' Hz'],
+    ['Fire Button',p.fire],['OB',p.ob],['Sensitivity Mode',p.sensitivityMode],['Focus Guns',(p.guns||[]).join(', ')||'All Guns']
+  ].map(x=>'<div class="mini"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('');
+  $('loadedProfileSensi').innerHTML=p.v.map((x,i)=>'<div class="axis"><small>'+AXIS_NAMES[i]+'</small><strong>'+x+'</strong><div class="bar"><i style="width:'+x/2+'%"></i></div></div>').join('');
+  const update=()=>{
+    const issues=diagnosisSelected(),range=$('diagnosisRange').value,plan=diagnosisPlan(range,issues);
+    if(!issues.length){$('diagnosisResult').innerHTML='<b>Abhi problem select nahi hui.</b><br>Jo actual dikkat hai wahi select karo. AIMCRAFT uske baad likely sensitivity khud identify karega.';return}
+    const rows=Object.entries(plan).map(([axis,z])=>{
+      const a=+axis,old=p.v[a],next=clamp(old+z.delta);
+      return '<div class="mini" style="margin-top:7px"><b>'+AXIS_NAMES[a]+' → '+old+' → '+next+'</b><span>'+z.reasons.join(' ')+'</span></div>';
+    }).join('');
+    $('diagnosisResult').innerHTML='<b>AI-style problem mapping:</b> '+(range==='Not Sure'?'Range unknown hai, isliye multiple candidate axes ko conservative test diya gaya. ':'')+rows;
+  };
+  $('diagnosisIssues').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{c.classList.toggle('on');update()});
+  $('diagnosisRange').onchange=update;
+  $('diagnosisGun').onchange=update;
+  update();
+}
+
+function applyDiagnosis(){
+  if(!current)return alert('Pehle profile code load karo ya sensitivity build karo.');
+  const issues=diagnosisSelected();
+  if(!issues.length)return alert('Pehle apni actual problem select karo.');
+  const range=$('diagnosisRange').value,gun=$('diagnosisGun').value,plan=diagnosisPlan(range,issues);
+  const before=[...current.v];
+  Object.entries(plan).forEach(([axis,z])=>{
+    const i=+axis;
+    if(!calibrationState.locked[i])current.v[i]=clamp(current.v[i]+z.delta);
+  });
+  // Weapon context is a small secondary signal only; it never overrides the symptom diagnosis.
+  if(['Desert Eagle','M1014','M1887','MP40'].includes(gun) && !calibrationState.locked[1] && (range==='Close Range'||range==='Not Sure')){
+    current.v[1]=clamp(current.v[1]+1);
+  }
+  if(['AWM','Woodpecker','SKS'].includes(gun) && range==='Precision' && !calibrationState.locked[4]){
+    current.v[4]=clamp(current.v[4]-1);
+  }
+  calibrationState.lastValues=[...current.v];
+  const round={at:new Date().toISOString(),gun,range,feedback:issues,values:[...current.v],source:'profile-diagnosis'};
+  saveHistory(round);persist();
+  render(current,'PROBLEM ANALYZED · '+gun.toUpperCase()+' · '+range.toUpperCase());
+  $('diagnosisPanel').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 function vaultKey(code){return'p_'+hash(code).toString(36)}
 function saveToVault(p){if(!p)return;const code=makeTransferCode(p),full=profilePayload(p);try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}');vault[vaultKey(code)]={code,profile:full,savedAt:new Date().toISOString()};localStorage.setItem(PROFILE_VAULT,JSON.stringify(vault));localStorage.setItem(STORE,JSON.stringify(full))}catch(e){}renderVault()}
 function persist(){if(!current)return;saveToVault(current)}
@@ -377,7 +498,7 @@ function generate(){
  },100);
 }
 function applyLoadedProfile(x,message='PROFILE LOADED'){const p=x.input||x;Object.entries({device:p.device,age:p.age,dpi:p.dpi,hz:p.hz,touch:p.touch,mode:p.mode,style:p.style,preset:p.preset,fire:p.fire,ob:p.ob}).forEach(([k,v])=>{if($(k))$(k).value=v});$('fingers').value=p.fingers||3;sensitivityMode=p.sensitivityMode||'Default';document.querySelectorAll('.modepick').forEach(x=>x.classList.toggle('on',x.dataset.mode===sensitivityMode));['guns','issues'].forEach(id=>$(id).querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',(p[id]||[]).includes(c.textContent.trim()))));calibrationState.locked=x.locked||[false,false,false,false,false,false];calibrationState.lastValues=x.values||null;calibrationState.rounds=x.rounds||[];hudEvidence=x.hud||null;const restored={...p,v:x.values||p.v,g:rangeGoal(p)};current=restored;render(restored,message);persist();$('profileCodeInput').value=makeTransferCode(restored)}
-function loadTransferCode(code){try{const x=decodeTransferCode(code);applyLoadedProfile(x,'TRANSFER CODE LOADED');$('result').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){alert('Profile code is invalid or incomplete. Copy the complete code and try again.')}}
+function loadTransferCode(code){try{const x=decodeTransferCode(code);applyLoadedProfile(x,'PROFILE LOADED · SELECT YOUR PROBLEM');$('result').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){alert('Profile code is invalid or incomplete. Copy the complete code and try again.')}}
 function loadSaved(){try{const vault=JSON.parse(localStorage.getItem(PROFILE_VAULT)||'{}'),items=Object.values(vault).sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));if(items.length){renderVault();$('profileVault')?.scrollIntoView({behavior:'smooth',block:'center'});return}const x=JSON.parse(localStorage.getItem(STORE)||'null');if(!x?.input)return alert('No saved AIMCRAFT profiles found on this browser.');applyLoadedProfile(x,'SAVED PROFILE LOADED')}catch(e){alert('Saved profiles could not be loaded.')}}
 function handleHud(input){
  const f=input.files&&input.files[0]; if(!f)return;
@@ -408,6 +529,7 @@ function handleHud(input){
 
 
 $('generate').onclick=generate;$('loadSaved').onclick=loadSaved;$('refine').onclick=refine;
+$('diagnoseApply').onclick=applyDiagnosis;
 $('loadCode').onclick=()=>loadTransferCode($('profileCodeInput').value);
 $('profileCodeInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();loadTransferCode(e.target.value)}};
 $('loadThisCode').onclick=()=>loadTransferCode($('code').textContent);
