@@ -108,9 +108,10 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="rangegrid" id="ranges"></div>
 <div class="note" id="explain"></div>
 
-<div class="note"><b>Profile Transfer Code</b>
+<div class="note"><b id="codeTitle">Profile Transfer Code</b>
 <div class="code" id="code" style="word-break:break-all;display:block;margin-top:7px"></div>
-<div class="micro">The code carries the core profile data. Copy it to another phone and use LOAD CODE & ADJUST. A changed sensitivity produces a new code.</div>
+<div class="micro" id="codeHelp">The code carries the core profile data. Copy it to another phone and use LOAD PROFILE & ANALYZE. Whenever AIMCRAFT changes the sensitivity, a new updated code is generated automatically.</div>
+<div class="micro" id="codeUpdateStatus" style="margin-top:6px"></div>
 <div class="smallActions"><button class="secondary" id="saveProfile">SAVE PROFILE</button><button class="secondary" id="copyCode">COPY CODE</button><button class="secondary" id="loadThisCode">LOAD THIS CODE</button><button class="secondary" id="exportProfile">EXPORT FULL JSON</button><button class="secondary" id="importProfileBtn">IMPORT JSON</button><button class="danger" id="resetProfile">RESET CURRENT</button></div>
 <input id="importProfile" type="file" accept="application/json" style="display:none">
 </div>
@@ -505,6 +506,7 @@ function applyDiagnosis(){
   const guns=diagnosisSelectedGuns();
   const plan=diagnosisPlan(ranges,issues);
   const before=[...current.v];
+  const oldCode=makeTransferCode(current);
 
   Object.entries(plan).forEach(([axis,z])=>{
     const i=+axis;
@@ -542,6 +544,12 @@ function applyDiagnosis(){
   };
   saveHistory(round);persist();
   render(current,'PROBLEM ANALYZED · '+(activeGuns.join(', ')||'ALL GUNS').toUpperCase());
+  const newCode=makeTransferCode(current);
+  const changed=oldCode!==newCode;
+  const status=$('codeUpdateStatus');
+  const title=$('codeTitle');
+  if(status) status.textContent=changed?'✅ Sensitivity updated — NEW PROFILE CODE generated. Copy the updated code below.':'ℹ️ No sensitivity value changed — existing profile code remains valid.';
+  if(title) title.textContent=changed?'Updated Profile Transfer Code':'Profile Transfer Code';
   $('diagnosisPanel').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
@@ -628,7 +636,7 @@ $('loadCode').onclick=()=>loadTransferCode($('profileCodeInput').value);
 $('profileCodeInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();loadTransferCode(e.target.value)}};
 $('loadThisCode').onclick=()=>loadTransferCode($('code').textContent);
 $('saveProfile').onclick=()=>{persist();alert('Profile saved. Copy the transfer code for another phone.')};
-$('copyCode').onclick=async()=>{if(!current)return;try{await navigator.clipboard.writeText($('code').textContent);$('copyCode').textContent='COPIED';setTimeout(()=>$('copyCode').textContent='COPY CODE',1000)}catch(e){alert($('code').textContent)}};
+$('copyCode').onclick=async()=>{if(!current)return;const code=$('code').textContent;if(!code)return;try{await navigator.clipboard.writeText(code);$('copyCode').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyCode').textContent='COPY CODE',1200)}catch(e){alert(code)}};
 $('exportProfile').onclick=()=>{if(!current)return;const blob=new Blob([JSON.stringify(profilePayload(current),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='aimcraft-profile-'+$('code').textContent+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
 $('importProfileBtn').onclick=()=>$('importProfile').click();
 $('importProfile').onchange=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.input||!Array.isArray(x.values))throw 0;const p=x.input;applyLoadedProfile(x,'PROFILE IMPORTED')}catch(err){alert('Invalid AIMCRAFT profile JSON.')}};r.readAsText(f)};
