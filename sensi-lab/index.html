@@ -97,9 +97,23 @@ button:disabled{opacity:.65;cursor:wait}</style>
     </div>
   </div>
   <div class="feedback" id="diagnosisIssues">
-    <span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span>
+    <div class="hint" style="margin:10px 0 6px">Problem(s) — ek se zyada select kar sakte ho:</div>
+    <span class="chip">Head goes over</span>
+    <span class="chip">Head tak drag nahi pahunchta</span>
+    <span class="chip">Stays on chest</span>
+    <span class="chip">Drag feels slow</span>
+    <span class="chip">Drag feels fast</span>
+    <span class="chip">Scope shakes</span>
+    <span class="chip">Recoil climbs</span>
+    <span class="chip">Recoil bahut zyada hai</span>
+    <span class="chip">Recoil control nahi ho raha</span>
+    <span class="chip">Spray left/right ja raha hai</span>
+    <span class="chip">Aim drifts</span>
+    <span class="chip">Crosshair hilta hai</span>
+    <span class="chip">Tracking mushkil hai</span>
+    <span class="chip">Scope open karte hi aim shift hota hai</span>
   </div>
-  <div class="note" id="diagnosisResult" style="margin-top:10px">Select a problem to see which sensitivity AIMCRAFT will test.</div>
+  <div class="note" id="diagnosisResult" style="margin-top:10px">Select one or more actual problems. You can combine recoil + aim + drag problems; AIMCRAFT will map them to the selected range(s).</div>
   <button type="button" id="diagnoseApply" style="margin-top:10px;background:linear-gradient(100deg,#ffd36b,#ff9f68)">ANALYZE PROBLEM & APPLY ADJUSTMENT</button>
 </div>
 <div class="sensi" id="sensi"></div>
@@ -123,13 +137,6 @@ button:disabled{opacity:.65;cursor:wait}</style>
 <div class="feedback" id="feedback"><span class="chip">Head goes over</span><span class="chip">Stays on chest</span><span class="chip">Drag feels slow</span><span class="chip">Drag feels fast</span><span class="chip">Scope shakes</span><span class="chip">Recoil climbs</span><span class="chip">Aim drifts</span></div>
 <button class="refine" id="refine" style="margin-top:10px;background:linear-gradient(100deg,#b8a5ff,#62e6ff)">REFINE THIS TEST ROUND</button>
 <div class="micro" id="history">No calibration rounds saved yet.</div>
-</div>
-
-<div class="note"><b>Advanced A/B Micro Test — Optional</b>
-<div class="micro">Main problem flow ke liye A/B ki zarurat nahi hai. Yeh sirf advanced users ke liye hai jab ek specific axis ko manually compare karna ho. Test both in the same distance/gun context and pick the one that feels more controllable. This records preference evidence; it does not claim a measured headshot percentage.</div>
-<div class="two" style="margin-top:9px"><select id="abAxis"><option>General</option><option>Red Dot</option><option>2× Scope</option><option>4× Scope</option><option>Sniper</option><option>Free Look</option></select><select id="abDelta"><option value="2">±2</option><option value="3" selected>±3</option><option value="4">±4</option><option value="5">±5</option></select></div>
-<button class="secondary" id="makeAB" style="margin-top:9px">MAKE TWO CANDIDATES</button>
-<div class="abbox" id="abbox"></div>
 </div>
 
 <div class="note"><b>Calibration History</b><div id="historyTable"></div><div class="smallActions"><button class="secondary" id="clearHistory">CLEAR HISTORY</button></div></div>
@@ -366,11 +373,6 @@ function diagnosisSelected(){
   const box=$('diagnosisIssues');
   return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
 }
-
-function diagnosisSelected(){
-  const box=$('diagnosisIssues');
-  return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
-}
 function diagnosisSelectedRanges(){
   const box=$('diagnosisRanges');
   return box ? [...box.querySelectorAll('.chip.on')].map(x=>x.textContent.trim()) : [];
@@ -395,9 +397,29 @@ function diagnosisPlan(ranges,issues){
     plan[axis].reasons.push(reason);
   };
   issues.forEach(issue=>{
-    const delta=(issue==='Stays on chest'||issue==='Drag feels slow')?4:
-                (issue==='Head goes over'||issue==='Drag feels fast'||issue==='Scope shakes')?-4:
-                -3;
+    const delta=(
+                  issue==='Stays on chest' ||
+                  issue==='Drag feels slow' ||
+                  issue==='Head tak drag nahi pahunchta'
+                )?4:
+                (
+                  issue==='Head goes over' ||
+                  issue==='Drag feels fast' ||
+                  issue==='Scope shakes'
+                )?-4:
+                (
+                  issue==='Recoil bahut zyada hai' ||
+                  issue==='Recoil control nahi ho raha' ||
+                  issue==='Recoil climbs'
+                )?-3:
+                (
+                  issue==='Spray left/right ja raha hai' ||
+                  issue==='Aim drifts' ||
+                  issue==='Crosshair hilta hai' ||
+                  issue==='Tracking mushkil hai' ||
+                  issue==='Scope open karte hi aim shift hota hai'
+                )?-2:
+                -2;
     chosen.forEach(range=>{
       diagnosisRangeAxes(range).forEach(axis=>{
         add(axis,delta,range+' · '+(
@@ -465,6 +487,19 @@ function renderDiagnosis(p){
           rangeBox.querySelector('.chip:last-child')?.classList.remove('on');
           chip.classList.toggle('on');
         }
+        update();
+      };
+    });
+  }
+
+  // Problem chips are multi-select. Selecting Not Sure in the RANGE section does not
+  // disable these symptom chips; users can select several real problems at once.
+  const issueBox=$('diagnosisIssues');
+  if(issueBox){
+    issueBox.querySelectorAll('.chip').forEach(chip=>{
+      chip.classList.remove('on');
+      chip.onclick=()=>{
+        chip.classList.toggle('on');
         update();
       };
     });
