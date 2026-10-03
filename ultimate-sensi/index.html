@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050811">
+<meta name="description" content="AIMCRAFT ULTIMATE — unified Free Fire sensitivity builder, calibration lab, profile transfer and OB update tools.">
+<title>AIMCRAFT ULTIMATE — Free Fire Sensitivity Lab</title>
+<style>
+:root{--bg:#050811;--panel:#0a1222;--panel2:#0e1930;--line:#24385e;--text:#f4f7ff;--muted:#9aa8c2;--cyan:#5de7ff;--violet:#9d7cff;--green:#62e6a4;--yellow:#ffd36b;--red:#ff7d91}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at 12% 0,#1a2c54 0,#070c18 38%,#04060d 100%);min-height:100vh}
+body:before{content:"";position:fixed;inset:0;background:linear-gradient(rgba(4,7,16,.56),rgba(3,5,12,.91)),radial-gradient(circle at 70% 20%,rgba(100,80,255,.14),transparent 35%);z-index:-2}
+.wrap{max-width:1120px;margin:auto;padding:16px 14px 70px}.hero{text-align:center;padding:18px 5px 12px}.eyebrow{font-size:11px;letter-spacing:2px;color:var(--cyan);font-weight:900}.hero h1{font-size:clamp(34px,8vw,70px);line-height:.94;margin:9px 0;background:linear-gradient(100deg,#fff,var(--cyan),var(--violet));-webkit-background-clip:text;color:transparent}.hero p{max-width:850px;margin:12px auto;color:var(--muted);line-height:1.55}
+.nav{position:sticky;top:0;z-index:10;display:flex;gap:7px;overflow:auto;padding:7px;margin:0 -2px 12px;background:rgba(5,8,17,.88);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:15px}.nav button{white-space:nowrap;background:#0a1326;color:#cbd6eb;border:1px solid #2b4067;border-radius:10px;padding:10px 12px;font-weight:800;cursor:pointer}.nav button.on{border-color:var(--cyan);color:#fff;box-shadow:0 0 0 1px rgba(93,231,255,.18) inset}
+.section{display:none}.section.on{display:block}.card{background:linear-gradient(145deg,rgba(11,19,35,.96),rgba(6,12,24,.96));border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 16px 50px rgba(0,0,0,.2)}.title{font-size:18px;font-weight:950;margin-bottom:5px}.sub{font-size:13px;color:var(--muted);line-height:1.55}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:900;color:#b9c7df;margin:0 0 6px}input,select{width:100%;background:#071020;color:#f4f7ff;border:1px solid #294067;border-radius:12px;padding:12px 12px;font-size:15px;outline:none}input:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,231,255,.08)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{display:inline-flex;align-items:center;gap:5px;padding:10px 12px;border:1px solid #294067;border-radius:999px;background:#071020;color:#b8c5da;cursor:pointer;font-weight:750;font-size:13px;user-select:none}.chip.on{border-color:var(--cyan);background:rgba(28,118,139,.24);color:#fff;box-shadow:0 0 0 1px rgba(93,231,255,.15) inset}.chip.disabled{opacity:.45;pointer-events:none}
+.modegrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.mode{padding:12px 8px;text-align:center;border:1px solid #294067;border-radius:12px;background:#071020;color:#b8c5da;cursor:pointer;font-weight:850}.mode.on{border-color:var(--violet);background:rgba(119,82,220,.18);color:#fff}
+button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;background:linear-gradient(90deg,#ffd35d,#ff9861);color:#080b12;font-size:16px;font-weight:950;cursor:pointer}button.secondary{border:1px solid #315079;background:#091326;color:#dbe6f8;border-radius:11px;padding:11px 13px;font-weight:850;cursor:pointer}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions>*{flex:1}
+.progress{display:none;margin-top:11px}.progress.on{display:block}.track{height:9px;background:#071020;border-radius:99px;overflow:hidden;border:1px solid #233657}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .2s}.stage{font-size:12px;color:var(--muted);margin-top:7px}
+.notice{border-left:4px solid var(--cyan);padding:12px 13px;background:#081226;border-radius:12px;color:#c5d1e6;line-height:1.55}.notice.ok{border-left-color:var(--green)}.notice.warn{border-left-color:var(--yellow)}
+.sensi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.axis{background:#071020;border:1px solid #294067;border-radius:14px;padding:13px}.axis small{display:block;color:#93a4c1;font-weight:800}.axis strong{font-size:32px;display:block;margin:4px 0}.meter{height:7px;border-radius:99px;background:#182743;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:99px}
+.profile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kv{background:#071020;border:1px solid #263a5d;border-radius:12px;padding:10px}.kv b{display:block;font-size:12px;color:#8fa1bf}.kv span{display:block;margin-top:4px;font-weight:850}
+.problem-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.problem{padding:11px;border:1px solid #294067;border-radius:12px;background:#071020;color:#bdc9dd;cursor:pointer;font-weight:800}.problem.on{border-color:var(--cyan);background:rgba(31,122,142,.2);color:#fff}
+.resultMsg{min-height:20px;color:#b9c8df;font-size:13px;line-height:1.5}.history{overflow:auto}.history table{width:100%;border-collapse:collapse;font-size:12px}.history th,.history td{padding:9px;border-bottom:1px solid #203252;text-align:left;vertical-align:top}.codebox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:#050b16;border:1px solid #2c4268;padding:12px;border-radius:12px;color:#ccefff;font-size:12px}
+.hudPreview{display:none;margin-top:9px;max-height:260px;max-width:100%;border-radius:12px;border:1px solid #294067}.small{font-size:11px;color:#8090ab}.rangeHint{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rangeCard{padding:10px;border:1px solid #263a5d;border-radius:12px;background:#071020}.rangeCard b{display:block;font-size:12px}.rangeCard span{font-size:11px;color:#8fa1bf}
+@media(max-width:720px){.grid,.grid3,.profile{grid-template-columns:1fr}.sensi{grid-template-columns:repeat(2,minmax(0,1fr))}.modegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.rangeHint{grid-template-columns:repeat(2,minmax(0,1fr))}.problem-grid{grid-template-columns:1fr}.hero h1{font-size:43px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">VG MENT4L × AIMCRAFT ENGINE</div>
+<h1>AIMCRAFT ULTIMATE</h1>
+<p>One unified Free Fire sensitivity lab: device-aware starting build, HUD evidence, exact gun profile, guided problem calibration, profile transfer and OB update — without the old duplicate tools.</p>
+</header>
+
+<nav class="nav" id="nav">
+<button class="on" data-tab="build">BUILD SENSI</button>
+<button data-tab="calibrate">CALIBRATE</button>
+<button data-tab="update">OB UPDATE</button>
+<button data-tab="profile">PROFILE</button>
+</nav>
+
+<section class="section on" id="build">
+<div class="card">
+<div class="title">01 · Player & Device Fingerprint</div>
+<div class="sub">Starting sensitivity is a calibration baseline, not a promise of a universal “best” number. The engine uses the inputs you actually provide and then lets your in-game test feedback correct the curve.</div>
+<div class="grid" style="margin-top:12px">
+<div><label>Device name *</label><input id="device" placeholder="iQOO Neo 10 / POCO M7 5G / iPhone 15 Pro Max"></div>
+<div><label>Phone age</label><select id="age"><option>New / under 6 months</option><option>6–12 months</option><option>1–2 years</option><option>2–3 years</option><option>3+ years</option></select></div>
+<div><label>RAM</label><select id="ram"><option>3–4 GB</option><option>6 GB</option><option selected>8 GB</option><option>12 GB</option><option>16 GB+</option></select></div>
+<div><label>DPI / smallest width</label><input id="dpi" type="number" min="200" max="800" value="360"></div>
+<div><label>Refresh rate</label><select id="hz"><option>60</option><option>90</option><option selected>120</option><option>144</option><option>165</option><option>Unknown</option></select></div>
+<div><label>Touch sampling</label><input id="touch" type="number" min="60" max="1000" value="240"></div>
+<div><label>Fingers</label><select id="fingers"><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+<div><label>Fire button size</label><input id="fire" type="number" min="1" max="100" value="48"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">02 · Game & Aim Context</div>
+<div class="grid" style="margin-top:12px">
+<div><label>Game mode</label><select id="gameMode"><option>All Mode</option><option>Clash Squad</option><option>Battle Royale</option><option>Ranked</option><option>Custom</option></select></div>
+<div><label>Player mode</label><select id="playerMode"><option>All Mode</option><option>Rush</option><option>One Tap</option><option>Drag Headshot</option><option>Spray / Recoil</option><option>Sniper</option><option>Balanced</option></select></div>
+<div><label>Player style</label><select id="style"><option>All Styles</option><option>Freestyle</option><option>Jump Shot</option><option>Situp Shot</option><option>Noob Work</option><option>Aggressive</option><option>Controlled</option></select></div>
+<div><label>Sensitivity mode</label><select id="sensMode"><option>Default</option><option>High</option></select></div>
+<div><label>Aim precision / reticle behavior</label><select id="aimMode"><option>Default</option><option>Precise on Scope</option><option>Full Control</option></select></div>
+<div><label>Current OB</label><select id="ob"><option>OB55</option></select></div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">03 · Exact Gun Profile</div>
+<div class="sub">This is critical. <b>All Guns</b> means the whole weapon pool. Selecting three guns means the profile is locked to those exact three guns and that information is preserved in the transfer code.</div>
+<div class="chips" id="guns" style="margin-top:10px"></div>
+<div class="small" id="gunCount" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+<div class="title">04 · HUD Evidence</div>
+<div class="sub">Upload your real HUD screenshot. The site records image dimensions/aspect information and uses it as supporting evidence. It does not pretend a screenshot alone can measure hidden touch latency.</div>
+<input id="hud" type="file" accept="image/*" style="margin-top:10px">
+<img id="hudPreview" class="hudPreview">
+<div id="hudMeta" class="small" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+<div class="title">05 · Build Starting Sensitivity</div>
+<div class="sub">The new engine intentionally avoids the old “random device shift” behavior. It starts from a stable curve, applies device/input evidence, then expects real test feedback for final tuning.</div>
+<button class="primary" id="buildBtn">BUILD STARTING SENSITIVITY</button>
+<div class="progress" id="buildProgress"><div class="track"><div class="bar" id="buildBar"></div></div><div class="stage" id="buildStage">Preparing…</div></div>
+</div>
+
+<div id="buildResult"></div>
+</section>
+
+<section class="section" id="calibrate">
+<div class="card">
+<div class="title">CALIBRATION LAB — FIX THE ACTUAL PROBLEM</div>
+<div class="sub">Use the same gun and range for a short Training Ground test. Select every real problem you are seeing. AIMCRAFT will adjust only the relevant sensitivity axes instead of changing all six values blindly.</div>
+<div id="calStatus" class="notice warn" style="margin-top:10px">Build or load a profile first.</div>
+</div>
+
+<div class="card" id="calForm" style="display:none">
+<div class="title">Test context</div>
+<label style="margin-top:10px">Gun(s)</label><div class="chips" id="calGuns"></div>
+<label style="margin-top:12px">Problem range(s) — multiple allowed</label><div class="chips" id="ranges"></div>
+<label style="margin-top:12px">Problem(s) — multiple allowed</label>
+<div class="problem-grid" id="problems"></div>
+<button class="primary" id="calBtn" style="margin-top:13px">ANALYZE PROBLEM & APPLY CALIBRATION</button>
+<div class="resultMsg" id="calMsg" style="margin-top:10px"></div>
+</div>
+
+<div id="calResult"></div>
+<div class="card" id="historyCard" style="display:none"><div class="title">Calibration History</div><div class="history" id="history"></div></div>
+</section>
+
+<section class="section" id="update">
+<div class="card">
+<div class="title">OB UPDATE — KEEP THE PROFILE, UPDATE THE SENSITIVITY</div>
+<div class="sub">Load a profile code or paste six manual values. The updater preserves device, fingers, style and exact gun selection. Only sensitivity values are changed.</div>
+<div class="grid" style="margin-top:12px">
+<div class="full"><label>Profile code</label><input id="updateCode" placeholder="AUX2-..."></div>
+<div><label>Old OB</label><select id="oldOb"><option>OB55</option><option>UNKNOWN</option></select></div>
+<div><label>Target OB</label><select id="targetOb"><option>OB55</option></select></div>
+</div>
+<div class="actions" style="margin-top:10px"><button class="secondary" id="loadUpdate">LOAD PROFILE</button><button class="secondary" id="applyOb">UPDATE TO TARGET OB</button></div>
+<div id="updateStatus" class="resultMsg" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+<div class="title">Manual Sensitivity Import</div>
+<div class="grid3" style="margin-top:10px">
+<div><label>General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
+<div><label>Red Dot</label><input id="m1" type="number" min="0" max="200" value="180"></div>
+<div><label>2× Scope</label><input id="m2" type="number" min="0" max="200" value="160"></div>
+<div><label>4× Scope</label><input id="m3" type="number" min="0" max="200" value="140"></div>
+<div><label>Sniper</label><input id="m4" type="number" min="0" max="200" value="85"></div>
+<div><label>Free Look</label><input id="m5" type="number" min="0" max="200" value="120"></div>
+</div>
+<button class="primary" id="importManual" style="margin-top:11px">IMPORT AS PROFILE</button>
+</div>
+<div id="updateResult"></div>
+</section>
+
+<section class="section" id="profile">
+<div class="card">
+<div class="title">PROFILE TRANSFER</div>
+<div class="sub">The code contains the complete profile, including exact gun selection, player/device context, sensitivity and calibration state. A three-gun profile cannot silently become All Guns.</div>
+<input id="profileCode" placeholder="AUX2-..." style="margin-top:10px">
+<div class="actions" style="margin-top:9px"><button class="secondary" id="loadProfile">LOAD PROFILE</button><button class="secondary" id="copyProfile">COPY CURRENT CODE</button><button class="secondary" id="saveProfile">SAVE ON THIS PHONE</button></div>
+<div id="profileCodeBox" style="margin-top:10px"></div>
+</div>
+<div id="profileView"></div>
+</section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const AXIS=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
+const WEAPONS=[
+['All Guns','ALL'],['M1887','SHOTGUN'],['M1014','SHOTGUN'],['MAG-7','SHOTGUN'],['TREATMENT LASER GUN','SPECIAL'],
+['Desert Eagle','PISTOL'],['G18','PISTOL'],['USP','PISTOL'],['M500','PISTOL'],['Woodpecker','DMR'],['SKS','DMR'],
+['AC80','DMR'],['SVD','DMR'],['UMP','SMG'],['MAC10','SMG'],['MP40','SMG'],['MP5','SMG'],['Bizon','SMG'],
+['Thompson','SMG'],['Vector','SMG'],['P90','SMG'],['M4A1','AR'],['SCAR','AR'],['XM8','AR'],['AN94','AR'],
+['GROZA','AR'],['AK47','AR'],['FAMAS','AR'],['PARAFAL','AR'],['M14','AR'],['M249','AR'],['RPK','AR'],['M7','AR'],
+['AWM','SNIPER'],['Kar98k','SNIPER'],['M82B','SNIPER'],['M24','SNIPER'],['VSS','DMR']
+];
+const GUN_BIAS={SHOTGUN:[5,5,-1,-3,-5,0],PISTOL:[3,4,0,-1,-2,0],SMG:[3,3,1,0,-2,0],AR:[1,1,1,1,0,0],DMR:[-1,-1,1,3,2,0],SNIPER:[-3,-2,-1,0,5,0],SPECIAL:[1,1,1,0,0,0],ALL:[0,0,0,0,0,0]};
+const PROBLEMS=[
+['Head goes over','overshoot'],['Stays on chest','undershoot'],['Head tak drag nahi pahunchta','undershoot'],
+['Drag feels slow','slow'],['Drag feels fast','fast'],['Scope shakes','shake'],
+['Recoil bahut zyada hai','recoil'],['Recoil control nahi ho raha','recoil'],['Recoil climbs','recoil'],
+['Spray left/right ja raha hai','drift'],['Aim drifts','drift'],['Crosshair hilta hai','shake'],
+['Tracking mushkil hai','track'],['Scope open karte hi aim shift hota hai','scopeShift']
+];
+const RANGES=['Close Range','Mid Range','Long Range','Precision'];
+let hud=null,current=null,history=[],buildBusy=false;
+
+function clamp(n){return Math.max(0,Math.min(200,Math.round(Number(n)||0)))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function b64(s){const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function unb64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),p=b+'='.repeat((4-b.length%4)%4),bin=atob(p);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
+function codeFor(p){return 'AUX2-'+b64(JSON.stringify({v:2,profile:p}))}
+function decode(code){const s=String(code||'').trim().replace(/\s+/g,'');if(!s.startsWith('AUX2-'))throw Error('Invalid code');const x=JSON.parse(unb64(s.slice(5)));if(!x.profile?.v||!Array.isArray(x.profile.v))throw Error('Incomplete profile');return x.profile}
+function save(){if(current)localStorage.setItem('AIMCRAFT_ULTIMATE_PROFILE',JSON.stringify(current));localStorage.setItem('AIMCRAFT_ULTIMATE_HISTORY',JSON.stringify(history))}
+function loadSaved(){try{const p=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_PROFILE')||'null');if(p) setCurrent(p,'Saved profile loaded');history=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_HISTORY')||'[]')}catch(e){}}
+function selected(id){return [...$(id).querySelectorAll('.on')].map(x=>x.dataset.value||x.textContent.trim())}
+function toggleGroup(id){$(id).addEventListener('click',e=>{const c=e.target.closest('[data-value]');if(!c)return;c.classList.toggle('on');if(id==='guns')syncGuns(c);})}
+function syncGuns(chip){const box=$('guns'),all=box.querySelector('[data-value="All Guns"]');if(chip.dataset.value==='All Guns'&&chip.classList.contains('on'))box.querySelectorAll('[data-value]').forEach(x=>{if(x!==chip)x.classList.remove('on')});if(chip.dataset.value!=='All Guns'&&chip.classList.contains('on')){all.classList.remove('on');const focus=box.querySelectorAll('[data-value].on').length;if(focus>3)chip.classList.remove('on')}const g=selected('guns');$('gunCount').textContent=g.includes('All Guns')?'All Guns · full weapon pool':('Exact focus guns: '+g.length+'/3 · '+(g.join(' + ')||'none'))}
+function renderGuns(){const box=$('guns');box.innerHTML=WEAPONS.map(([n])=>'<span class="chip '+(n==='All Guns'?'on':'')+'" data-value="'+esc(n)+'">'+esc(n)+'</span>').join('');syncGuns(box.querySelector('[data-value="All Guns"]'));toggleGroup('guns')}
+function fillProblems(){const box=$('problems');box.innerHTML=PROBLEMS.map(x=>'<div class="problem" data-value="'+esc(x[0])+'">'+esc(x[0])+'</div>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.problem');if(x)x.classList.toggle('on')})}
+function fillRanges(){const box=$('ranges');box.innerHTML=RANGES.map(x=>'<span class="chip" data-value="'+x+'">'+x+'</span>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.chip');if(!x)return;x.classList.toggle('on')})}
+function buildFingerprint(){
+ const hz=Number($('hz').value)||90,touch=Number($('touch').value)||180,dpi=Number($('dpi').value)||360;
+ const dpr=window.devicePixelRatio||1,w=screen.width||360,h=screen.height||800,coarse=matchMedia('(pointer:coarse)').matches;
+ return {hz,touch,dpi,dpr,w,h,coarse,age:$('age').value,ram:$('ram').value,fingers:Number($('fingers').value),fire:Number($('fire').value),device:$('device').value.trim()};
+}
+function deviceAdjust(f){
+ let z=[0,0,0,0,0,0];
+ if(f.hz>=120){z[0]-=4;z[1]-=3;z[2]-=2;z[3]-=2}else if(f.hz<=60){z[0]+=5;z[1]+=4;z[2]+=3;z[3]+=2}
+ if(f.touch>=480){z[0]-=2;z[1]-=2}else if(f.touch>0&&f.touch<180){z[0]+=3;z[1]+=3}
+ if(f.dpi>=500){z[0]-=5;z[1]-=4;z[2]-=3}else if(f.dpi<=280){z[0]+=4;z[1]+=3;z[2]+=2}
+ if(f.fingers>=4){z[0]-=1;z[1]-=1}
+ if(f.fire<=35){z[0]+=2;z[1]+=1}else if(f.fire>=60){z[0]-=2;z[1]-=1}
+ if(/3–4/.test(f.ram)){z[2]+=2;z[3]+=2}
+ if(/2–3|3\+/.test(f.age)){z[1]+=1;z[2]+=1}
+ return z;
+}
+function contextAdjust(){
+ const z=[0,0,0,0,0,0],mode=$('playerMode').value,style=$('style').value,game=$('gameMode').value,sens=$('sensMode').value,aim=$('aimMode').value;
+ if(mode==='One Tap'||mode==='Drag Headshot'){z[0]+=3;z[1]+=3}
+ if(mode==='Rush'){z[0]+=4;z[1]+=3}
+ if(mode==='Spray / Recoil'){z[2]-=2;z[3]-=3}
+ if(mode==='Sniper'){z[0]-=2;z[1]-=2;z[2]-=2;z[3]-=1;z[4]+=4}
+ if(style==='Aggressive'||style==='Jump Shot'){z[0]+=2;z[1]+=2}
+ if(style==='Controlled'||style==='Situp Shot'){z[0]-=2;z[1]-=1;z[2]-=1}
+ if(game==='Clash Squad'){z[0]+=1;z[1]+=1}
+ if(game==='Battle Royale'){z[3]-=1;z[4]+=1}
+ if(sens==='High'){z[0]+=4;z[1]+=3;z[2]+=2}
+ if(aim==='Precise on Scope'||aim==='Full Control'){z[1]-=2;z[2]-=2;z[3]-=2;z[4]-=2}
+ return z;
+}
+function gunAdjust(guns){
+ const z=[0,0,0,0,0,0],list=guns.includes('All Guns')?['ALL']:guns;
+ list.forEach(n=>{const t=WEAPONS.find(x=>x[0]===n)?.[1]||'AR';const b=GUN_BIAS[t]||GUN_BIAS.AR;b.forEach((v,i)=>z[i]+=v/(list.length||1))});
+ return z;
+}
+function makeStarting(){
+ const f=buildFingerprint(), base=[185,180,160,140,85,120],a=deviceAdjust(f),b=contextAdjust(),g=gunAdjust(selected('guns').length?selected('guns'):['All Guns']);
+ let v=base.map((x,i)=>clamp(x+a[i]+b[i]+g[i]));
+ // Keep the curve intentionally ordered by aiming state; do not flatten all six values.
+ v[2]=Math.min(v[2],v[1]);v[3]=Math.min(v[3],v[2]);v[4]=Math.min(v[4],Math.max(55,v[3]-35));
+ return {version:2,createdAt:new Date().toISOString(),device:f.device||'Unknown device',age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
+}
+function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="axis"><small>'+AXIS[i]+'</small><strong>'+x+'</strong><div class="meter"><i style="width:'+x/2+'%"></i></div></div>').join('')+'</div>'}
+function profileHTML(p){
+ return '<div class="profile">'+[['Device',p.device],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['RAM',p.ram],['DPI',p.dpi],['Refresh',p.hz+' Hz'],['Touch',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['OB',p.ob],['Gun Profile',p.guns.includes('All Guns')?'All Guns · Full Weapon Pool':p.guns.join(' + ')]].map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
+}
+function setCurrent(p,msg){
+ current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],v:p.v.map(clamp)};
+ $('profileView').innerHTML='<div class="card"><div class="title">'+esc(msg||'PROFILE LOADED')+'</div>'+profileHTML(current)+'</div><div class="card">'+renderSensi(current.v)+'</div>';
+ $('profileCodeBox').innerHTML='<div class="codebox">'+esc(codeFor(current))+'</div>';
+ $('profileCode').value=codeFor(current);
+ $('calForm').style.display='block';$('calStatus').className='notice ok';$('calStatus').textContent='Profile ready. Select the exact test gun(s), range(s), and actual problem(s).';
+ renderCalibrationGuns();renderHistory();save();
+}
+function renderBuild(p){
+ $('buildResult').innerHTML='<div class="card"><div class="title">STARTING SENSITIVITY — TEST THIS FIRST</div>'+renderSensi(p.v)+'<div class="notice" style="margin-top:11px"><b>Important:</b> these are starting values, not a guaranteed headshot preset. The useful part is the next step: test the same gun/range and feed the real problem into Calibration Lab.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="goCal">OPEN CALIBRATION LAB</button><button class="secondary" id="saveNow">SAVE PROFILE</button></div></div>';
+ $('goCal').onclick=()=>tab('calibrate');$('saveNow').onclick=()=>{setCurrent(p,'PROFILE SAVED');alert('Profile saved. Copy the code from Profile tab.')}
+ setCurrent(p,'PROFILE READY');
+}
+function tab(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.tab===id));$(id).classList.add('on');window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+
+function renderCalibrationGuns(){
+ const box=$('calGuns'),list=current?.guns?.includes('All Guns')?['All Guns']:current?.guns||[];
+ box.innerHTML=list.map(x=>'<span class="chip" data-value="'+esc(x)+'">'+esc(x)+'</span>').join('');
+ box.onclick=e=>{const c=e.target.closest('.chip');if(c)c.classList.toggle('on')};
+}
+function renderHistory(){
+ if(!history.length){$('historyCard').style.display='none';return}
+ $('historyCard').style.display='block';
+ $('history').innerHTML='<table><tr><th>Time</th><th>Gun</th><th>Range</th><th>Problems</th><th>Before → After</th></tr>'+history.slice().reverse().map(h=>'<tr><td>'+esc(h.time)+'</td><td>'+esc(h.guns.join(', '))+'</td><td>'+esc(h.ranges.join(', '))+'</td><td>'+esc(h.problems.join(', '))+'</td><td>'+esc(h.before.join(' / '))+' → '+esc(h.after.join(' / '))+'</td></tr>').join('')+'</table>';
+}
+function axisForRange(r){return r==='Close Range'?[0,1]:r==='Mid Range'?[1,2]:r==='Long Range'?[2,3]:[3,4]}
+function problemDelta(type,axis){
+ if(['undershoot','slow'].includes(type))return axis<=1?4:axis===2?3:axis===3?2:1;
+ if(['overshoot','fast','shake'].includes(type))return axis<=1?-4:axis===2?-3:axis===3?-2:axis===4?-2:0;
+ if(type==='recoil')return axis===1?-1:axis===2?-3:axis===3?-4:axis===4?-2:0;
+ if(type==='drift')return axis===1?-2:axis===2?-2:axis===3?-2:axis===4?-1:0;
+ if(type==='track')return axis<=2?3:axis===3?2:0;
+ if(type==='scopeShift')return axis>=2?-2:axis===1?-1:0;
+ return 0;
+}
+function calibrate(){
+ if(!current)return alert('Pehle profile build/load karo.');
+ const guns=selected('calGuns'),ranges=selected('ranges'),problems=selected('problems');
+ if(!guns.length||!ranges.length||!problems.length)return alert('Gun, range aur actual problem select karo.');
+ const delta=[0,0,0,0,0,0];
+ problems.forEach(label=>{const type=PROBLEMS.find(x=>x[0]===label)?.[1];ranges.forEach(r=>axisForRange(r).forEach(a=>delta[a]+=problemDelta(type,a)/ranges.length));});
+ for(let i=0;i<6;i++)delta[i]=Math.max(-6,Math.min(6,Math.round(delta[i])));
+ const before=[...current.v];current.v=current.v.map((x,i)=>clamp(x+delta[i]));
+ const changed=before.some((x,i)=>x!==current.v[i]);
+ const h={time:new Date().toLocaleString(),guns,ranges,problems,before,after:[...current.v]};
+ history.push(h);save();setCurrent(current,changed?'CALIBRATION APPLIED · UPDATED PROFILE':'NO VALUE CHANGED');
+ $('calMsg').textContent=changed?'Sensitivity updated from your selected test evidence. A NEW transfer code is now shown in Profile.':'No unlocked axis needed a change for this combination; existing code remains valid.';
+ renderHistory();
+}
+function loadCodeIntoProfile(code){
+ try{const p=decode(code);setCurrent(p,'PROFILE LOADED · EXACT GUNS RESTORED');tab('profile');}
+ catch(e){alert('Profile code invalid or incomplete.')}
+}
+function updateOB(){
+ if(!current)return alert('Load a profile first.');
+ const target=$('targetOb').value,old=$('oldOb').value;if(target==='OB55'&&old==='OB55'){ $('updateStatus').textContent='Same OB: no version delta applied. Use Calibration Lab for aim problems.';return}
+ let d=[-1,-1,0,0,0,0];
+ if(old==='UNKNOWN'){d=[-1,-1,-1,0,0,0]}
+ current.v=current.v.map((x,i)=>clamp(x+d[i]));current.ob=target;save();setCurrent(current,'OB UPDATE COMPLETE · SENSITIVITY UPDATED');
+ $('updateStatus').textContent='Only sensitivity + OB context changed. Exact gun profile and other information were preserved. New code is available in Profile.';
+}
+function importManual(){
+ const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
+ const p=makeStarting();p.v=v;p.createdAt=new Date().toISOString();setCurrent(p,'MANUAL SENSITIVITY IMPORTED');tab('profile');
+}
+$('hud').onchange=()=>{
+ const f=$('hud').files?.[0];if(!f)return;const im=new Image(),url=URL.createObjectURL(f);
+ im.onload=()=>{hud={name:f.name,size:f.size,width:im.naturalWidth,height:im.naturalHeight,ratio:+(im.naturalWidth/im.naturalHeight).toFixed(3)};$('hudPreview').src=url;$('hudPreview').style.display='block';$('hudMeta').textContent='HUD evidence: '+im.naturalWidth+'×'+im.naturalHeight+' · ratio '+hud.ratio+' · '+Math.round(f.size/1024)+' KB';};
+ im.src=url;
+};
+$('buildBtn').onclick=()=>{
+ if(buildBusy)return; if(!$('device').value.trim())return alert('Device name डालो.');
+ buildBusy=true;$('buildBtn').disabled=true;$('buildProgress').classList.add('on');let n=0;
+ const timer=setInterval(()=>{n+=20;$('buildBar').style.width=n+'%';$('buildStage').textContent=['Reading device + touch inputs…','Mapping game/style context…','Applying exact gun context…','Building 0–200 starting curve…','Finalizing profile…'][Math.min(4,n/20-1)];if(n>=100){clearInterval(timer);current=makeStarting();renderBuild(current);buildBusy=false;$('buildBtn').disabled=false;$('buildProgress').classList.remove('on');}},150);
+};
+$('calBtn').onclick=calibrate;
+$('loadProfile').onclick=()=>loadCodeIntoProfile($('profileCode').value);
+$('copyProfile').onclick=async()=>{if(!current)return alert('No profile');const c=codeFor(current);try{await navigator.clipboard.writeText(c);$('copyProfile').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyProfile').textContent='COPY CURRENT CODE',1200)}catch(e){alert(c)}};
+$('saveProfile').onclick=()=>{if(current){save();alert('Profile saved on this phone.')}};
+$('loadUpdate').onclick=()=>{if(!$('updateCode').value.trim())return alert('Profile code डालो.');try{const p=decode($('updateCode').value);setCurrent(p,'PROFILE LOADED FOR OB UPDATE');tab('update')}catch(e){alert('Invalid profile code.')}};
+$('applyOb').onclick=updateOB;$('importManual').onclick=importManual;
+$('profileCode').addEventListener('keydown',e=>{if(e.key==='Enter')loadCodeIntoProfile(e.target.value)});
+$('updateCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('loadUpdate').click()});
+renderGuns();fillProblems();fillRanges();loadSaved();
+})();
+</script>
+</body>
+</html>
