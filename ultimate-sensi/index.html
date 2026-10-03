@@ -112,6 +112,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 </div>
 
 <div id="calResult"></div>
+<div class="card" id="learningCard" style="display:none"><div class="title">ADAPTIVE MEMORY</div><div id="learning"></div></div>
 <div class="card" id="historyCard" style="display:none"><div class="title">Calibration History</div><div class="history" id="history"></div></div>
 </section>
 
@@ -177,16 +178,47 @@ const PROBLEMS=[
 ['Tracking mushkil hai','track'],['Scope open karte hi aim shift hota hai','scopeShift']
 ];
 const RANGES=['Close Range','Mid Range','Long Range','Precision'];
-let hud=null,current=null,history=[],buildBusy=false;
+let hud=null,current=null,history=[],learning={},buildBusy=false,pendingCalibration=null;
 
 function clamp(n){return Math.max(0,Math.min(200,Math.round(Number(n)||0)))}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function b64(s){const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function unb64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),p=b+'='.repeat((4-b.length%4)%4),bin=atob(p);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
-function codeFor(p){return 'AUX2-'+b64(JSON.stringify({v:2,profile:p}))}
-function decode(code){const s=String(code||'').trim().replace(/\s+/g,'');if(!s.startsWith('AUX2-'))throw Error('Invalid code');const x=JSON.parse(unb64(s.slice(5)));if(!x.profile?.v||!Array.isArray(x.profile.v))throw Error('Incomplete profile');return x.profile}
-function save(){if(current)localStorage.setItem('AIMCRAFT_ULTIMATE_PROFILE',JSON.stringify(current));localStorage.setItem('AIMCRAFT_ULTIMATE_HISTORY',JSON.stringify(history))}
-function loadSaved(){try{const p=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_PROFILE')||'null');if(p) setCurrent(p,'Saved profile loaded');history=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_HISTORY')||'[]')}catch(e){}}
+function codeFor(p){return 'AUX3-'+b64(JSON.stringify({v:3,profile:p}))}
+function decode(code){
+ const s=String(code||'').trim().replace(/\s+/g,'');
+ if(!s.startsWith('AUX3-')&&!s.startsWith('AUX2-'))throw Error('Invalid code');
+ const x=JSON.parse(unb64(s.slice(5)));
+ if(!x.profile?.v||!Array.isArray(x.profile.v))throw Error('Incomplete profile');
+ return x.profile;
+}
+function save(){
+ if(current)localStorage.setItem('AIMCRAFT_ULTIMATE_PROFILE',JSON.stringify(current));
+ localStorage.setItem('AIMCRAFT_ULTIMATE_HISTORY',JSON.stringify(history));
+ localStorage.setItem('AIMCRAFT_ULTIMATE_LEARNING',JSON.stringify(learning));
+}
+function loadSaved(){
+ try{
+  const p=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_PROFILE')||'null');
+  history=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_HISTORY')||'[]');
+  learning=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_LEARNING')||'{}');
+  if(p) setCurrent(p,'Saved profile loaded');
+ }catch(e){}
+}
+function learningKey(p){
+ return [p.gameMode,p.playerMode,p.style,p.sensMode,p.aimMode,(p.guns||['All Guns']).slice().sort().join('+')].join('|');
+}
+function learningAdjust(p){
+ const row=learning[learningKey(p)]; if(!row) return [0,0,0,0,0,0];
+ return row.sum.map((s,i)=>Math.max(-8,Math.min(8,Math.round(s/Math.max(1,row.n)))));
+}
+function renderLearning(){
+ const keys=Object.keys(learning);
+ if(!keys.length){$('learningCard').style.display='none';return}
+ $('learningCard').style.display='block';
+ const total=keys.reduce((n,k)=>n+(learning[k].n||0),0);
+ $('learning').innerHTML='<div class="notice ok"><b>Adaptive calibration memory is active.</b> '+total+' confirmed test result(s) have been learned on this phone. Future builds can use only small, evidence-backed corrections; the engine never treats RAM or phone age as a direct sensitivity multiplier.</div>';
+}
 function selected(id){return [...$(id).querySelectorAll('.on')].map(x=>x.dataset.value||x.textContent.trim())}
 function toggleGroup(id){$(id).addEventListener('click',e=>{const c=e.target.closest('[data-value]');if(!c)return;c.classList.toggle('on');if(id==='guns')syncGuns(c);})}
 function syncGuns(chip){const box=$('guns'),all=box.querySelector('[data-value="All Guns"]');if(chip.dataset.value==='All Guns'&&chip.classList.contains('on'))box.querySelectorAll('[data-value]').forEach(x=>{if(x!==chip)x.classList.remove('on')});if(chip.dataset.value!=='All Guns'&&chip.classList.contains('on')){all.classList.remove('on');const focus=box.querySelectorAll('[data-value].on').length;if(focus>3)chip.classList.remove('on')}const g=selected('guns');$('gunCount').textContent=g.includes('All Guns')?'All Guns · full weapon pool':('Exact focus guns: '+g.length+'/3 · '+(g.join(' + ')||'none'))}
@@ -205,8 +237,7 @@ function deviceAdjust(f){
  if(f.dpi>=500){z[0]-=5;z[1]-=4;z[2]-=3}else if(f.dpi<=280){z[0]+=4;z[1]+=3;z[2]+=2}
  if(f.fingers>=4){z[0]-=1;z[1]-=1}
  if(f.fire<=35){z[0]+=2;z[1]+=1}else if(f.fire>=60){z[0]-=2;z[1]-=1}
- if(/3–4/.test(f.ram)){z[2]+=2;z[3]+=2}
- if(/2–3|3\+/.test(f.age)){z[1]+=1;z[2]+=1}
+ // RAM and phone age are context only. They are intentionally NOT direct sensitivity multipliers.
  return z;
 }
 function contextAdjust(){
@@ -230,10 +261,12 @@ function gunAdjust(guns){
 }
 function makeStarting(){
  const f=buildFingerprint(), base=[185,180,160,140,85,120],a=deviceAdjust(f),b=contextAdjust(),g=gunAdjust(selected('guns').length?selected('guns'):['All Guns']);
- let v=base.map((x,i)=>clamp(x+a[i]+b[i]+g[i]));
+ const draft={gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,guns:selected('guns').length?selected('guns'):['All Guns']};
+ const l=learningAdjust(draft);
+ let v=base.map((x,i)=>clamp(x+a[i]+b[i]+g[i]+l[i]));
  // Keep the curve intentionally ordered by aiming state; do not flatten all six values.
  v[2]=Math.min(v[2],v[1]);v[3]=Math.min(v[3],v[2]);v[4]=Math.min(v[4],Math.max(55,v[3]-35));
- return {version:2,createdAt:new Date().toISOString(),device:f.device||'Unknown device',age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
+ return {version:3,createdAt:new Date().toISOString(),device:f.device||'Unknown device',age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
 }
 function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="axis"><small>'+AXIS[i]+'</small><strong>'+x+'</strong><div class="meter"><i style="width:'+x/2+'%"></i></div></div>').join('')+'</div>'}
 function profileHTML(p){
@@ -261,6 +294,7 @@ function renderCalibrationGuns(){
  box.onclick=e=>{const c=e.target.closest('.chip');if(c)c.classList.toggle('on')};
 }
 function renderHistory(){
+ renderLearning();
  if(!history.length){$('historyCard').style.display='none';return}
  $('historyCard').style.display='block';
  $('history').innerHTML='<table><tr><th>Time</th><th>Gun</th><th>Range</th><th>Problems</th><th>Before → After</th></tr>'+history.slice().reverse().map(h=>'<tr><td>'+esc(h.time)+'</td><td>'+esc(h.guns.join(', '))+'</td><td>'+esc(h.ranges.join(', '))+'</td><td>'+esc(h.problems.join(', '))+'</td><td>'+esc(h.before.join(' / '))+' → '+esc(h.after.join(' / '))+'</td></tr>').join('')+'</table>';
@@ -279,14 +313,44 @@ function calibrate(){
  if(!current)return alert('Pehle profile build/load karo.');
  const guns=selected('calGuns'),ranges=selected('ranges'),problems=selected('problems');
  if(!guns.length||!ranges.length||!problems.length)return alert('Gun, range aur actual problem select karo.');
+ if(pendingCalibration)return alert('Pehle current calibration ka feedback do.');
  const delta=[0,0,0,0,0,0];
- problems.forEach(label=>{const type=PROBLEMS.find(x=>x[0]===label)?.[1];ranges.forEach(r=>axisForRange(r).forEach(a=>delta[a]+=problemDelta(type,a)/ranges.length));});
+ problems.forEach(label=>{
+  const type=PROBLEMS.find(x=>x[0]===label)?.[1];
+  ranges.forEach(r=>axisForRange(r).forEach(a=>delta[a]+=problemDelta(type,a)));
+ });
  for(let i=0;i<6;i++)delta[i]=Math.max(-6,Math.min(6,Math.round(delta[i])));
- const before=[...current.v];current.v=current.v.map((x,i)=>clamp(x+delta[i]));
- const changed=before.some((x,i)=>x!==current.v[i]);
- const h={time:new Date().toLocaleString(),guns,ranges,problems,before,after:[...current.v]};
- history.push(h);save();setCurrent(current,changed?'CALIBRATION APPLIED · UPDATED PROFILE':'NO VALUE CHANGED');
- $('calMsg').textContent=changed?'Sensitivity updated from your selected test evidence. A NEW transfer code is now shown in Profile.':'No unlocked axis needed a change for this combination; existing code remains valid.';
+ const before=[...current.v],after=current.v.map((x,i)=>clamp(x+delta[i]));
+ const changed=before.some((x,i)=>x!==after[i]);
+ pendingCalibration={guns,ranges,problems,before,after,delta};
+ current.v=after;
+ setCurrent(current,changed?'CALIBRATION CANDIDATE · TEST IT':'NO VALUE CHANGED');
+ $('calResult').innerHTML='<div class="card"><div class="title">DID THE NEW SENSITIVITY FEEL BETTER?</div><div class="sub">Test the exact same gun + range again. Do not change other sliders during this check. Your answer teaches this profile instead of blindly repeating the same adjustment.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="fbBetter">✓ BETTER</button><button class="secondary" id="fbSame">≈ SAME</button><button class="secondary" id="fbWorse">✕ WORSE — REVERT</button></div></div>';
+ $('fbBetter').onclick=()=>finishFeedback('better');
+ $('fbSame').onclick=()=>finishFeedback('same');
+ $('fbWorse').onclick=()=>finishFeedback('worse');
+ $('calMsg').textContent=changed?'Candidate applied. Now run the same short test and give feedback.':'No relevant axis moved for this combination.';
+}
+function finishFeedback(result){
+ if(!pendingCalibration)return;
+ const p=pendingCalibration;
+ if(result==='worse'){
+  current.v=[...p.before];
+  setCurrent(current,'CALIBRATION REVERTED · WORSE TEST RESULT');
+  $('calMsg').textContent='Reverted. The failed adjustment is not learned.';
+ }else{
+  const key=learningKey(current);
+  if(!learning[key])learning[key]={n:0,sum:[0,0,0,0,0,0]};
+  learning[key].n++;
+  if(result==='better')p.delta.forEach((d,i)=>learning[key].sum[i]+=d);
+  const h={time:new Date().toLocaleString(),guns:p.guns,ranges:p.ranges,problems:p.problems,before:p.before,after:[...current.v],feedback:result};
+  history.push(h);
+  current.history=[...(current.history||[]),h];
+  save();setCurrent(current,result==='better'?'CONFIRMED BETTER · LEARNED':'TEST ACCEPTED · NO LEARNING');
+  $('calMsg').textContent=result==='better'?'Great. This successful correction is now part of the adaptive memory for this context.':'Kept as the current profile without learning a directional correction.';
+ }
+ pendingCalibration=null;
+ $('calResult').innerHTML='';
  renderHistory();
 }
 function loadCodeIntoProfile(code){
@@ -316,6 +380,7 @@ $('buildBtn').onclick=()=>{
  const timer=setInterval(()=>{n+=20;$('buildBar').style.width=n+'%';$('buildStage').textContent=['Reading device + touch inputs…','Mapping game/style context…','Applying exact gun context…','Building 0–200 starting curve…','Finalizing profile…'][Math.min(4,n/20-1)];if(n>=100){clearInterval(timer);current=makeStarting();renderBuild(current);buildBusy=false;$('buildBtn').disabled=false;$('buildProgress').classList.remove('on');}},150);
 };
 $('calBtn').onclick=calibrate;
+renderLearning();
 $('loadProfile').onclick=()=>loadCodeIntoProfile($('profileCode').value);
 $('copyProfile').onclick=async()=>{if(!current)return alert('No profile');const c=codeFor(current);try{await navigator.clipboard.writeText(c);$('copyProfile').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyProfile').textContent='COPY CURRENT CODE',1200)}catch(e){alert(c)}};
 $('saveProfile').onclick=()=>{if(current){save();alert('Profile saved on this phone.')}};
