@@ -636,29 +636,46 @@ function bindIssueFixers(){
     const oldOb=normalizeOb($('#profileIssueOldOb').value||$('#loadedOldOb').value||currentProfile.obVersion||'OB55');
     const targetOb=normalizeOb($('#profileIssueTargetOb').value||LATEST_OB);
     const base=baseSensitivity(currentProfile);
-    const fixed=applyMultipleIssueFixWithContext(base,selected,{...currentProfile,oldOb,targetOb,customIssue:custom});
-    const issue=[...selected,(custom?'CUSTOM: '+custom:'')].join(' + ');
-    const rec={issue,time:new Date().toISOString(),from:oldOb,to:targetOb,before:base,after:fixed};
-    const history=Array.isArray(currentProfile.recalibrationHistory)?currentProfile.recalibrationHistory.slice():[];
-    history.unshift(rec);
-    // Same Profile ID: only sensitivity is changed. Device, style, mode, fingers,
-    // guns, HUD and all other saved information stay unchanged.
-    const p={...currentProfile,sensitivity:fixed,recalibrationHistory:history.slice(0,25),lastRecalibration:rec};
-    delete p.__source;
-    localStorage.setItem('vg_ment4l_profile_'+(currentProfile.code||''),JSON.stringify(p));
+    const issue=[...selected,(custom?'CUSTOM: '+custom:'')].join(' + ') || 'Custom problem';
+    const resultEl=$('#profileIssueResult');
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML='<span class="up-spin"></span> Problems analyse karke naya Profile ID save ho raha hai…';
+
     try{
-      const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-      if(r.ok)BACKEND_AVAILABLE=true;
-    }catch(e){BACKEND_AVAILABLE=false;}
-    currentProfile={...p};
-    saveUpdateHistory('issue-fix',oldOb,targetOb,base,fixed,currentProfile.code||'');
-    showIssueOutput($('#profileIssueResult'),base,fixed,issue,'Profile sensitivity updated in the same Profile ID',oldOb,targetOb);
-    renderResult(oldOb,targetOb,base,fixed,'<span class="pill">Code: '+esc(currentProfile.code||'—')+'</span><span class="pill">Only sensitivity updated</span><span class="pill">Other profile information unchanged</span>','Selected problems were combined into one recalibration. The same Profile ID now loads the new sensitivity while all other saved profile information remains unchanged.');
-    const box=$('#updatedCodeBox');
-    if(box){
-      box.style.display='block';
-      box.innerHTML='<b>🔐 UPDATED PROFILE CODE</b><div style="margin-top:6px;font-size:20px;letter-spacing:1px"><code>'+esc(currentProfile.code||'—')+'</code></div><div style="margin-top:6px">Code same hai, lekin is code ke andar <b>sirf sensitivity</b> update hui hai. Baaki information same hai.</div><button type="button" class="secondary" id="copyUpdatedCode" style="margin-top:8px">COPY CODE</button>';
-      $('#copyUpdatedCode').onclick=async()=>{try{await navigator.clipboard.writeText(currentProfile.code||'');}catch(e){}};
+      // Problem-fix creates a NEW Profile ID. The old profile remains intact;
+      // device, style, mode, fingers, guns, HUD and other context are cloned.
+      const r=await fetch('/api/profile-fix',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          code:currentProfile.code,
+          issues:selected,
+          customText:custom
+        })
+      });
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok || !j.ok) throw new Error(j.detail||j.error||'Profile problem fix failed');
+
+      const fixed=j.sensitivity;
+      const newCode=String(j.newProfileId||'').toUpperCase();
+      const next={...currentProfile,code:newCode,sensitivity:fixed,__source:j.source||'backend'};
+      delete next.__source;
+      currentProfile=next;
+      localStorage.setItem('vg_ment4l_profile_'+newCode,JSON.stringify(next));
+
+      saveUpdateHistory('issue-fix',oldOb,targetOb,base,fixed,newCode);
+      showIssueOutput(resultEl,base,fixed,issue,'New sensitivity generated',oldOb,targetOb);
+      resultEl.innerHTML += '<div class="code-box" style="margin-top:12px"><div><div class="small">UPDATED VG MENT4L PROFILE ID</div><div class="code">'+esc(newCode||'—')+
+        '</div><div class="profile-note">Problem fix ke baad naya code automatically generate hua. Purana Profile ID unchanged hai aur original sensitivity/history preserve hai.</div></div><div class="code-actions"><button class="copy" id="copyProfileFixCode">COPY CODE</button></div></div>';
+      const copy=$('#copyProfileFixCode');
+      if(copy)copy.onclick=async()=>{try{await navigator.clipboard.writeText(newCode)}catch(e){} copy.textContent='COPIED ✓';setTimeout(()=>copy.textContent='COPY CODE',1600);};
+
+      renderResult(oldOb,targetOb,base,fixed,'<span class="pill">New Code: '+esc(newCode||'—')+'</span><span class="pill">Original Profile preserved</span><span class="pill">Only sensitivity recalibrated in the new profile</span>','Selected problems were combined into one recalibration. A new Profile ID was generated while the original profile remains unchanged.');
+    }catch(e){
+      // Keep the existing local profile untouched if the backend cannot create
+      // the new profile. Do not silently overwrite the original code.
+      resultEl.className='issueResult';
+      resultEl.innerHTML='<b>⚠ Problem fix save nahi hua.</b><div style="margin-top:6px">'+esc(e.message||'Profile fix failed')+'</div><div style="margin-top:6px">Original Profile ID ko overwrite nahi kiya gaya.</div>';
     }
   };
   const mb=$('#manualIssueFix'); if(mb) mb.onclick=async()=>{
