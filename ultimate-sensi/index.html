@@ -185,10 +185,12 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function b64(s){const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function unb64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),p=b+'='.repeat((4-b.length%4)%4),bin=atob(p);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
 function codeFor(p){
- // The transfer code carries the complete base profile PLUS the exact
- // calibration test-gun context used to produce the latest adjustment.
- const profile={...p,calibrationGuns:Array.isArray(p?.calibrationGuns)?p.calibrationGuns.slice(0,3):[]};
- return 'AUX3-'+b64(JSON.stringify({v:3,profile}));
+ const profile={...p};
+ delete profile.createdAt;
+ delete profile.history;
+ delete profile.learning;
+ profile.calibrationGuns=Array.isArray(p?.calibrationGuns)?p.calibrationGuns.slice(0,3):[];
+ return 'AUX4-'+b64(JSON.stringify({v:4,profile}));
 }
 function decode(code){
  const s=String(code||'').trim().replace(/\s+/g,'');
@@ -268,6 +270,26 @@ async function refineGameplay(){if(gpBusy||!current||!gpResult)return;const issu
 function renderGuns(){const box=$('guns');box.innerHTML=WEAPONS.map(([n])=>'<span class="chip '+(n==='All Guns'?'on':'')+'" data-value="'+esc(n)+'">'+esc(n)+'</span>').join('');syncGuns(box.querySelector('[data-value="All Guns"]'));toggleGroup('guns')}
 function fillProblems(){const box=$('problems');box.innerHTML=PROBLEMS.map(x=>'<div class="problem" data-value="'+esc(x[0])+'">'+esc(x[0])+'</div>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.problem');if(x)x.classList.toggle('on')})}
 function fillRanges(){const box=$('ranges');box.innerHTML=RANGES.map(x=>'<span class="chip" data-value="'+x+'">'+x+'</span>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.chip');if(!x)return;x.classList.toggle('on')})}
+const HUD_API='https://vg-ment4l.onrender.com';
+async function readHUDForAnalysis(file){
+ if(!file)return null;
+ const dataUrl=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(file)});
+ const im=await new Promise((resolve,reject)=>{const x=new Image();x.onload=()=>resolve(x);x.onerror=reject;x.src=dataUrl});
+ const maxW=1280,scale=Math.min(1,maxW/im.naturalWidth),w=Math.max(1,Math.round(im.naturalWidth*scale)),h=Math.max(1,Math.round(im.naturalHeight*scale));
+ const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(im,0,0,w,h);
+ const packed=canvas.toDataURL('image/jpeg',0.78);
+ const bytes=new TextEncoder().encode(packed),digest=await crypto.subtle.digest('SHA-256',bytes);
+ const fingerprint=Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('');
+ const r=await fetch(HUD_API+'/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   imageData:packed,width:w,height:h,hudKey:'hud-'+fingerprint,fingerprint,analysisVersion:'2.0-deep-hud',
+   device:$('device').value.trim(),playerMode:$('playerMode').value,playerStyle:$('style').value,
+   mode:$('gameMode').value,fingers:$('fingers').value
+ })});
+ if(!r.ok)throw new Error('HUD analysis failed ('+r.status+')');
+ const out=await r.json();
+ if(!out.ok||!out.analysis)throw new Error(out.error||'HUD analysis unavailable');
+ return {width:w,height:h,ratio:+(w/h).toFixed(3),fingerprint,analysis:out.analysis};
+}
 function buildFingerprint(){
  const hz=Number($('hz').value)||90,touch=Number($('touch').value)||180,dpi=Number($('dpi').value)||360;
  const dpr=window.devicePixelRatio||1,w=screen.width||360,h=screen.height||800,coarse=matchMedia('(pointer:coarse)').matches;
@@ -303,13 +325,13 @@ function gunAdjust(guns){
  return z;
 }
 function makeStarting(){
- const f=buildFingerprint(), base=[185,180,160,140,85,120],a=deviceAdjust(f),b=contextAdjust(),g=gunAdjust(selected('guns').length?selected('guns'):['All Guns']);
+ const f=buildFingerprint(), base=[185,180,160,140,85,120],a=deviceAdjust(f),b=contextAdjust(),g=gunAdjust(selected('guns').length?selected('guns'):['All Guns']),hd=hud?.analysis?.sensitivityDelta||{},ha=[Number(hd.general)||0,Number(hd.red_dot)||0,Number(hd.scope_2x)||0,Number(hd.scope_4x)||0,Number(hd.sniper)||0,Number(hd.free_look)||0].map(x=>Math.max(-15,Math.min(15,Math.round(x))));
  const draft={gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,guns:selected('guns').length?selected('guns'):['All Guns']};
  const l=learningAdjust(draft);
- let v=base.map((x,i)=>clamp(x+a[i]+b[i]+g[i]+l[i]));
+ let v=base.map((x,i)=>clamp(x+a[i]+b[i]+g[i]+l[i]+ha[i]));
  // Keep the curve intentionally ordered by aiming state; do not flatten all six values.
  v[2]=Math.min(v[2],v[1]);v[3]=Math.min(v[3],v[2]);v[4]=Math.min(v[4],Math.max(55,v[3]-35));
- return {version:3,createdAt:new Date().toISOString(),device:f.device||'Unknown device',age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
+ return {version:4,device:f.device||'Unknown device',age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
 }
 function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="axis"><small>'+AXIS[i]+'</small><strong>'+x+'</strong><div class="meter"><i style="width:'+x/2+'%"></i></div></div>').join('')+'</div>'}
 function profileHTML(p){
@@ -324,8 +346,8 @@ function setCurrent(p,msg){
  renderCalibrationGuns();renderHistory();save();
 }
 function renderBuild(p){
- $('buildResult').innerHTML='<div class="card"><div class="title">STARTING SENSITIVITY — TEST THIS FIRST</div>'+renderSensi(p.v)+'<div class="notice" style="margin-top:11px"><b>Important:</b> these are starting values, not a guaranteed headshot preset. The useful part is the next step: test the same gun/range and feed the real problem into Calibration Lab.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="goCal">OPEN CALIBRATION LAB</button><button class="secondary" id="saveNow">SAVE PROFILE</button></div></div>';
- $('goCal').onclick=()=>tab('calibrate');$('saveNow').onclick=()=>{setCurrent(p,'PROFILE SAVED');alert('Profile saved. Copy the code from Profile tab.')}
+ $('buildResult').innerHTML='<div class="card"><div class="title">STARTING SENSITIVITY — TEST THIS FIRST</div>'+renderSensi(p.v)+'<div class="notice" style="margin-top:11px"><b>Profile Code</b><div class="sub">Ye code device, HUD analysis, exact gun profile, settings aur current sensitivity ko carry karta hai. Same profile information + same sensitivity = same code. Adjustment ke baad sensitivity badlegi, isliye code automatically naya hoga.</div><div class="codebox" style="margin-top:9px">'+esc(codeFor(p))+'</div><button class="secondary" id="copyBuildCode" style="margin-top:9px;width:100%">COPY PROFILE CODE</button></div><div class="notice" style="margin-top:11px"><b>Important:</b> these are starting values, not a guaranteed headshot preset. Test the same gun/range and feed the real problem into Calibration Lab.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="goCal">OPEN CALIBRATION LAB</button><button class="secondary" id="saveNow">SAVE PROFILE</button></div></div>';
+ $('goCal').onclick=()=>tab('calibrate');$('copyBuildCode').onclick=async()=>{const code=codeFor(p);try{await navigator.clipboard.writeText(code);$('copyBuildCode').textContent='PROFILE CODE COPIED'}catch(e){alert(code)}};$('saveNow').onclick=()=>{setCurrent(p,'PROFILE SAVED');alert('Profile saved. The same code is also shown in Profile tab.')}
  setCurrent(p,'PROFILE READY');
 }
 function tab(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.tab===id));$(id).classList.add('on');window.scrollTo({top:0,behavior:'smooth'})}
@@ -419,15 +441,32 @@ function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
  const p=makeStarting();p.v=v;p.createdAt=new Date().toISOString();setCurrent(p,'MANUAL SENSITIVITY IMPORTED');tab('profile');
 }
-$('hud').onchange=()=>{
- const f=$('hud').files?.[0];if(!f)return;const im=new Image(),url=URL.createObjectURL(f);
- im.onload=()=>{hud={name:f.name,size:f.size,width:im.naturalWidth,height:im.naturalHeight,ratio:+(im.naturalWidth/im.naturalHeight).toFixed(3)};$('hudPreview').src=url;$('hudPreview').style.display='block';$('hudMeta').textContent='HUD evidence: '+im.naturalWidth+'×'+im.naturalHeight+' · ratio '+hud.ratio+' · '+Math.round(f.size/1024)+' KB';};
- im.src=url;
+$('hud').onchange=async()=>{
+ const f=$('hud').files?.[0];if(!f)return;
+ const url=URL.createObjectURL(f);$('hudPreview').src=url;$('hudPreview').style.display='block';
+ $('hudMeta').textContent='HUD uploaded — deep analysis will inspect the full layout during BUILD.';
+ hud=null;
+ try{
+   hud=await readHUDForAnalysis(f);
+   $('hudMeta').textContent='HUD DEEP ANALYSIS READY · '+hud.width+'×'+hud.height+' · full layout mapped';
+ }catch(e){
+   $('hudMeta').textContent='HUD analysis unavailable: '+e.message+' · build can continue without HUD evidence';
+ }
 };
-$('buildBtn').onclick=()=>{
+$('buildBtn').onclick=async()=>{
  if(buildBusy)return; if(!$('device').value.trim())return alert('Device name डालो.');
- buildBusy=true;$('buildBtn').disabled=true;$('buildProgress').classList.add('on');let n=0;
- const timer=setInterval(()=>{n+=20;$('buildBar').style.width=n+'%';$('buildStage').textContent=['Reading device + touch inputs…','Mapping game/style context…','Applying exact gun context…','Building 0–200 starting curve…','Finalizing profile…'][Math.min(4,n/20-1)];if(n>=100){clearInterval(timer);current=makeStarting();renderBuild(current);buildBusy=false;$('buildBtn').disabled=false;$('buildProgress').classList.remove('on');}},150);
+ buildBusy=true;$('buildBtn').disabled=true;$('buildProgress').classList.add('on');$('buildBar').style.width='15%';$('buildStage').textContent='Reading device + touch inputs…';
+ try{
+   if($('hud').files?.[0]&&!hud){$('buildBar').style.width='35%';$('buildStage').textContent='Deep-scanning complete HUD layout…';try{hud=await readHUDForAnalysis($('hud').files[0]);}catch(e){$('hudMeta').textContent='HUD analysis unavailable: '+e.message+' · continuing without HUD evidence';}}
+   $('buildBar').style.width='60%';$('buildStage').textContent='Mapping game/style + exact gun profile…';
+   await new Promise(r=>setTimeout(r,120));
+   $('buildBar').style.width='82%';$('buildStage').textContent='Applying device + HUD evidence…';
+   current=makeStarting();
+   $('buildBar').style.width='100%';$('buildStage').textContent='Finalizing stable profile code…';
+   await new Promise(r=>setTimeout(r,180));
+   renderBuild(current);
+ }catch(e){alert('Build failed: '+e.message)}
+ finally{buildBusy=false;$('buildBtn').disabled=false;setTimeout(()=>$('buildProgress').classList.remove('on'),250);}
 };
 $('calBtn').onclick=calibrate;
 renderLearning();
