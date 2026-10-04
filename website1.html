@@ -244,7 +244,7 @@ async function analyzeHUDWithAI(file){
   const packed=await resizeHudForAI(file,1280);
   const hudKey=await getCanonicalHUDIdentity();
   const fingerprint=getHUDFingerprint();
-  const r=await fetch(API_BASE+'/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,fingerprint,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});
+  const r=await fetch(API_BASE+'/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,fingerprint,analysisVersion:'2.0-deep-hud',device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});
   const j=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');
   hudIdentityKey=String(j.hudKey||hudKey);
