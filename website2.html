@@ -119,6 +119,11 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
         <select id="manualPreset"><option>Default</option><option>High</option></select>
       </div>
       <div class="field">
+        <label>Device Name</label>
+        <input id="manualDeviceName" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15" autocomplete="off">
+        <div class="help mini">Jis device ki ye sensitivity hai uska exact name dalo. Ye manual Profile Code ke saath save hoga.</div>
+      </div>
+      <div class="field">
         <label>This sensitivity belongs to OB</label>
         <input id="manualOldOb" placeholder="OB52" value="OB52">
         <div class="help mini">Purana OB yaad nahi hai? <b>UNKNOWN</b> likh sakte ho — phir Return-Player calibration chalega.</div>
@@ -502,8 +507,9 @@ function updateByOb(oldOb,targetOb,base,p={}){
 function showManualCode(code,label){
   const box=$('#updatedCodeBox');
   if(!box)return;
+  const device=String($('#manualDeviceName')?.value||'').trim()||'Unknown Device';
   box.style.display='block';
-  box.innerHTML='<b>🔐 '+esc(label||'MANUAL SENSITIVITY CODE')+'</b><div style="margin-top:6px;font-size:22px;letter-spacing:1px"><code>'+esc(code)+'</code></div><div style="margin-top:6px">Ye code isi manual sensitivity profile ko identify karta hai. Same imported information se same code milega; sensitivity/OB details badalne par naya code banega.</div><button type="button" class="secondary" id="copyManualCode" style="margin-top:8px">COPY CODE</button>';
+  box.innerHTML='<b>🔐 '+esc(label||'MANUAL SENSITIVITY CODE')+'</b><div style="margin-top:6px"><span class="pill">Device: '+esc(device)+'</span></div><div style="margin-top:6px;font-size:22px;letter-spacing:1px"><code>'+esc(code)+'</code></div><div style="margin-top:6px">Ye code isi manual sensitivity profile ko identify karta hai. Device name + sensitivity + preset + OB details code ke andar fingerprint hote hain. Same information se same code milega; inmein se koi detail badalne par naya code banega.</div><button type="button" class="secondary" id="copyManualCode" style="margin-top:8px">COPY CODE</button>';
   $('#copyManualCode').onclick=async()=>{try{await navigator.clipboard.writeText(code)}catch(e){}};
 }
 function renderResult(oldOb,targetOb,oldVals,newVals,meta,analysisText){
@@ -572,12 +578,13 @@ function stableManualHash(input){
   for(const ch of String(input)){h^=BigInt(ch.charCodeAt(0));h=(h*prime)&mask;}
   return h.toString(36).toUpperCase().padStart(13,'0').slice(-10);
 }
-function makeManualProfileCode(sensitivity,preset,sourceOb,targetOb){
-  const key=JSON.stringify({v:1,sensitivity,preset:String(preset||'Default'),sourceOb:String(sourceOb||'UNKNOWN'),targetOb:String(targetOb||LATEST_OB)});
+function makeManualProfileCode(sensitivity,preset,sourceOb,targetOb,deviceName=''){
+  const key=JSON.stringify({v:2,device:String(deviceName||'').trim(),sensitivity,preset:String(preset||'Default'),sourceOb:String(sourceOb||'UNKNOWN'),targetOb:String(targetOb||LATEST_OB)});
   return '#'+stableManualHash(key);
 }
-async function saveManualImportedProfile(code,sensitivity,preset,sourceOb,targetOb){
-  const profile={code,manualImport:true,profileType:'manual-sensitivity',preset:String(preset||'Default'),obVersion:normalizeOb(targetOb)||LATEST_OB,sourceOb:normalizeOb(sourceOb)||'UNKNOWN',sensitivity:{...sensitivity},device:'Manual Import',playerMode:'Manual Import',playerStyle:'Manual',gameMode:'Manual',guns:[],allGuns:false,updatedAt:new Date().toISOString()};
+async function saveManualImportedProfile(code,sensitivity,preset,sourceOb,targetOb,deviceName=''){
+  const device=String(deviceName||'').trim()||'Unknown Device';
+  const profile={code,manualImport:true,profileType:'manual-sensitivity',preset:String(preset||'Default'),obVersion:normalizeOb(targetOb)||LATEST_OB,sourceOb:normalizeOb(sourceOb)||'UNKNOWN',sensitivity:{...sensitivity},device,deviceName:device,playerMode:'Manual Import',playerStyle:'Manual',gameMode:'Manual',guns:[],allGuns:false,updatedAt:new Date().toISOString()};
   localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
   try{
     const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
@@ -689,8 +696,9 @@ function bindIssueFixers(){
     const issue=[...selected,(custom?'CUSTOM: '+custom:'')].join(' + ');
     const fixed=applyMultipleIssueFixWithContext(base,selected,{preset:$('#manualPreset').value,oldOb,targetOb,customIssue:custom});
     writeManualSensitivity(fixed);
-    const code=makeManualProfileCode(fixed,$('#manualPreset').value,oldOb,targetOb);
-    await saveManualImportedProfile(code,fixed,$('#manualPreset').value,oldOb,targetOb);
+    const deviceName=String($('#manualDeviceName').value||'').trim()||'Unknown Device';
+    const code=makeManualProfileCode(fixed,$('#manualPreset').value,oldOb,targetOb,deviceName);
+    await saveManualImportedProfile(code,fixed,$('#manualPreset').value,oldOb,targetOb,deviceName);
     showIssueOutput($('#manualIssueResult'),base,fixed,issue,'Manual sensitivity recalibration complete',oldOb,targetOb);
     showManualCode(code,'Problem-fixed manual sensitivity code');
   };
@@ -798,8 +806,9 @@ async function runManualUpdate(){
   if(!unknown && obNum(oldOb)===targetNum){
     const same={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
     window.__OB_RESEARCH__={hasResearch:false,serverResearch:false,versions:[],notes:[]};
-    const sameCode=makeManualProfileCode(same,$('#manualPreset').value,oldOb,target);
-    await saveManualImportedProfile(sameCode,same,$('#manualPreset').value,oldOb,target);
+    const deviceName=String($('#manualDeviceName').value||'').trim()||'Unknown Device';
+    const sameCode=makeManualProfileCode(same,$('#manualPreset').value,oldOb,target,deviceName);
+    await saveManualImportedProfile(sameCode,same,$('#manualPreset').value,oldOb,target,deviceName);
     renderResult(oldOb,target,same,same,`<span class="pill">Same OB</span><span class="pill">Manual import</span><span class="pill">Code: ${esc(sameCode)}</span><span class="pill">Problem Fix available</span>`,`Source OB aur Target OB dono ${normalizeOb(target)} hain, isliye OB conversion apply nahi kiya gaya. Agar aim/drag/recoil mein problem hai to neeche Sensitivity Problem Fixer se isi sensitivity ko recalibrate karo.`);
     showManualCode(sameCode,'MANUAL SENSITIVITY CODE');
     await showUpdateProgress('manual','Same OB confirmed — ready for problem recalibration',100,true);
@@ -807,9 +816,10 @@ async function runManualUpdate(){
   }
   if(unknown && target!=='OB55'){alert('UNKNOWN old OB mode abhi current supported OB55 ke liye use karo.'); updateBusy=false; $('#manualUpdate').disabled=false; $('#manualUpdateProgress')?.classList.remove('show'); return;}
   const oldVals={general:clamp($('#mGeneral').value),red_dot:clamp($('#mRed').value),scope_2x:clamp($('#m2x').value),scope_4x:clamp($('#m4x').value),sniper:clamp($('#mSniper').value),free_look:clamp($('#mFree').value)};
-  const p={preset:$('#manualPreset').value};
-  const importedCode=makeManualProfileCode(oldVals,$('#manualPreset').value,oldOb,target);
-  await saveManualImportedProfile(importedCode,oldVals,$('#manualPreset').value,oldOb,target);
+  const deviceName=String($('#manualDeviceName').value||'').trim()||'Unknown Device';
+  const p={preset:$('#manualPreset').value,device:deviceName,deviceName};
+  const importedCode=makeManualProfileCode(oldVals,$('#manualPreset').value,oldOb,target,deviceName);
+  await saveManualImportedProfile(importedCode,oldVals,$('#manualPreset').value,oldOb,target,deviceName);
   await researchOfficial(oldOb,target,'manual');
   await showUpdateProgress('manual','Analysing patch signals + imported values…',48); await sleep(180);
   let newVals,shownOld,analysis;
@@ -828,8 +838,8 @@ async function runManualUpdate(){
   await showUpdateProgress('manual','Recalibrating six sensitivity values…',72); await sleep(180);
   saveUpdateHistory('manual',shownOld,target,oldVals,newVals,'');
   await showUpdateProgress('manual','Saving update history…',92); await sleep(180);
-  const finalCode=makeManualProfileCode(newVals,$('#manualPreset').value,shownOld,target);
-  await saveManualImportedProfile(finalCode,newVals,$('#manualPreset').value,shownOld,target);
+  const finalCode=makeManualProfileCode(newVals,$('#manualPreset').value,shownOld,target,deviceName);
+  await saveManualImportedProfile(finalCode,newVals,$('#manualPreset').value,shownOld,target,deviceName);
   const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">Code: ${esc(finalCode)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
   renderResult(shownOld,target,oldVals,newVals,meta,analysis);
   showManualCode(finalCode,'UPDATED MANUAL SENSITIVITY CODE');
