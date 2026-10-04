@@ -103,7 +103,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 
 <div class="card" id="calForm" style="display:none">
 <div class="title">Test context</div>
-<label style="margin-top:10px">Gun Profile</label><div class="sub" style="margin-bottom:8px">Yahi guns adjustment mein use hongi jo BUILD SENSI mein choose ki gayi thi. Calibration kisi doosri gun ko add nahi karega.</div><div class="chips" id="calGuns"></div><div class="notice" style="margin-top:10px">All Guns choose kiya tha → adjustment <b>All Guns</b> ka hoga. 3 guns choose kiye the → adjustment <b>sirf unhi 3 guns</b> ka hoga.</div><div class="card" style="margin:12px 0 0;padding:12px"><label>Profile Code — adjustment ke liye load karo</label><div class="sub" style="margin-bottom:8px">Code paste karke profile aur exact gun selection load karo.</div><input id="calCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code" style="width:100%"><div class="actions" style="margin-top:9px"><button class="secondary" id="calLoadCode">LOAD PROFILE CODE</button><button class="secondary" id="calCopyCode">COPY CURRENT CODE</button></div><div id="calCodeStatus" class="resultMsg" style="margin-top:8px"></div></div>
+<label style="margin-top:10px">Gun Profile</label><div class="sub" style="margin-bottom:8px">BUILD SENSI mein jo gun profile save hui hai, adjustment usi profile par hoga. Yahan guns ko dobara choose/add nahi kiya ja sakta.</div><div class="chips" id="calGuns"></div><div class="notice" style="margin-top:10px">All Guns profile → adjustment All Guns ka. Exact selected guns profile → adjustment sirf unhi selected guns ka.</div><div class="card" style="margin:12px 0 0;padding:12px"><label>Profile Code — adjustment ke liye load karo</label><div class="sub" style="margin-bottom:8px">Code paste karke profile aur exact gun selection load karo.</div><input id="calCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code" style="width:100%"><div class="actions" style="margin-top:9px"><button class="secondary" id="calLoadCode">LOAD PROFILE CODE</button><button class="secondary" id="calCopyCode">COPY CURRENT CODE</button></div><div id="calCodeStatus" class="resultMsg" style="margin-top:8px"></div></div>
 <label style="margin-top:12px">Problem range(s) — multiple allowed</label><div class="chips" id="ranges"></div>
 <label style="margin-top:12px">Problem(s) — multiple allowed</label>
 <div class="problem-grid" id="problems"></div>
@@ -391,7 +391,7 @@ function renderCalibrationGuns(){
  const box=$('calGuns');
  const guns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
  current.calibrationGuns=[...guns];
- box.innerHTML=guns.map(x=>'<span class="chip on" data-value="'+esc(x)+'">'+esc(x)+'</span>').join('');
+ box.innerHTML='<div class="notice ok" style="margin:0"><b>Active Gun Profile:</b> '+esc(guns.join(' + '))+'<br><span class="small">Read-only — BUILD SENSI profile se locked.</span></div>';
  box.onclick=null;
  const s=$('calCodeStatus'); if(s)s.textContent='Active gun profile: '+guns.join(' + ');
 }
@@ -430,7 +430,7 @@ function calibrate(){
  pendingCalibration={guns,ranges,problems,before,after,delta};
  current.v=after;
  setCurrent(current,changed?'CALIBRATION CANDIDATE · TEST IT':'NO VALUE CHANGED');
- $('calResult').innerHTML='<div class="card"><div class="title">DID THE NEW SENSITIVITY FEEL BETTER?</div><div class="sub">Test the same '+esc(guns.join(' + '))+' again. The profile code has already been updated automatically.</div><div class="codebox" style="margin-top:10px">'+esc(codeFor(current))+'</div><button class="secondary" id="calCopyUpdatedCode" style="margin-top:9px;width:100%">COPY UPDATED CODE</button><div class="actions" style="margin-top:10px"><button class="secondary" id="fbBetter">✓ BETTER</button><button class="secondary" id="fbSame">≈ SAME</button><button class="secondary" id="fbWorse">✕ WORSE — REVERT</button></div></div>';const ccb=$('calCopyUpdatedCode');if(ccb)ccb.onclick=async()=>{try{await navigator.clipboard.writeText(codeFor(current));ccb.textContent='UPDATED CODE COPIED'}catch(e){alert(codeFor(current))}};
+ $('calResult').innerHTML='<div class="card"><div class="title">DID THE NEW SENSITIVITY FEEL BETTER?</div><div class="sub">Test the same '+esc(guns.join(' + '))+' again. The sensitivity has been updated for this exact gun profile, and the new Profile ID has been generated automatically.</div><div class="codebox" style="margin-top:10px">'+esc(codeFor(current))+'</div><button class="secondary" id="calCopyUpdatedCode" style="margin-top:9px;width:100%">COPY UPDATED CODE</button><div class="actions" style="margin-top:10px"><button class="secondary" id="fbBetter">✓ BETTER</button><button class="secondary" id="fbSame">≈ SAME</button><button class="secondary" id="fbWorse">✕ WORSE — REVERT</button></div></div>';const ccb=$('calCopyUpdatedCode');if(ccb)ccb.onclick=async()=>{try{await navigator.clipboard.writeText(codeFor(current));ccb.textContent='UPDATED CODE COPIED'}catch(e){alert(codeFor(current))}};
  $('fbBetter').onclick=()=>finishFeedback('better');
  $('fbSame').onclick=()=>finishFeedback('same');
  $('fbWorse').onclick=()=>finishFeedback('worse');
@@ -469,15 +469,24 @@ async function loadCodeIntoProfile(code){
 }
 function updateOB(){
  if(!current)return alert('Load a profile first.');
- const target=$('targetOb').value,old=$('oldOb').value;if(target==='OB55'&&old==='OB55'){ $('updateStatus').textContent='Same OB: no version delta applied. Use Calibration Lab for aim problems.';return}
+ const target=$('targetOb').value,old=$('oldOb').value;
+ if(target==='OB55'&&old==='OB55'){
+   $('updateStatus').innerHTML='<div class="notice warn">Same OB: sensitivity unchanged. Use Calibration Lab for actual aim problems.</div>';
+   return;
+ }
  let d=[-1,-1,0,0,0,0];
- if(old==='UNKNOWN'){d=[-1,-1,-1,0,0,0]}
- current.v=current.v.map((x,i)=>clamp(x+d[i]));current.ob=target;save();setCurrent(current,'OB UPDATE COMPLETE · SENSITIVITY UPDATED');
- $('updateStatus').textContent='Only sensitivity + OB context changed. Exact gun profile and other information were preserved. New code is available in Profile.';
+ if(old==='UNKNOWN')d=[-1,-1,-1,0,0,0];
+ const before=[...current.v];
+ current.v=current.v.map((x,i)=>clamp(x+d[i]));
+ current.ob=target;
+ const newCode=codeFor(current);
+ save();setCurrent(current,'OB UPDATE COMPLETE · SENSITIVITY UPDATED');
+ backendSaveProfile(current);
+ $('updateStatus').innerHTML='<div class="notice ok"><b>OB Update complete.</b> Device, HUD, exact gun profile and all other information preserved.<br>Old sensitivity: '+esc(before.join(' / '))+'<br>New sensitivity: '+esc(current.v.join(' / '))+'<br><div class="codebox" style="margin-top:9px">'+esc(newCode)+'</div></div>';
 }
 function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
- const p=makeStarting();p.v=v;p.createdAt=new Date().toISOString();setCurrent(p,'MANUAL SENSITIVITY IMPORTED');tab('profile');
+ const p=makeStarting();p.v=v;setCurrent(p,'MANUAL SENSITIVITY IMPORTED · NEW PROFILE ID CREATED');tab('profile');
 }
 $('hud').onchange=async()=>{
  const f=$('hud').files?.[0];if(!f)return;
