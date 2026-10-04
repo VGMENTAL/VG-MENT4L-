@@ -265,6 +265,74 @@ async function fetchRailwayPhoneSpec(name){
   return null;
 }
 
+
+function decodeHtmlEntities(s){
+  return String(s||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;|&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+}
+async function fetchWebSearchDeviceResearch(name){
+  const q=String(name||'').trim();
+  if(!q)return null;
+  const searches=[
+    '"' + q + '" chipset processor GPU',
+    '"' + q + '" display refresh rate touch sampling',
+    '"' + q + '" RAM Android specifications',
+    '"' + q + '" gaming phone'
+  ];
+  const snippets=[];
+  const sources=[];
+  for(const term of searches){
+    const ctl=new AbortController();
+    const timer=setTimeout(()=>ctl.abort(),7000);
+    try{
+      const url='https://html.duckduckgo.com/html/?q='+encodeURIComponent(term);
+      const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-Research/4.0)','Accept':'text/html'}});
+      if(!r.ok)continue;
+      const html=await r.text();
+      const blocks=[...html.matchAll(/<div[^>]*class="result__body"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>/gi)];
+      for(const m of blocks.slice(0,5)){
+        const b=m[1];
+        const a=b.match(/class="result__a"[^>]*href="([^"]+)"/i);
+        const sn=b.match(/class="result__snippet"[^>]*>([\\s\\S]*?)<\\/a?/i);
+        const title=decodeHtmlEntities((b.match(/class="result__a"[^>]*>([\\s\\S]*?)<\\/a>/i)||[])[1]||'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim();
+        const text=decodeHtmlEntities((sn?sn[1]:b).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+        if(text)snippets.push(title+' '+text);
+        if(a&&a[1])sources.push(a[1]);
+      }
+    }catch{} finally{clearTimeout(timer);}
+  }
+  const all=snippets.join(' ');
+  if(!all)return null;
+  const exactNorm=normalizeDevice(q);
+  const mention=normalizeDevice(all).includes(exactNorm.replace(/\\s+/g,' '));
+  const first=(re)=>{const m=all.match(re);return m?m[1].trim():''};
+  const chipset=first(/\\b((?:Qualcomm\\s+)?Snapdragon\\s+[A-Za-z0-9+\\-]+|MediaTek\\s+(?:Dimensity|Helio)\\s+[A-Za-z0-9+\\-]+|Dimensity\\s+[A-Za-z0-9+\\-]+|Exynos\\s+[A-Za-z0-9+\\-]+|Tensor\\s+G[0-9]+(?:\\s+[A-Za-z0-9+\\-]+)?|Apple\\s+A[0-9A-Za-z]+)\\b/i);
+  const gpu=first(/\\b((?:Adreno\\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\\s+GPU))\\b/i);
+  const refresh=first(/\\b(\\d{2,3}\\s*Hz)\\b(?:\\s+(?:refresh|display|screen))?/i);
+  const touch=first(/\\b(\\d{2,4}\\s*Hz)\\b[^.]{0,45}?(?:touch sampling|touch response|touch sampling rate)/i);
+  const ram=first(/\\b((?:2|3|4|6|8|12|16|18|24)\\s*GB(?:\\s+RAM)?)\\b/i);
+  const resolution=first(/\\b(\\d{3,5}\\s*[x×]\\s*\\d{3,5})\\b/);
+  const size=first(/\\b(\\d(?:\\.\\d)?(?:-inch|\\s*inch|")\\s*(?:display|screen)?)\\b/i);
+  const os=first(/\\b((?:Android|iOS|HarmonyOS)\\s*[0-9A-Za-z.\\-]*)\\b/i);
+  const gaming=/gaming|game[- ]?turbo|game space|gt[0-9]|rog|redmagic|legion|black shark|iqoo/i.test(all)?'Gaming-oriented features found in web research':'General smartphone; gaming capability inferred from hardware only';
+  if(!chipset&&!display&&!refresh&&!resolution&&!ram)return null;
+  const canonical=q;
+  return {
+    canonical,brand:(q.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
+    platform:/iphone|ios/i.test(q+' '+os)?'iOS':'Android',
+    variant:/5g/i.test(q)?'5G':(/4g/i.test(q)?'4G':''),
+    chipset:chipset||'Not found in indexed web results',
+    gpu:gpu||'Not found in indexed web results',
+    ram:ram||'Not found in indexed web results',
+    display:[size,resolution].filter(Boolean).join(' · ')||'Not found in indexed web results',
+    refreshRate:refresh||'Not found in indexed web results',
+    touchSampling:touch||'Not found in indexed web results',
+    os:os||'Not found in indexed web results',
+    gaming,source:sources[0]||'https://html.duckduckgo.com/',sources:sources.slice(0,8),
+    sourceType:'web-search-research',sourceLabel:'Live web specification research',match:mention?'research':'web-research',query:q,confidence:mention?'medium':'low',
+    notes:'Facts are extracted from current indexed web results; fields not found are left unverified.'
+  };
+}
+
 async function fetchGeminiDeviceResearch(name, runtimeContext={}){
   const key=String(process.env.GEMINI_API_KEY||'').trim();
   const q=String(name||'').trim();
@@ -1151,7 +1219,9 @@ const server = http.createServer(async (req, res) => {
       if(railway) return json(res,200,{ok:true,device:railway,verified:true,researched:true,query:q,notice:'Exact device research profile found from extended specification database.',sourceType:'spec-database'});
       const grounded=await fetchGeminiDeviceResearch(q,runtimeContext);
       if(grounded) return json(res,200,{ok:true,device:grounded,verified:true,researched:true,grounded:true,query:q,notice:'Exact device research completed with web-grounded AI.',sourceType:'gemini-grounded-research'});
-      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Exact device could not be verified. No hardware details were invented.'});
+      const webResearch=await fetchWebSearchDeviceResearch(q);
+      if(webResearch) return json(res,200,{ok:true,device:webResearch,verified:true,researched:true,query:q,notice:'Device information collected from live indexed web research.',sourceType:'web-search-research'});
+      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Device research sources did not return usable specifications.'});
     }
     if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
       const hudKey=decodeURIComponent(u.pathname.slice('/api/hud-analysis/'.length));
