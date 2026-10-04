@@ -491,53 +491,50 @@ function deviceKnowledgeEnrich(d, query){
   const all=String([out.chipset,out.display,out.resolution,out.gpu,out.os,out.network,out.variant].filter(Boolean).join(' '));
   const cleanMissing=v=>{
     const s=String(v||'').trim();
-    return !s || /^(not|unknown|auto research|could not|not officially|not found|n\\/a|-)/i.test(s);
+    return !s || /^(not|unknown|auto research|could not|not officially|not found|n[./]?a|-)/i.test(s);
   };
   if(cleanMissing(out.resolution)){
-    const m=String(out.display||'').match(/(\\d{3,5}\\s*[x×]\\s*\\d{3,5})/);
+    const m=String(out.display||'').match(/(\d{3,5}\s*[x×]\s*\d{3,5})/);
     if(m) out.resolution=m[1].replace(/x/g,' × ');
   }
   if(cleanMissing(out.gpu)){
     const maps=[
-      [/snapdragon\\s+4\\s+gen\\s+2/i,'Adreno 613'],
-      [/snapdragon\\s+6\\s+gen\\s+1/i,'Adreno 710'],
-      [/snapdragon\\s+6\\s+gen\\s+3/i,'Adreno 710'],
-      [/snapdragon\\s+7s\\s+gen\\s+2/i,'Adreno 710'],
-      [/snapdragon\\s+7s\\s+gen\\s+3/i,'Adreno 732'],
-      [/snapdragon\\s+7s\\s+gen\\s+4/i,'Adreno-class GPU'],
-      [/snapdragon\\s+8s\\s+gen\\s+3/i,'Adreno 735'],
-      [/snapdragon\\s+8s\\s+gen\\s+4/i,'Adreno-class GPU'],
-      [/snapdragon\\s+8\\s+gen\\s+2/i,'Adreno 740'],
-      [/snapdragon\\s+8\\s+gen\\s+3/i,'Adreno 750'],
-      [/snapdragon\\s+8\\s+gen\\s+4/i,'Adreno-class GPU'],
-      [/dimensity\\s+6300/i,'Mali-G57 MC2'],
-      [/dimensity\\s+6100/i,'Mali-G57 MC2'],
-      [/dimensity\\s+7300/i,'Mali-G615 MC2'],
-      [/dimensity\\s+7400/i,'Mali-G615 MC2'],
-      [/dimensity\\s+7500/i,'Mali-G625 MC2'],
-      [/dimensity\\s+8200/i,'Mali-G610 MC6'],
-      [/dimensity\\s+8300/i,'Mali-G615 MC6'],
-      [/dimensity\\s+9200/i,'Immortalis-G715 MC11'],
-      [/dimensity\\s+9300/i,'Immortalis-G720 MC12'],
-      [/exynos\\s+1380/i,'Mali-G68 MP5'],
-      [/exynos\\s+1480/i,'Xclipse 530'],
-      [/tensor\\s+g2/i,'Mali-G710 MP7'],
-      [/tensor\\s+g3/i,'Immortalis-G715s MC10'],
-      [/tensor\\s+g4/i,'Mali-G715s MC7'],
-      [/kirin\\s+9000/i,'Maleoon 910'],
-      [/apple\\s+a1[56789]/i,'Apple GPU']
+      [/snapdragon\s+4\s+gen\s+2/i,'Adreno 613'],
+      [/snapdragon\s+6\s+gen\s+1/i,'Adreno 710'],
+      [/snapdragon\s+6\s+gen\s+3/i,'Adreno 710'],
+      [/snapdragon\s+7s\s+gen\s+2/i,'Adreno 710'],
+      [/snapdragon\s+7s\s+gen\s+3/i,'Adreno 732'],
+      [/snapdragon\s+8s\s+gen\s+3/i,'Adreno 735'],
+      [/snapdragon\s+8\s+gen\s+2/i,'Adreno 740'],
+      [/snapdragon\s+8\s+gen\s+3/i,'Adreno 750'],
+      [/dimensity\s+6300/i,'Mali-G57 MC2'],
+      [/dimensity\s+6100/i,'Mali-G57 MC2'],
+      [/dimensity\s+7300/i,'Mali-G615 MC2'],
+      [/dimensity\s+7400/i,'Mali-G615 MC2'],
+      [/dimensity\s+7500/i,'Mali-G625 MC2'],
+      [/dimensity\s+8200/i,'Mali-G610 MC6'],
+      [/dimensity\s+8300/i,'Mali-G615 MC6'],
+      [/dimensity\s+9200/i,'Immortalis-G715 MC11'],
+      [/dimensity\s+9300/i,'Immortalis-G720 MC12'],
+      [/exynos\s+1380/i,'Mali-G68 MP5'],
+      [/exynos\s+1480/i,'Xclipse 530'],
+      [/tensor\s+g2/i,'Mali-G710 MP7'],
+      [/tensor\s+g3/i,'Immortalis-G715s MC10'],
+      [/tensor\s+g4/i,'Mali-G715s MC7'],
+      [/kirin\s+9000/i,'Maleoon 910'],
+      [/apple\s+a1[56789]/i,'Apple GPU']
     ];
     const hit=maps.find(x=>x[0].test(all));
     if(hit) out.gpu=hit[1];
   }
   if(cleanMissing(out.network)){
-    if(/\\b5g\\b/i.test(q+' '+all)) out.network='5G';
-    else if(/\\b4g\\b|lte/i.test(q+' '+all)) out.network='4G / LTE';
+    if(/\b5g\b/i.test(q+' '+all)) out.network='5G';
+    else if(/\b4g\b|lte/i.test(q+' '+all)) out.network='4G / LTE';
   }
   if(cleanMissing(out.platform)) out.platform=/iphone|ios/i.test(q+' '+all)?'iOS':'Android';
   if(cleanMissing(out.variant)){
-    if(/\\b5g\\b/i.test(q+' '+all)) out.variant='5G';
-    else if(/\\b4g\\b/i.test(q+' '+all)) out.variant='4G';
+    if(/\b5g\b/i.test(q+' '+all)) out.variant='5G';
+    else if(/\b4g\b/i.test(q+' '+all)) out.variant='4G';
   }
   if(cleanMissing(out.display) && out.resolution) out.display=out.resolution;
   if(cleanMissing(out.gaming)){
@@ -548,6 +545,7 @@ function deviceKnowledgeEnrich(d, query){
   out.query=q;
   return out;
 }
+
 
 function decodeHtmlEntities(s){
   return String(s||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;|&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>');
@@ -1548,67 +1546,3 @@ async function loadProfile(code) {
     // usable on every later load.
     const migrated = cleanProfile(legacyDerived, code);
     if (dbReady) await dbSaveProfile(migrated);
-    else writeJson(fileFor(PROFILES, code), migrated);
-    return migrated;
-  }
-  return null;
-}
-
-const routes = {
-  '/': ['index.html', 'text/html; charset=utf-8'],
-  '/website1.html': ['website1.html', 'text/html; charset=utf-8'],
-  '/website2.html': ['website2.html', 'text/html; charset=utf-8'],
-  '/website3.html': ['website3.html', 'text/html; charset=utf-8'],
-  '/robots.txt': ['robots.txt', 'text/plain; charset=utf-8'],
-  '/sitemap.xml': ['sitemap.xml', 'application/xml; charset=utf-8']
-};
-
-const server = http.createServer(async (req, res) => {
-  if (!ALLOW.has(req.method)) return json(res, 405, { error: 'Method not allowed' });
-  if (req.method === 'OPTIONS') return json(res, 204, {});
-  const u = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-
-  try {
-    if (req.method === 'GET' && u.pathname === '/api/config') {
-      return json(res, 200, {
-        ok: true,
-        latestOb: `OB${LATEST_OB}`,
-        latestObNumber: LATEST_OB,
-        officialSource: OFFICIAL_OB_URLS[`OB${LATEST_OB}`],
-        backend: dbReady,
-        storage: dbReady ? 'supabase-postgres' : 'local-fallback',
-        gameplayAI: !!String(process.env.GEMINI_API_KEY || '').trim(),
-        aiProvider: 'gemini',
-        gameplayModel: String(process.env.GEMINI_MODEL || 'gemini-3.8-flash'),
-        videoMode: 'full-video-direct-stream-fast-static',
-        maxVideoBytes: GAMEPLAY_MAX_BODY,
-        version: '8.0-fast-static-video'
-      });
-    }
-    if (req.method === 'GET' && u.pathname === '/api/health') {
-      return json(res, 200, {
-        ok: true, service: 'VG MENT4L API', version: '7.0-streamed-video', latestOb: `OB${LATEST_OB}`,
-        database: dbReady ? 'connected' : 'fallback', databaseError: dbReady ? '' : dbError,
-        gameplayAI: !!String(process.env.GEMINI_API_KEY || '').trim(), aiProvider: 'gemini'
-      });
-    }
-    if (req.method === 'GET' && u.pathname === '/api/device-research') {
-      const q = u.searchParams.get('device') || '';
-      const runtimeContext = {
-        ua:u.searchParams.get('ua')||'',
-        screen:u.searchParams.get('screen')||'',
-        dpr:u.searchParams.get('dpr')||'',
-        touch:u.searchParams.get('touch')||'',
-        width:u.searchParams.get('width')||'',
-        height:u.searchParams.get('height')||''
-      };
-      const nq=normalizeDevice(q);
-      const cached=DEVICE_RESEARCH_CACHE[nq];
-      if(cached) { const device=deviceKnowledgeEnrich({...cached,query:q},q); return json(res,200,{ok:true,device,verified:true,researched:true,query:q,notice:'Verified device specification profile loaded and completed by device intelligence engine.',sourceType:device.sourceType}); }
-
-      const hit=lookupDevice(q);
-      if(hit) { const device=deviceKnowledgeEnrich(hit,q); return json(res,200,{ok:true,device,verified:true,query:q,notice:'Exact device profile found and completed by device intelligence engine.',sourceType:device.sourceType||'official'}); }
-
-      const jobs=await Promise.allSettled([
-        fetchExternalPhoneSpec(q),
-        fetchRailwayPhoneSpec(q),
