@@ -21,7 +21,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 .sensi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.axis{background:#071020;border:1px solid #294067;border-radius:14px;padding:13px}.axis small{display:block;color:#93a4c1;font-weight:800}.axis strong{font-size:32px;display:block;margin:4px 0}.meter{height:7px;border-radius:99px;background:#182743;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:99px}
 .profile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kv{background:#071020;border:1px solid #263a5d;border-radius:12px;padding:10px}.kv b{display:block;font-size:12px;color:#8fa1bf}.kv span{display:block;margin-top:4px;font-weight:850}
 .problem-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.problem{padding:11px;border:1px solid #294067;border-radius:12px;background:#071020;color:#bdc9dd;cursor:pointer;font-weight:800}.problem.on{border-color:var(--cyan);background:rgba(31,122,142,.2);color:#fff}
-.resultMsg{min-height:20px;color:#b9c8df;font-size:13px;line-height:1.5}.history{overflow:auto}.history table{width:100%;border-collapse:collapse;font-size:12px}.history th,.history td{padding:9px;border-bottom:1px solid #203252;text-align:left;vertical-align:top}.codebox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:#050b16;border:1px solid #2c4268;padding:12px;border-radius:12px;color:#ccefff;font-size:12px}.manualSensiResult{margin-top:12px}.manualSensiGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.manualSensiAxis{background:#050b16;border:1px solid #315079;border-radius:14px;padding:12px;text-align:center}.manualSensiAxis small{display:block;color:#8fa1bf;font-size:11px;font-weight:900}.manualSensiAxis strong{display:block;font-size:34px;line-height:1.05;margin-top:5px;color:#fff}.manualSensiAxis em{display:block;font-size:10px;color:#8090ab;font-style:normal;margin-top:4px}@media(max-width:720px){.manualSensiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.resultMsg{min-height:20px;color:#b9c8df;font-size:13px;line-height:1.5}.history{overflow:auto}.history table{width:100%;border-collapse:collapse;font-size:12px}.history th,.history td{padding:9px;border-bottom:1px solid #203252;text-align:left;vertical-align:top}.codebox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:#050b16;border:1px solid #2c4268;padding:12px;border-radius:12px;color:#ccefff;font-size:12px}.deviceResearchGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.deviceResearchItem{background:#050b16;border:1px solid #294067;border-radius:12px;padding:10px}.deviceResearchItem b{display:block;color:#8fa1bf;font-size:10px;text-transform:uppercase}.deviceResearchItem span{display:block;margin-top:4px;color:#fff;font-weight:850;font-size:13px}.researchSource{font-size:10px;color:#8090ab;margin-top:10px;word-break:break-word}@media(max-width:720px){.deviceResearchGrid{grid-template-columns:1fr}}.manualSensiResult{margin-top:12px}.manualSensiGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.manualSensiAxis{background:#050b16;border:1px solid #315079;border-radius:14px;padding:12px;text-align:center}.manualSensiAxis small{display:block;color:#8fa1bf;font-size:11px;font-weight:900}.manualSensiAxis strong{display:block;font-size:34px;line-height:1.05;margin-top:5px;color:#fff}.manualSensiAxis em{display:block;font-size:10px;color:#8090ab;font-style:normal;margin-top:4px}@media(max-width:720px){.manualSensiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .hudPreview{display:none;margin-top:9px;max-height:260px;max-width:100%;border-radius:12px;border:1px solid #294067}.small{font-size:11px;color:#8090ab}.rangeHint{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rangeCard{padding:10px;border:1px solid #263a5d;border-radius:12px;background:#071020}.rangeCard b{display:block;font-size:12px}.rangeCard span{font-size:11px;color:#8fa1bf}
 @media(max-width:720px){.grid,.grid3,.profile{grid-template-columns:1fr}.sensi{grid-template-columns:repeat(2,minmax(0,1fr))}.modegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.rangeHint{grid-template-columns:repeat(2,minmax(0,1fr))}.problem-grid{grid-template-columns:1fr}.hero h1{font-size:43px}}
 </style>
@@ -131,18 +131,18 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 </div>
 <div class="card">
 <div class="title">02 · MANUAL SENSITIVITY IMPORT → CREATE NEW PROFILE ID</div>
-<div class="sub">Agar sensitivity kisi aur website, friend, old phone, screenshot ya manual setting se mili hai aur AIMCRAFT Profile ID nahi hai, yahan six current values daalo. Import ke baad NEW Profile ID automatically banega aur server par save hoga. Is code ko Calibration Lab mein load karke adjustment kar sakte ho.</div>
+<div class="sub">Agar sensitivity kisi aur website, friend, old phone, screenshot ya manual setting se mili hai aur AIMCRAFT Profile ID nahi hai, yahan apni <b>CURRENT sensitivity values</b> daalo. Ye values sirf input hain; DEVICE ANALYZING in values ko change nahi karta. Import ke baad NEW Profile ID automatically banega aur server par save hoga. Is code ko Calibration Lab mein load karke adjustment kar sakte ho.</div>
 <div class="grid" style="margin-top:10px">
 <div><label>Sensitivity Mode</label><select id="manualSensMode"><option value="Default">Default</option><option value="High">High</option></select></div>
 <div><label>Device Name</label><input id="manualDevice" type="text" autocomplete="off" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15"><button class="secondary" id="manualDeviceAnalyze" style="width:100%;margin-top:8px">DEVICE ANALYZING</button></div>
 </div>
 <div class="grid3" style="margin-top:10px">
-<div><label>General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
-<div><label>Red Dot</label><input id="m1" type="number" min="0" max="200" value="180"></div>
-<div><label>2× Scope</label><input id="m2" type="number" min="0" max="200" value="160"></div>
-<div><label>4× Scope</label><input id="m3" type="number" min="0" max="200" value="140"></div>
-<div><label>Sniper</label><input id="m4" type="number" min="0" max="200" value="85"></div>
-<div><label>Free Look</label><input id="m5" type="number" min="0" max="200" value="120"></div>
+<div><label>Current General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
+<div><label>Current Red Dot</label><input id="m1" type="number" min="0" max="200" value="180"></div>
+<div><label>Current 2× Scope</label><input id="m2" type="number" min="0" max="200" value="160"></div>
+<div><label>Current 4× Scope</label><input id="m3" type="number" min="0" max="200" value="140"></div>
+<div><label>Current Sniper</label><input id="m4" type="number" min="0" max="200" value="85"></div>
+<div><label>Current Free Look</label><input id="m5" type="number" min="0" max="200" value="120"></div>
 </div>
 <div class="card" style="margin-top:12px;border-color:#294067;background:#071020">
 <div class="title">ACTUAL SENSITIVITY PROBLEM</div>
@@ -551,7 +551,17 @@ async function researchManualDevice(force=false){
    deviceResearch=dj?.device||null;
    if(deviceResearch){
      const d=deviceResearch;
-     box.innerHTML='<b>DEVICE RESEARCH COMPLETE</b><br><b>'+esc(d.canonical||device)+'</b>'+(d.variant?'<br>Variant: '+esc(d.variant):'')+'<br><b>Chipset / Processor:</b> '+esc(d.chipset||'Not verified')+' · <b>GPU:</b> '+esc(d.gpu||'Not verified')+'<br><b>Display:</b> '+esc(d.display||'Not verified')+'<br><b>Refresh Rate:</b> '+esc(d.refreshRate||'Not verified')+' · <b>Touch Sampling:</b> '+esc(d.touchSampling||'Not verified')+'<br><b>RAM:</b> '+esc(d.ram||'Not verified')+' · <b>OS:</b> '+esc(d.os||'Not verified')+'<br><b>Gaming Profile:</b> '+esc(d.gaming||'Not verified')+'<br><span class="small">Research Source: '+esc(d.sourceLabel||d.sourceType||'web research')+'</span>';
+     box.innerHTML='<b>DEVICE RESEARCH COMPLETE ✓</b><br><b style="font-size:17px">'+esc(d.canonical||device)+'</b>'+(d.variant?'<br>Variant: '+esc(d.variant):'')+'<div class="deviceResearchGrid">'+
+'<div class="deviceResearchItem"><b>Processor / Chipset</b><span>'+esc(d.chipset||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>GPU</b><span>'+esc(d.gpu||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Display</b><span>'+esc(d.display||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Refresh Rate</b><span>'+esc(d.refreshRate||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Touch Sampling Rate</b><span>'+esc(d.touchSampling||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Touch Response</b><span>'+esc(d.touchResponse||d.touchSampling||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>RAM</b><span>'+esc(d.ram||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>OS</b><span>'+esc(d.os||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Gaming Profile</b><span>'+esc(d.gaming||'Not verified')+'</span></div>'+
+'</div><div class="researchSource"><b>Research Source:</b> '+esc(d.sourceLabel||d.sourceType||'web research')+(d.confidence?' · Confidence: '+esc(d.confidence):'')+'</div>';
    }else{
      box.innerHTML='<b>DEVICE RESEARCH FAILED</b><br>Exact model verify nahi hua. Isliye guessed chipset/specs sensitivity mein use nahi kiye jayenge.';
    }
