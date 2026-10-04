@@ -551,7 +551,7 @@ async function researchManualDevice(force=false){
    deviceResearch=dj?.device||null;
    if(deviceResearch){
      const d=deviceResearch;
-     box.innerHTML='<b>DEVICE RESEARCH COMPLETE</b><br><b>'+esc(d.canonical||device)+'</b>'+(d.variant?'<br>Variant: '+esc(d.variant):'')+'<br><b>Chipset:</b> '+esc(d.chipset||'Not verified')+' · <b>GPU:</b> '+esc(d.gpu||'Not verified')+'<br><b>Display:</b> '+esc(d.display||'Not verified')+'<br><b>Refresh:</b> '+esc(d.refreshRate||'Not verified')+' · <b>Touch:</b> '+esc(d.touchSampling||'Not verified')+'<br><b>RAM:</b> '+esc(d.ram||'Not verified')+' · <b>OS:</b> '+esc(d.os||'Not verified')+'<br><span class="small">Source: '+esc(d.sourceLabel||d.sourceType||'verified research')+'</span>';
+     box.innerHTML='<b>DEVICE RESEARCH COMPLETE</b><br><b>'+esc(d.canonical||device)+'</b>'+(d.variant?'<br>Variant: '+esc(d.variant):'')+'<br><b>Chipset / Processor:</b> '+esc(d.chipset||'Not verified')+' · <b>GPU:</b> '+esc(d.gpu||'Not verified')+'<br><b>Display:</b> '+esc(d.display||'Not verified')+'<br><b>Refresh Rate:</b> '+esc(d.refreshRate||'Not verified')+' · <b>Touch Sampling:</b> '+esc(d.touchSampling||'Not verified')+'<br><b>RAM:</b> '+esc(d.ram||'Not verified')+' · <b>OS:</b> '+esc(d.os||'Not verified')+'<br><b>Gaming Profile:</b> '+esc(d.gaming||'Not verified')+'<br><span class="small">Research Source: '+esc(d.sourceLabel||d.sourceType||'web research')+'</span>';
    }else{
      box.innerHTML='<b>DEVICE RESEARCH FAILED</b><br>Exact model verify nahi hua. Isliye guessed chipset/specs sensitivity mein use nahi kiye jayenge.';
    }
