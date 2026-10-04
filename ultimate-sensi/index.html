@@ -21,7 +21,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 .sensi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.axis{background:#071020;border:1px solid #294067;border-radius:14px;padding:13px}.axis small{display:block;color:#93a4c1;font-weight:800}.axis strong{font-size:32px;display:block;margin:4px 0}.meter{height:7px;border-radius:99px;background:#182743;overflow:hidden}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:99px}
 .profile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kv{background:#071020;border:1px solid #263a5d;border-radius:12px;padding:10px}.kv b{display:block;font-size:12px;color:#8fa1bf}.kv span{display:block;margin-top:4px;font-weight:850}
 .problem-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.problem{padding:11px;border:1px solid #294067;border-radius:12px;background:#071020;color:#bdc9dd;cursor:pointer;font-weight:800}.problem.on{border-color:var(--cyan);background:rgba(31,122,142,.2);color:#fff}
-.resultMsg{min-height:20px;color:#b9c8df;font-size:13px;line-height:1.5}.history{overflow:auto}.history table{width:100%;border-collapse:collapse;font-size:12px}.history th,.history td{padding:9px;border-bottom:1px solid #203252;text-align:left;vertical-align:top}.codebox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:#050b16;border:1px solid #2c4268;padding:12px;border-radius:12px;color:#ccefff;font-size:12px}
+.resultMsg{min-height:20px;color:#b9c8df;font-size:13px;line-height:1.5}.history{overflow:auto}.history table{width:100%;border-collapse:collapse;font-size:12px}.history th,.history td{padding:9px;border-bottom:1px solid #203252;text-align:left;vertical-align:top}.codebox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:#050b16;border:1px solid #2c4268;padding:12px;border-radius:12px;color:#ccefff;font-size:12px}.manualSensiResult{margin-top:12px}.manualSensiGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.manualSensiAxis{background:#050b16;border:1px solid #315079;border-radius:14px;padding:12px;text-align:center}.manualSensiAxis small{display:block;color:#8fa1bf;font-size:11px;font-weight:900}.manualSensiAxis strong{display:block;font-size:34px;line-height:1.05;margin-top:5px;color:#fff}.manualSensiAxis em{display:block;font-size:10px;color:#8090ab;font-style:normal;margin-top:4px}@media(max-width:720px){.manualSensiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .hudPreview{display:none;margin-top:9px;max-height:260px;max-width:100%;border-radius:12px;border:1px solid #294067}.small{font-size:11px;color:#8090ab}.rangeHint{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rangeCard{padding:10px;border:1px solid #263a5d;border-radius:12px;background:#071020}.rangeCard b{display:block;font-size:12px}.rangeCard span{font-size:11px;color:#8fa1bf}
 @media(max-width:720px){.grid,.grid3,.profile{grid-template-columns:1fr}.sensi{grid-template-columns:repeat(2,minmax(0,1fr))}.modegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.rangeHint{grid-template-columns:repeat(2,minmax(0,1fr))}.problem-grid{grid-template-columns:1fr}.hero h1{font-size:43px}}
 </style>
@@ -536,47 +536,48 @@ function fillManualProblems(){
  box.innerHTML=PROBLEMS.map(x=>'<div class="problem" data-type="'+esc(x[1])+'" data-value="'+esc(x[0])+'">'+esc(x[0])+'</div>').join('');
  box.onclick=e=>{const x=e.target.closest('.problem');if(x)x.classList.toggle('on')};
 }
+async function researchManualDevice(force=false){
+ const device=String($('manualDevice').value||'').trim();
+ if(!device)return null;
+ const box=$('manualDeviceResearch');
+ if(!force && deviceResearch?.query && String(deviceResearch.query).toLowerCase()===device.toLowerCase() && deviceResearch.verified!==false)return deviceResearch;
+ box.className='notice';
+ box.innerHTML='<b>DEVICE RESEARCHING…</b><br>Exact model ko manufacturer/spec databases aur grounded research se verify kiya ja raha hai…';
+ try{
+   const runtime={ua:navigator.userAgent||'',screen:(screen.width||0)+'x'+(screen.height||0),dpr:window.devicePixelRatio||1,touch:navigator.maxTouchPoints||0,width:screen.width||0,height:screen.height||0};
+   const qs=new URLSearchParams({device,ua:runtime.ua,screen:runtime.screen,dpr:String(runtime.dpr),touch:String(runtime.touch),width:String(runtime.width),height:String(runtime.height)});
+   const dr=await fetch(HUD_API+'/api/device-research?'+qs.toString());
+   const dj=await dr.json();
+   deviceResearch=dj?.device||null;
+   if(deviceResearch){
+     const d=deviceResearch;
+     box.innerHTML='<b>DEVICE RESEARCH COMPLETE</b><br><b>'+esc(d.canonical||device)+'</b>'+(d.variant?'<br>Variant: '+esc(d.variant):'')+'<br><b>Chipset:</b> '+esc(d.chipset||'Not verified')+' · <b>GPU:</b> '+esc(d.gpu||'Not verified')+'<br><b>Display:</b> '+esc(d.display||'Not verified')+'<br><b>Refresh:</b> '+esc(d.refreshRate||'Not verified')+' · <b>Touch:</b> '+esc(d.touchSampling||'Not verified')+'<br><b>RAM:</b> '+esc(d.ram||'Not verified')+' · <b>OS:</b> '+esc(d.os||'Not verified')+'<br><span class="small">Source: '+esc(d.sourceLabel||d.sourceType||'verified research')+'</span>';
+   }else{
+     box.innerHTML='<b>DEVICE RESEARCH FAILED</b><br>Exact model verify nahi hua. Isliye guessed chipset/specs sensitivity mein use nahi kiye jayenge.';
+   }
+ }catch(e){
+   deviceResearch=null;
+   box.innerHTML='<b>DEVICE RESEARCH ERROR</b><br>'+esc(e.message||e);
+ }
+ return deviceResearch;
+}
 async function importManual(){
  const before=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
  const sensMode=$('manualSensMode').value;
  const device=String($('manualDevice').value||'').trim();
  const selectedProblems=[...$('manualProblems').querySelectorAll('.problem.on')];
  const custom=String($('manualCustomProblem').value||'').trim();
- if(!device)return alert('Device Name dalo. Exact device research isi naam ke basis par hogi.');
- if(!selectedProblems.length&&!custom)return alert('Kam se kam 1 sensitivity problem select karo ya apni problem likho.');
+ if(!device)return alert('Device Name dalo. Example: POCO M7 / Samsung A55 / iPhone 15 Pro Max');
+ if(!selectedProblems.length&&!custom)return alert('Kam se kam 1 problem select karo ya apni problem likho.');
  const btn=$('importManual');btn.disabled=true;btn.textContent='RESEARCHING DEVICE + ANALYSING SENSITIVITY…';
- $('manualDeviceResearch').className='notice';
- $('manualDeviceResearch').textContent='Exact device research chal rahi hai — manufacturer specs, chipset, GPU, display, refresh/touch aur OS verify kiye ja rahe hain…';
  try{
-   let researched=null;
-   const runtime={
-     ua:navigator.userAgent||'',screen:(screen.width||0)+'x'+(screen.height||0),dpr:window.devicePixelRatio||1,
-     touch:navigator.maxTouchPoints||0,width:screen.width||0,height:screen.height||0
-   };
-   try{
-     const qs=new URLSearchParams({device,ua:runtime.ua,screen:runtime.screen,dpr:String(runtime.dpr),touch:String(runtime.touch),width:String(runtime.width),height:String(runtime.height)});
-     const dr=await fetch(HUD_API+'/api/device-research?'+qs.toString());
-     const dj=await dr.json();
-     researched=dj?.device||null;
-   }catch(e){}
-   deviceResearch=researched;
-   if(researched){
-     $('manualDeviceResearch').innerHTML='<b>DEVICE RESEARCH COMPLETE</b><br><b>'+esc(researched.canonical||device)+'</b><br>Chipset: '+esc(researched.chipset||'Not verified')+' · GPU: '+esc(researched.gpu||'Not verified')+'<br>Display: '+esc(researched.display||'Not verified')+' · Refresh: '+esc(researched.refreshRate||'Not verified')+' · Touch: '+esc(researched.touchSampling||'Not verified')+'<br>RAM: '+esc(researched.ram||'Not verified')+' · OS: '+esc(researched.os||'Not verified')+'<br><span class="small">Source: '+esc(researched.sourceLabel||researched.sourceType||'verified research')+'</span>';
-   }else{
-     $('manualDeviceResearch').innerHTML='<b>DEVICE RESEARCH</b><br>Exact model verify nahi ho saka. Sensitivity ko guessed hardware specs se change nahi kiya jayega.';
-   }
+   const researched=await researchManualDevice(true);
    const issues=selectedProblems.map(x=>x.dataset.value);
-   const context={
-     device,deviceResearch:researched||{canonical:device,verified:false},
-     sensitivityMode:sensMode,source:'manual-import',
-     browserRuntime:runtime,originalSensitivity:before
-   };
+   const runtime={ua:navigator.userAgent||'',screen:(screen.width||0)+'x'+(screen.height||0),dpr:window.devicePixelRatio||1,touch:navigator.maxTouchPoints||0,width:screen.width||0,height:screen.height||0};
+   const context={device,deviceResearch:researched||{canonical:device,verified:false},sensitivityMode:sensMode,source:'manual-import',browserRuntime:runtime,originalSensitivity:before};
    let after=null,diagnosis='',changes=[],usedAI=false;
    try{
-     const rr=await fetch(HUD_API+'/api/manual-fix',{
-       method:'POST',headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({sensitivity:{general:before[0],red_dot:before[1],scope_2x:before[2],scope_4x:before[3],sniper:before[4],free_look:before[5]},issues,customText:custom,context})
-     });
+     const rr=await fetch(HUD_API+'/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:{general:before[0],red_dot:before[1],scope_2x:before[2],scope_4x:before[3],sniper:before[4],free_look:before[5]},issues,customText:custom,context})});
      const rd=await rr.json();
      if(rr.ok&&rd?.sensitivity){
        const sv=rd.sensitivity;
@@ -587,27 +588,23 @@ async function importManual(){
    if(!after){
      const delta=[0,0,0,0,0,0];
      selectedProblems.forEach(el=>manualProblemDelta(el.dataset.type).forEach((n,i)=>delta[i]+=n));
-     if(custom){
-       const t=custom.toLowerCase();
-       if(/head.*upar|over|overshoot|fast|aage/.test(t))manualProblemDelta('overshoot').forEach((n,i)=>delta[i]+=n);
-       if(/chest|neck|short|pahunch|slow|under/.test(t))manualProblemDelta('undershoot').forEach((n,i)=>delta[i]+=n);
-       if(/recoil|spray|shake|hil/.test(t))manualProblemDelta('recoil').forEach((n,i)=>delta[i]+=n);
-     }
+     const t=custom.toLowerCase();
+     if(/head.*upar|over|overshoot|fast|aage/.test(t))manualProblemDelta('overshoot').forEach((n,i)=>delta[i]+=n);
+     if(/chest|neck|short|pahunch|slow|under/.test(t))manualProblemDelta('undershoot').forEach((n,i)=>delta[i]+=n);
+     if(/recoil|spray|shake|hil/.test(t))manualProblemDelta('recoil').forEach((n,i)=>delta[i]+=n);
      for(let i=0;i<6;i++)delta[i]=Math.max(-8,Math.min(8,Math.round(delta[i])));
-     after=before.map((x,i)=>clamp(x+delta[i]));
-     changes=['Conservative local problem-based fallback applied.'];
+     after=before.map((x,i)=>clamp(x+delta[i]));changes=['Conservative local problem-based fallback applied.'];
    }
    const p=makeStarting();
-   p.v=after;p.device=device;p.deviceName=device;p.deviceResearch=researched;p.sensMode=sensMode;
-   p.source='manual-import';p.manualImport={
-     source:'external/manual',importedAt:new Date().toISOString(),originalValues:before,values:after,
-     device,sensMode,problems:issues,customProblem:custom,diagnosis,changes,aiRefined:usedAI,browserRuntime:runtime
-   };
+   p.v=after;p.device=device;p.deviceName=device;p.deviceResearch=researched;p.sensMode=sensMode;p.source='manual-import';
+   p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),originalValues:before,values:after,device,sensMode,problems:issues,customProblem:custom,diagnosis,changes,aiRefined:usedAI,browserRuntime:runtime};
    p.ob=$('ob')?.value||'OB55';
    setCurrent(p,'MANUAL SENSITIVITY ANALYSED · NEW PROFILE ID CREATED');
    const code=codeFor(current);
    await backendSaveProfile(current);
-   $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW SENSITIVITY + NEW PROFILE ID CREATED</b><br>Device: '+esc(device)+' · Mode: '+esc(sensMode)+'<br>Problems: '+esc(issues.join(' + ')||'Custom issue')+'<br>Before: '+esc(before.join(' / '))+'<br>New Sensitivity: '+esc(after.join(' / '))+'<br><div class="small" style="margin-top:6px">'+esc(diagnosis||changes.join(' · ')||'Device + problem evidence used for adjustment.')+'</div><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Device research + problem analysis save ho gaya. Ye NEW Profile ID updated sensitivity profile ko identify karta hai.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%">OPEN CALIBRATION FOR THIS NEW PROFILE</button></div>';
+   const labels=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
+   const sensGrid=after.map((v,i)=>'<div class="manualSensiAxis"><small>'+labels[i]+'</small><strong>'+v+'</strong><em>BEFORE '+before[i]+' → '+v+'</em></div>').join('');
+   $('manualImportStatus').innerHTML='<div class="notice ok manualSensiResult"><b style="font-size:18px">NEW SENSITIVITY + NEW PROFILE ID CREATED</b><br><span style="font-size:14px">Device: '+esc(device)+' · Mode: '+esc(sensMode)+'</span><br><span style="font-size:13px">Problems: '+esc(issues.join(' + ')||'Custom issue')+'</span><div class="manualSensiGrid">'+sensGrid+'</div><div class="small" style="margin-top:10px">'+esc(diagnosis||changes.join(' · ')||'Device research + problem analysis used for adjustment.')+'</div><div style="margin-top:12px;font-weight:900">NEW PROFILE ID</div><div class="codebox" style="font-size:18px;margin-top:6px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Device research + problem analysis save ho gaya. Ye NEW Profile ID isi updated sensitivity profile ko identify karta hai.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%;font-size:14px">OPEN CALIBRATION FOR THIS NEW PROFILE</button></div>';
    const omc=$('openManualCalibration');if(omc)omc.onclick=()=>{ $('calCode').value=code;tab('calibrate');$('calCodeStatus').textContent='Manual problem-fixed profile ready: '+code; };
  }catch(e){
    $('manualImportStatus').innerHTML='<div class="notice warn">Analysis failed: '+esc(e.message||e)+'</div>';
@@ -694,6 +691,15 @@ function wireAIMCRAFT(){
   $('loadUpdate').onclick=()=>loadForUpdate($('updateCode').value);
   $('applyOb').onclick=updateOB;
   $('importManual').onclick=importManual;
+  let manualResearchTimer=null;
+  $('manualDevice').addEventListener('input',()=>{
+    clearTimeout(manualResearchTimer);
+    deviceResearch=null;
+    const v=$('manualDevice').value.trim();
+    if(!v){$('manualDeviceResearch').textContent='Device Name dalne ke baad device research automatically hogi.';return;}
+    manualResearchTimer=setTimeout(()=>researchManualDevice(false),700);
+  });
+  $('manualDevice').addEventListener('blur',()=>{if($('manualDevice').value.trim())researchManualDevice(false);});
 
   $('loadProfile').onclick=()=>loadCodeIntoProfile($('profileCode').value);
   $('copyProfile').onclick=()=>safeCopy(codeFor(current),$('copyProfile'),'CODE COPIED');
