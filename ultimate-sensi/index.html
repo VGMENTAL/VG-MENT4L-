@@ -308,7 +308,7 @@ function initGameplay(){
 function readGpMeta(f){return new Promise((resolve,reject)=>{const v=document.createElement('video'),u=URL.createObjectURL(f);v.preload='metadata';v.onloadedmetadata=()=>{URL.revokeObjectURL(u);resolve({duration:Number(v.duration)||0,w:v.videoWidth||0,h:v.videoHeight||0})};v.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Use a normal MP4/H.264 gameplay video.'))};v.src=u})}
 async function gpFrames(f,m){return new Promise((resolve,reject)=>{const v=document.createElement('video'),u=URL.createObjectURL(f),can=document.createElement('canvas'),ctx=can.getContext('2d',{alpha:false});v.preload='auto';v.muted=true;v.playsInline=true;v.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Video frame extraction failed.'))};v.onloadedmetadata=async()=>{try{const d=Math.max(.1,m.duration||v.duration),n=Math.max(16,Math.min(24,Math.ceil(d/1.2))),W=Math.min(720,v.videoWidth||720),H=Math.max(1,Math.round(W*(v.videoHeight||540)/(v.videoWidth||960)));can.width=W;can.height=H;const out=[];for(let i=0;i<n;i++){const t=Math.min(d-.03,Math.max(0,i*d/n));await new Promise((ok,fail)=>{let to=setTimeout(()=>{clean();fail(new Error('Video seek timed out.'))},10000);const clean=()=>{clearTimeout(to);v.removeEventListener('seeked',yes);v.removeEventListener('error',no)};const yes=()=>{clean();ok()};const no=()=>{clean();fail(new Error('Could not decode gameplay frame.'))};v.addEventListener('seeked',yes,{once:true});v.addEventListener('error',no,{once:true});v.currentTime=t});ctx.drawImage(v,0,0,W,H);out.push({t:t.toFixed(1)+'s',data:can.toDataURL('image/jpeg',.55)});$('gpBar').style.width=(15+(i+1)/n*45)+'%';$('gpStage').textContent='Reading gameplay timeline '+(i+1)+'/'+n}URL.revokeObjectURL(u);resolve(out)}catch(e){URL.revokeObjectURL(u);reject(e)}};v.src=u})}
 function gpContext(){return {device:current?.device||'',sensitivity:Object.fromEntries(AXIS.map((a,i)=>[a,current?.v?.[i]||0])),gameMode:current?.gameMode||'',playerMode:current?.playerMode||'',playerStyle:current?.style||'',sensMode:current?.sensMode||'',aimMode:current?.aimMode||'',ob:current?.ob||'OB55',guns:current?.guns||['All Guns'],fingers:current?.fingers||'',fire:current?.fire||'',ram:current?.ram||'',age:current?.age||''}}
-async function analyzeGameplay(){if(gpBusy)return;if(!current)return $('gpResult').textContent='Pehle Build Sensi ya Profile se profile ready karo.';if(!gpFile)return $('gpResult').textContent='Gameplay video select karo.';gpBusy=true;$('gpAnalyze').disabled=true;$('gpResult').textContent='Poore gameplay timeline ko evidence frames mein read kiya ja raha hai…';$('gpProgress').classList.add('on');try{const frames=await gpFrames(gpFile,gpMeta);$('gpBar').style.width='65%';$('gpStage').textContent='Gemini gameplay analysis chal raha hai…';const r=await fetch('/api/gameplay-analyze-gemini-frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:gpContext(),frames})});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.detail||j.error||'Gameplay analysis failed');gpResult=j.result||j.analysis||j;const s=gpResult.recommendedSensitivity;if(!s)throw new Error('AI ne usable sensitivity return nahi ki.');const before=[...current.v],keys=['General','RedDot','2x','4x','Sniper','FreeLook'],after0=AXIS.map((a,i)=>clamp(s[a]??s[keys[i]]??before[i]));
+async function analyzeGameplay(){if(gpBusy)return;if(!current)return $('gpResult').textContent='Pehle Build Sensi ya Profile se profile ready karo.';if(!gpFile)return $('gpResult').textContent='Gameplay video select karo.';gpBusy=true;$('gpAnalyze').disabled=true;$('gpResult').textContent='Poore gameplay timeline ko evidence frames mein read kiya ja raha hai…';$('gpProgress').classList.add('on');try{const frames=await gpFrames(gpFile,gpMeta);$('gpBar').style.width='65%';$('gpStage').textContent='Gemini gameplay analysis chal raha hai…';const r=await fetch(HUD_API+'/api/gameplay-analyze-gemini-frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:gpContext(),frames})});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.detail||j.error||'Gameplay analysis failed');gpResult=j.result||j.analysis||j;const s=gpResult.recommendedSensitivity;if(!s)throw new Error('AI ne usable sensitivity return nahi ki.');const before=[...current.v],keys=['General','RedDot','2x','4x','Sniper','FreeLook'],after0=AXIS.map((a,i)=>clamp(s[a]??s[keys[i]]??before[i]));
 const aiText=[gpResult.mainIssue||'',...(gpResult.problemDiagnosis||[]),...(gpResult.findings||[])].join(' ').toLowerCase();
 const aiIssues=[];
 if(/over|overshoot|above head|ahead of target|too fast|flick.*ahead/.test(aiText)) aiIssues.push('Drag bahut fast / overshoot');
@@ -318,7 +318,7 @@ if(/recoil|spray|shake/.test(aiText)) aiIssues.push('Recoil / spray shaky');
 const aiRanges=String(gpResult.rangePreference||'').split(/[,|/]/).map(x=>x.trim()).filter(Boolean).map(x=>/close/i.test(x)?'Close Range':/mid/i.test(x)?'Mid Range':/long/i.test(x)?'Long Range':x);
 const after=headControlAdjust(after0,aiIssues,aiRanges);
 current.v=after;current.gameplayCalibration={time:new Date().toISOString(),before,after,confidence:gpResult.confidence||'',mainIssue:gpResult.mainIssue||'',goal:'head-level control without aggressive overshoot'};setCurrent(current,'GAMEPLAY CHECK COMPLETE · TEST THE NEW SENSITIVITY');$('gpBar').style.width='100%';$('gpStage').textContent='Complete';$('gpRefine').disabled=false;$('gpResult').innerHTML='<div class="notice ok"><b>Gameplay analysis complete.</b><br>AI: '+esc(gpResult.model||'Gemini')+' · Confidence: '+esc(gpResult.confidence||'—')+'<br>Main issue: '+esc(gpResult.mainIssue||'—')+'</div><div style="margin-top:9px">'+renderSensi(after)+'</div><div class="small" style="margin-top:8px">Before → After: '+esc(before.join(' / '))+' → '+esc(after.join(' / '))+'</div>'}catch(e){$('gpResult').textContent='Gameplay analysis failed: '+e.message}finally{gpBusy=false;$('gpAnalyze').disabled=false}}
-async function refineGameplay(){if(gpBusy||!current||!gpResult)return;const issues=[...$('gpProblems').querySelectorAll('.on')].map(x=>x.dataset.value),custom=$('gpCustom').value.trim();if(!issues.length&&!custom)return $('gpResult').textContent='At least one actual problem select karo ya custom problem likho.';gpBusy=true;$('gpRefine').disabled=true;$('gpAnalyze').disabled=true;$('gpResult').textContent='REFINE THIS TEST ROUND: targeted adjustment apply ho raha hai…';try{const r=await fetch('/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:Object.fromEntries(AXIS.map((a,i)=>[a,current.v[i]])),issues,customText:custom,context:gpContext()})});const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||'Refinement failed');const s=j.sensitivity||{},keys=['General','RedDot','2x','4x','Sniper','FreeLook'],before=[...current.v],raw=AXIS.map((a,i)=>clamp(s[a]??s[keys[i]]??before[i])),after=headControlAdjust(raw,issues,[]);current.v=after;current.gameplayCalibration={...(current.gameplayCalibration||{}),refinedAt:new Date().toISOString(),issues,customText:custom,before,after};setCurrent(current,'TEST ROUND REFINED · RETEST NOW');$('gpResult').innerHTML='<div class="notice ok"><b>Targeted refinement complete.</b></div>'+renderSensi(after)+'<div class="small" style="margin-top:8px">Before → After: '+esc(before.join(' / '))+' → '+esc(after.join(' / '))+'</div><div class="codebox" style="margin-top:10px">'+esc(codeFor(current))+'</div><button class="secondary" id="gpCopyUpdatedCode" style="margin-top:9px;width:100%">COPY UPDATED CODE</button>';const cb=$('gpCopyUpdatedCode');if(cb)cb.onclick=async()=>{try{await navigator.clipboard.writeText(codeFor(current));cb.textContent='UPDATED CODE COPIED'}catch(e){alert(codeFor(current))}}}catch(e){$('gpResult').textContent='Refinement failed: '+e.message}finally{gpBusy=false;$('gpRefine').disabled=false;$('gpAnalyze').disabled=false}}
+async function refineGameplay(){if(gpBusy||!current||!gpResult)return;const issues=[...$('gpProblems').querySelectorAll('.on')].map(x=>x.dataset.value),custom=$('gpCustom').value.trim();if(!issues.length&&!custom)return $('gpResult').textContent='At least one actual problem select karo ya custom problem likho.';gpBusy=true;$('gpRefine').disabled=true;$('gpAnalyze').disabled=true;$('gpResult').textContent='REFINE THIS TEST ROUND: targeted adjustment apply ho raha hai…';try{const r=await fetch(HUD_API+'/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:Object.fromEntries(AXIS.map((a,i)=>[a,current.v[i]])),issues,customText:custom,context:gpContext()})});const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||'Refinement failed');const s=j.sensitivity||{},keys=['General','RedDot','2x','4x','Sniper','FreeLook'],before=[...current.v],raw=AXIS.map((a,i)=>clamp(s[a]??s[keys[i]]??before[i])),after=headControlAdjust(raw,issues,[]);current.v=after;current.gameplayCalibration={...(current.gameplayCalibration||{}),refinedAt:new Date().toISOString(),issues,customText:custom,before,after};setCurrent(current,'TEST ROUND REFINED · RETEST NOW');$('gpResult').innerHTML='<div class="notice ok"><b>Targeted refinement complete.</b></div>'+renderSensi(after)+'<div class="small" style="margin-top:8px">Before → After: '+esc(before.join(' / '))+' → '+esc(after.join(' / '))+'</div><div class="codebox" style="margin-top:10px">'+esc(codeFor(current))+'</div><button class="secondary" id="gpCopyUpdatedCode" style="margin-top:9px;width:100%">COPY UPDATED CODE</button>';const cb=$('gpCopyUpdatedCode');if(cb)cb.onclick=async()=>{try{await navigator.clipboard.writeText(codeFor(current));cb.textContent='UPDATED CODE COPIED'}catch(e){alert(codeFor(current))}}}catch(e){$('gpResult').textContent='Refinement failed: '+e.message}finally{gpBusy=false;$('gpRefine').disabled=false;$('gpAnalyze').disabled=false}}
 function renderGuns(){const box=$('guns');box.innerHTML=WEAPONS.map(([n])=>'<span class="chip '+(n==='All Guns'?'on':'')+'" data-value="'+esc(n)+'">'+esc(n)+'</span>').join('');syncGuns(box.querySelector('[data-value="All Guns"]'));toggleGroup('guns')}
 function fillProblems(){const box=$('problems');box.innerHTML=PROBLEMS.map(x=>'<div class="problem" data-value="'+esc(x[0])+'">'+esc(x[0])+'</div>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.problem');if(x)x.classList.toggle('on')})}
 function fillRanges(){const box=$('ranges');box.innerHTML=RANGES.map(x=>'<span class="chip" data-value="'+x+'">'+x+'</span>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.chip');if(!x)return;x.classList.toggle('on')})}
@@ -547,3 +547,82 @@ $('buildBtn').onclick=async()=>{
    renderBuild(current);
  }catch(e){alert('Build failed: '+e.message)}
  finally{buildBusy=false;$('buildBtn').disabled=false;setTimeout(()=>$('buildProgress').classList.remove('on'),250);}
+};
+
+// ---------- AIMCRAFT ULTIMATE BOOT / EVENT WIRING ----------
+function safeCopy(value, button, copiedText){
+  const textValue=String(value||'');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(textValue).then(()=>{
+      if(button){const oldText=button.textContent;button.textContent=copiedText||'COPIED';setTimeout(()=>button.textContent=oldText,1400);}
+    }).catch(()=>alert(textValue));
+  }else alert(textValue);
+}
+
+async function loadForCalibration(code){
+  const s=String(code||'').trim().replace(/\s+/g,'');
+  if(!isNumericProfileCode(s) && !/^#[A-Z0-9]{5,10}$/.test(s)) return alert('Valid 12–15 digit Profile Code paste karo.');
+  try{
+    const p=isNumericProfileCode(s)?await backendLoadProfile(s):await hydrateLoadedProfile(decode(s));
+    setCurrent(p,'PROFILE LOADED · COMPLETE PROFILE RESTORED');
+    $('calCode').value=codeFor(current);
+    $('profileCode').value=codeFor(current);
+    tab('calibrate');
+  }catch(e){ $('calCodeStatus').textContent='Profile load failed: '+(e.message||'server error'); }
+}
+
+async function loadForUpdate(code){
+  const s=String(code||'').trim().replace(/\s+/g,'');
+  if(!isNumericProfileCode(s) && !/^#[A-Z0-9]{5,10}$/.test(s)) return alert('Valid 12–15 digit Profile Code paste karo.');
+  try{
+    const p=isNumericProfileCode(s)?await backendLoadProfile(s):await hydrateLoadedProfile(decode(s));
+    setCurrent(p,'PROFILE LOADED · COMPLETE PROFILE RESTORED');
+    $('updateCode').value=codeFor(current);
+    $('oldOb').value=current.ob||'OB55';
+    tab('update');
+    $('updateStatus').innerHTML='<div class="notice ok">Complete profile loaded successfully. Ab OB target choose karke UPDATE TO TARGET OB dabao.</div>';
+  }catch(e){ $('updateStatus').textContent='Profile load failed: '+(e.message||'server error'); }
+}
+
+function wireAIMCRAFT(){
+  renderGuns();
+  fillProblems();
+  fillRanges();
+  initGameplay();
+
+  $('calBtn').onclick=calibrate;
+  $('calLoadCode').onclick=()=>loadForCalibration($('calCode').value);
+  $('calCopyCode').onclick=()=>safeCopy(codeFor(current),$('calCopyCode'),'CODE COPIED');
+
+  $('loadUpdate').onclick=()=>loadForUpdate($('updateCode').value);
+  $('applyOb').onclick=updateOB;
+  $('importManual').onclick=importManual;
+
+  $('loadProfile').onclick=()=>loadCodeIntoProfile($('profileCode').value);
+  $('copyProfile').onclick=()=>safeCopy(codeFor(current),$('copyProfile'),'CODE COPIED');
+  $('saveProfile').onclick=async()=>{
+    if(!current)return alert('Pehle profile build/load karo.');
+    const code=await backendSaveProfile(current);
+    $('profileCode').value=code;
+    $('profileCodeBox').innerHTML='<div class="codebox">'+esc(code)+'</div><div class="small" style="margin-top:7px">Profile server par saved hai.</div>';
+  };
+
+  // If a saved profile exists on this phone, restore it quietly.
+  // This does not generate a result on page load; it only restores an existing profile.
+  try{ loadSaved(); }catch(e){}
+
+  // Keep profile-code inputs clean and numeric on mobile.
+  ['calCode','updateCode','profileCode'].forEach(id=>{
+    $(id).addEventListener('input',e=>{e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(0,15)});
+  });
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',wireAIMCRAFT,{once:true});
+}else{
+  wireAIMCRAFT();
+}
+})();
+</script>
+</body>
+</html>
