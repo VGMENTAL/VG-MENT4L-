@@ -178,7 +178,7 @@ const PROBLEMS=[
 ['Tracking mushkil hai','track'],['Scope open karte hi aim shift hota hai','scopeShift']
 ];
 const RANGES=['Close Range','Mid Range','Long Range','Precision'];
-let hud=null,current=null,history=[],learning={},buildBusy=false,pendingCalibration=null;
+let hud=null,deviceResearch=null,current=null,history=[],learning={},buildBusy=false,pendingCalibration=null;
 
 function clamp(n){return Math.max(0,Math.min(200,Math.round(Number(n)||0)))}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -363,11 +363,14 @@ function makeStarting(){
  let v=base.map((x,i)=>clamp(x+a[i]+b[i]+g[i]+l[i]+ha[i]));
  // Keep the curve intentionally ordered by aiming state; do not flatten all six values.
  v[2]=Math.min(v[2],v[1]);v[3]=Math.min(v[3],v[2]);v[4]=Math.min(v[4],Math.max(55,v[3]-35));
- return {version:4,device:f.device||'Unknown device',age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
+ return {version:5,device:f.device||'Unknown device',deviceResearch:deviceResearch||null,age:f.age,ram:f.ram,dpi:f.dpi,hz:f.hz,touch:f.touch,fingers:f.fingers,fire:f.fire,gameMode:$('gameMode').value,playerMode:$('playerMode').value,style:$('style').value,sensMode:$('sensMode').value,aimMode:$('aimMode').value,ob:$('ob').value,guns:selected('guns').length?selected('guns'):['All Guns'],hud:hud, v, history:[]};
 }
 function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="axis"><small>'+AXIS[i]+'</small><strong>'+x+'</strong><div class="meter"><i style="width:'+x/2+'%"></i></div></div>').join('')+'</div>'}
 function profileHTML(p){
- return '<div class="profile">'+[['Device',p.device],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['RAM',p.ram],['DPI',p.dpi],['Refresh',p.hz+' Hz'],['Touch',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['OB',p.ob],['Gun Profile',p.guns.includes('All Guns')?'All Guns · Full Weapon Pool':p.guns.join(' + ')]].map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
+ const d=p.deviceResearch||{},gun=p.guns?.includes('All Guns')?'All Guns · Full Weapon Pool':(p.guns||[]).join(' + ');
+ const hudState=p.hud?.analysis?'Deep HUD analysis stored':'HUD evidence not stored';
+ const rows=[['Device',p.device],['Phone Age',p.age],['RAM',p.ram],['DPI / Smallest Width',p.dpi],['Refresh Rate',p.hz+' Hz'],['Touch Sampling',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['Sensitivity Mode',p.sensMode],['Aim Precision',p.aimMode],['OB',p.ob],['Gun Profile',gun],['Chipset',d.chipset||'Not separately researched'],['GPU',d.gpu||'Not separately researched'],['Display',d.display||'Not separately researched'],['Device OS',d.os||'Not separately researched'],['HUD Evidence',hudState]];
+ return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
 }
 function setCurrent(p,msg){
  current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],calibrationGuns:Array.isArray(p.calibrationGuns)?p.calibrationGuns.slice(0,3):[],v:p.v.map(clamp)};
@@ -375,7 +378,7 @@ function setCurrent(p,msg){
  $('profileView').innerHTML='<div class="card"><div class="title">'+esc(msg||'PROFILE LOADED')+'</div>'+profileHTML(current)+'</div><div class="card">'+renderSensi(current.v)+'</div>';
  $('profileCodeBox').innerHTML='<div class="codebox">'+esc(code)+'</div>';
  $('profileCode').value=code;
- $('calForm').style.display='block';$('calStatus').className='notice ok';$('calStatus').textContent='Profile ready. Exact gun selection, HUD evidence and device context are locked to this Profile ID.';
+ $('calForm').style.display='block';$('calStatus').className='notice ok';$('calStatus').innerHTML='<b>COMPLETE PROFILE RESTORED.</b> Device age, RAM, DPI, refresh, touch, fingers, fire button, game/player settings, sensitivity mode, aim precision, OB, HUD evidence, device research, exact gun profile and current sensitivity are loaded from this Profile ID.';
  renderCalibrationGuns();renderHistory();save();
  backendSaveProfile(current);
 }
@@ -506,7 +509,9 @@ $('buildBtn').onclick=async()=>{
  buildBusy=true;$('buildBtn').disabled=true;$('buildProgress').classList.add('on');$('buildBar').style.width='15%';$('buildStage').textContent='Reading device + touch inputs…';
  try{
    if($('hud').files?.[0]&&!hud){$('buildBar').style.width='35%';$('buildStage').textContent='Deep-scanning complete HUD layout…';try{hud=await readHUDForAnalysis($('hud').files[0]);}catch(e){$('hudMeta').textContent='HUD analysis unavailable: '+e.message+' · continuing without HUD evidence';}}
-   $('buildBar').style.width='60%';$('buildStage').textContent='Mapping game/style + exact gun profile…';
+   $('buildBar').style.width='55%';$('buildStage').textContent='Researching device profile + mapping game/gun inputs…';
+   try{const dr=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent($('device').value.trim()));const dj=await dr.json();deviceResearch=dj?.device||null;}catch(e){deviceResearch=null;}
+   $('buildBar').style.width='68%';$('buildStage').textContent='Mapping exact gun profile + all saved inputs…';
    await new Promise(r=>setTimeout(r,120));
    $('buildBar').style.width='82%';$('buildStage').textContent='Applying device + HUD evidence…';
    current=makeStarting();
@@ -518,7 +523,7 @@ $('buildBtn').onclick=async()=>{
 };
 $('calBtn').onclick=calibrate;
 renderLearning();
-$('calLoadCode').onclick=async()=>{const code=$('calCode').value.trim();if(!code)return alert('12–15 digit Profile Code paste karo.');try{const p=isNumericProfileCode(code)?await backendLoadProfile(code):decode(code);setCurrent(p,'PROFILE LOADED FOR CALIBRATION');$('calCode').value=codeFor(current);$('calCodeStatus').textContent='Loaded. Gun Profile: '+current.guns.join(' + ')+' · HUD + device context restored.';}catch(e){$('calCodeStatus').textContent='Invalid / unavailable profile code.';alert('Profile code invalid, incomplete, ya server par nahi mila.')}};
+$('calLoadCode').onclick=async()=>{const code=$('calCode').value.trim();if(!code)return alert('12–15 digit Profile Code paste karo.');try{const p=isNumericProfileCode(code)?await backendLoadProfile(code):decode(code);setCurrent(p,'PROFILE LOADED FOR CALIBRATION');$('calCode').value=codeFor(current);$('calCodeStatus').innerHTML='<b>Complete profile loaded.</b> Device: '+esc(current.device)+' · Age: '+esc(current.age)+' · RAM: '+esc(current.ram)+' · Game: '+esc(current.gameMode)+' · Player: '+esc(current.playerMode)+' · Style: '+esc(current.style)+' · Guns: '+esc(current.guns.join(' + '))+' · HUD + device context restored.';}catch(e){$('calCodeStatus').textContent='Invalid / unavailable profile code.';alert('Profile code invalid, incomplete, ya server par nahi mila.')}};
 $('calCopyCode').onclick=async()=>{if(!current)return alert('Pehle profile build/load karo.');const code=codeFor(current);try{await navigator.clipboard.writeText(code);$('calCopyCode').textContent='UPDATED CODE COPIED';setTimeout(()=>$('calCopyCode').textContent='COPY CURRENT CODE',1400)}catch(e){alert(code)}};
 $('loadProfile').onclick=async()=>loadCodeIntoProfile($('profileCode').value);
 $('copyProfile').onclick=async()=>{if(!current)return alert('No profile');const c=codeFor(current);try{await navigator.clipboard.writeText(c);$('copyProfile').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyProfile').textContent='COPY CURRENT CODE',1200)}catch(e){alert(c)}};
