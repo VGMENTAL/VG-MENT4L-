@@ -1307,8 +1307,9 @@ JSON:
 
 async function runGeminiTextFix(payload) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
-  const model = String(process.env.GEMINI_MODEL || 'gemini-3.8-flash').trim();
   if (!key) return null;
+  const models=[String(process.env.GEMINI_MODEL||'gemini-3.8-flash'),'gemini-3.8-flash','gemini-2.5-flash','gemini-2.5-flash-lite']
+    .filter((m,i,a)=>m&&a.indexOf(m)===i);
   const prompt = `You are the final sensitivity refinement analyst for VG MENT4L Free Fire MAX.
 Analyze ALL selected problems and the player's custom sentence together. Do not ignore the custom sentence.
 BASE SENSITIVITY: ${JSON.stringify(payload.sensitivity)}
@@ -1318,17 +1319,25 @@ PROFILE/GAME CONTEXT: ${JSON.stringify(payload.context || {})}
 Return ONLY JSON:
 {"sensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"diagnosis":"","changes":[""],"confidence":"low|medium|high"}
 Keep values 0-200. Make the smallest useful changes supported by the evidence. RAM is context only.`;
-  const r = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions', {
-    method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, input: [{ type: 'text', text: prompt }] })
-  }, 120000);
-  const text = await r.text();
-  if (!r.ok) throw new Error(`Gemini refinement HTTP ${r.status}: ${text.slice(0, 1000)}`);
-  const out = parseJsonOutput(extractText(JSON.parse(text)));
-  out.sensitivity = normSens(out.sensitivity);
-  out.changes = Array.isArray(out.changes) ? out.changes.slice(0, 20) : [];
-  out.model = model;
-  return out;
+  let lastError='';
+  for(const model of models){
+    try{
+      const r=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions',{
+        method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
+        body:JSON.stringify({model,input:[{type:'text',text:prompt}]})
+      },30000);
+      const text=await r.text();
+      if(!r.ok){lastError=`Gemini refinement HTTP ${r.status}: ${text.slice(0,500)}`;continue;}
+      const out=parseJsonOutput(extractText(JSON.parse(text)));
+      if(!out?.sensitivity)continue;
+      out.sensitivity=normSens(out.sensitivity);
+      out.changes=Array.isArray(out.changes)?out.changes.slice(0,20):[];
+      out.model=model;
+      return out;
+    }catch(e){lastError=String(e?.message||e);}
+  }
+  if(lastError) throw new Error(lastError);
+  return null;
 }
 
 async function saveNewProfile(clone) {
@@ -1367,7 +1376,14 @@ function profileCodeFingerprint(profile) {
     if (x && typeof x === 'object') {
       const o = {};
       Object.keys(x).sort().forEach(k => {
-        if (['code','createdAt','updatedAt','history','learning','time','refinedAt','calibrationGuns'].includes(k)) return;
+        if (['code','createdAt','updatedAt','history','learning','time','refinedAt','calibrationGuns','deviceResearch','deviceResearchStatus','browserRuntime','gameplayAnalysis','analysisResult'].includes(k)) return;
+        if (k === 'hud' && x[k] && typeof x[k] === 'object') {
+          const hv = { ...x[k] };
+          delete hv.analysis;
+          delete hv.rawAnalysis;
+          o[k] = clean(hv);
+          return;
+        }
         o[k] = clean(x[k]);
       });
       return o;
