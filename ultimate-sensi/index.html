@@ -103,7 +103,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 
 <div class="card" id="calForm" style="display:none">
 <div class="title">Test context</div>
-<label style="margin-top:10px">Gun(s)</label><div class="chips" id="calGuns"></div>
+<label style="margin-top:10px">Calibration Test Gun(s) — maximum 3</label><div class="sub" style="margin-bottom:8px">All Guns profile mein yahan sirf is test round ke 1–3 guns choose karo. Base profile All Guns hi rahega.</div><div class="chips" id="calGuns"></div>
 <label style="margin-top:12px">Problem range(s) — multiple allowed</label><div class="chips" id="ranges"></div>
 <label style="margin-top:12px">Problem(s) — multiple allowed</label>
 <div class="problem-grid" id="problems"></div>
@@ -184,7 +184,12 @@ function clamp(n){return Math.max(0,Math.min(200,Math.round(Number(n)||0)))}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function b64(s){const bytes=new TextEncoder().encode(s);let bin='';bytes.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function unb64(s){const b=s.replace(/-/g,'+').replace(/_/g,'/'),p=b+'='.repeat((4-b.length%4)%4),bin=atob(p);return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
-function codeFor(p){return 'AUX3-'+b64(JSON.stringify({v:3,profile:p}))}
+function codeFor(p){
+ // The transfer code carries the complete base profile PLUS the exact
+ // calibration test-gun context used to produce the latest adjustment.
+ const profile={...p,calibrationGuns:Array.isArray(p?.calibrationGuns)?p.calibrationGuns.slice(0,3):[]};
+ return 'AUX3-'+b64(JSON.stringify({v:3,profile}));
+}
 function decode(code){
  const s=String(code||'').trim().replace(/\s+/g,'');
  if(!s.startsWith('AUX3-')&&!s.startsWith('AUX2-'))throw Error('Invalid code');
@@ -311,7 +316,7 @@ function profileHTML(p){
  return '<div class="profile">'+[['Device',p.device],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['RAM',p.ram],['DPI',p.dpi],['Refresh',p.hz+' Hz'],['Touch',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['OB',p.ob],['Gun Profile',p.guns.includes('All Guns')?'All Guns · Full Weapon Pool':p.guns.join(' + ')]].map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
 }
 function setCurrent(p,msg){
- current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],v:p.v.map(clamp)};
+ current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],calibrationGuns:Array.isArray(p.calibrationGuns)?p.calibrationGuns.slice(0,3):[],v:p.v.map(clamp)};
  $('profileView').innerHTML='<div class="card"><div class="title">'+esc(msg||'PROFILE LOADED')+'</div>'+profileHTML(current)+'</div><div class="card">'+renderSensi(current.v)+'</div>';
  $('profileCodeBox').innerHTML='<div class="codebox">'+esc(codeFor(current))+'</div>';
  $('profileCode').value=codeFor(current);
@@ -327,9 +332,43 @@ function tab(id){document.querySelectorAll('.section').forEach(x=>x.classList.re
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 
 function renderCalibrationGuns(){
- const box=$('calGuns'),list=current?.guns?.includes('All Guns')?['All Guns']:current?.guns||[];
- box.innerHTML=list.map(x=>'<span class="chip" data-value="'+esc(x)+'">'+esc(x)+'</span>').join('');
- box.onclick=e=>{const c=e.target.closest('.chip');if(c)c.classList.toggle('on')};
+ const box=$('calGuns');
+ const baseGuns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
+ const testGuns=Array.isArray(current?.calibrationGuns)?current.calibrationGuns:[];
+ const allProfile=baseGuns.includes('All Guns');
+ // All Guns is the base profile, not a calibration test weapon.
+ // For an All Guns profile, allow up to 3 independent test guns.
+ // For an exact-gun profile, keep calibration limited to that profile's guns.
+ const list=allProfile?WEAPONS.filter(x=>x[0]!=='All Guns').map(x=>x[0]):baseGuns;
+ box.innerHTML=list.map(x=>{
+   const on=testGuns.includes(x)?' on':'';
+   return '<span class="chip'+on+'" data-value="'+esc(x)+'">'+esc(x)+'</span>';
+ }).join('');
+ const count=testGuns.length;
+ const hint=allProfile
+   ? (count+'/3 test guns selected — base profile remains All Guns')
+   : ('Profile guns: '+baseGuns.join(' + '));
+ const existing=$('calGunHint'); if(existing)existing.textContent=hint;
+ box.onclick=e=>{
+   const chip=e.target.closest('.chip');if(!chip)return;
+   const val=chip.dataset.value;
+   const selectedNow=[...box.querySelectorAll('.chip.on')].map(x=>x.dataset.value);
+   if(!chip.classList.contains('on') && allProfile && selectedNow.length>=3){
+     $('calMsg').textContent='Maximum 3 calibration test guns allowed.';
+     return;
+   }
+   chip.classList.toggle('on');
+   const now=[...box.querySelectorAll('.chip.on')].map(x=>x.dataset.value);
+   current.calibrationGuns=now;
+   if(existing)existing.textContent=allProfile
+     ? (now.length+'/3 test guns selected — base profile remains All Guns')
+     : ('Profile guns: '+baseGuns.join(' + '));
+   save();
+ };
+ if(!existing){
+   const d=document.createElement('div');d.id='calGunHint';d.className='small';d.style.marginTop='8px';
+   d.textContent=hint;box.parentNode.insertBefore(d,box.nextSibling);
+ }
 }
 function renderHistory(){
  renderLearning();
@@ -350,8 +389,12 @@ function problemDelta(type,axis){
 function calibrate(){
  if(!current)return alert('Pehle profile build/load karo.');
  const guns=selected('calGuns'),ranges=selected('ranges'),problems=selected('problems');
- if(!guns.length||!ranges.length||!problems.length)return alert('Gun, range aur actual problem select karo.');
+ if(!guns.length||!ranges.length||!problems.length)return alert('1–3 test guns, range aur actual problem select karo.');
+ if(guns.length>3)return alert('Maximum 3 calibration test guns allowed.');
  if(pendingCalibration)return alert('Pehle current calibration ka feedback do.');
+ // Keep the original weapon scope untouched. The selected guns here are
+ // calibration evidence only, especially when the base profile is All Guns.
+ current.calibrationGuns=[...guns];
  const delta=[0,0,0,0,0,0];
  problems.forEach(label=>{
   const type=PROBLEMS.find(x=>x[0]===label)?.[1];
@@ -372,6 +415,7 @@ function calibrate(){
 function finishFeedback(result){
  if(!pendingCalibration)return;
  const p=pendingCalibration;
+ current.calibrationGuns=[...p.guns].slice(0,3);
  if(result==='worse'){
   current.v=[...p.before];
   setCurrent(current,'CALIBRATION REVERTED · WORSE TEST RESULT');
