@@ -1030,6 +1030,12 @@ const server = http.createServer(async (req, res) => {
       if(researched) return json(res,200,{ok:true,device:researched,verified:true,researched:true,query:q,notice:'Device research profile found from external specifications database.',sourceType:'spec-database'});
       return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Device could not be verified from the available specification sources; hardware specs were not invented.'});
     }
+    if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
+      const hudKey=decodeURIComponent(u.pathname.slice('/api/hud-analysis/'.length));
+      const cached=dbReady ? await dbGetHudAnalysis(hudKey) : localGetHudAnalysis(hudKey);
+      if(cached) return json(res,200,{ok:true,analysis:cached,hudKey,cached:true});
+      return json(res,404,{ok:false,error:'HUD analysis cache not found'});
+    }
     if (req.method === 'POST' && u.pathname === '/api/hud-analyze') {
       const b=await readBody(req, MAX_BODY);
       if(!b.imageData) return json(res,400,{error:'HUD image is required'});
