@@ -192,16 +192,72 @@ async function fetchExternalPhoneSpec(name){
     const ctl=new AbortController();
     const timer=setTimeout(()=>ctl.abort(),7000);
     try{
-      const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'VG-MENT4L-DeviceResearch/1.0','Accept':'application/json'}});
+      const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'VG-MENT4L-DeviceResearch/2.0','Accept':'application/json'}});
       if(!r.ok) continue;
       const j=await r.json();
       const rows=Array.isArray(j)?j:(Array.isArray(j.data)?j.data:(Array.isArray(j.results)?j.results:[]));
-      const exact=rows.find(x=>normalizeDevice(firstString(x.model_name,x.model,x.phone_name)).includes(normalizeDevice(q)) || normalizeDevice(q).includes(normalizeDevice(firstString(x.model_name,x.model,x.phone_name))));
-      const candidate=exact||rows[0];
+      const qn=normalizeDevice(q);
+      const exact=rows.find(x=>{
+        const n=normalizeDevice(firstString(x.model_name,x.model,x.phone_name));
+        return n===qn || (n.length>3 && qn.length>3 && (n.includes(qn)||qn.includes(n)));
+      });
+      const candidate=exact;
       const mapped=mapExternalPhoneSpec(candidate,q);
       if(mapped) return mapped;
     }catch{}
     finally{clearTimeout(timer);}
+  }
+  return null;
+}
+
+async function fetchGeminiDeviceResearch(name, runtimeContext={}){
+  const key=String(process.env.GEMINI_API_KEY||'').trim();
+  const q=String(name||'').trim();
+  if(!key||!q) return null;
+  const models=[String(process.env.GEMINI_MODEL||'gemini-3.8-flash'),'gemini-3.7-flash','gemini-3.6-flash','gemini-3.5-flash-lite']
+    .filter((m,i,a)=>m&&a.indexOf(m)===i);
+  const prompt=`Research the exact smartphone model named "${q}" for a Free Fire MAX sensitivity calibration profile.
+This is a DEVICE-SPECS research task, not a guess. Identify the exact model/variant first.
+Use web search/grounded sources when available. Prefer official manufacturer specifications, then GSMArena/Notebookcheck/other reputable specification databases.
+Return ONLY JSON.
+Rules:
+- Never substitute a different phone just because the name is similar.
+- If exact model cannot be verified, return verified=false and unknown fields.
+- Do not invent touch sampling, chipset, GPU, refresh rate or RAM.
+- Include source URLs for facts.
+- Give the most useful gaming-related hardware facts: chipset/SoC, GPU, RAM variants, display size/resolution/refresh, touch sampling if actually documented, OS, battery/cooling/gaming features.
+- Mention variant/region uncertainty when relevant.
+RUNTIME SIGNALS FROM THE USER'S ACTUAL BROWSER:
+${JSON.stringify(runtimeContext)}
+JSON:
+{"verified":true,"canonical":"","brand":"","platform":"Android","variant":"","chipset":"","gpu":"","ram":"","display":"","refreshRate":"","touchSampling":"","os":"","gaming":"","source":"","sources":[],"confidence":"low|medium|high","notes":""}`;
+  for(const model of models){
+    try{
+      const r=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
+        method:'POST',
+        headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          contents:[{role:'user',parts:[{text:prompt}]}],
+          tools:[{google_search:{}}],
+          generationConfig:{temperature:0,maxOutputTokens:1200}
+        })
+      },30000);
+      const tx=await r.text();
+      if(!r.ok) continue;
+      const out=parseJsonOutput(extractText(JSON.parse(tx)));
+      if(!out || out.verified!==true || !out.canonical) continue;
+      const cleaned={
+        canonical:String(out.canonical).trim(),brand:String(out.brand||'').trim(),platform:String(out.platform||'Android'),
+        variant:String(out.variant||'').trim(),chipset:String(out.chipset||'Not verified').trim(),gpu:String(out.gpu||'Not verified').trim(),
+        ram:String(out.ram||'Not verified').trim(),display:String(out.display||'Not verified').trim(),
+        refreshRate:String(out.refreshRate||'Not verified').trim(),touchSampling:String(out.touchSampling||'Not verified').trim(),
+        os:String(out.os||'Not verified').trim(),gaming:String(out.gaming||'').trim(),
+        source:String(out.source||'').trim(),sources:Array.isArray(out.sources)?out.sources.slice(0,8).map(String):[],
+        sourceType:'gemini-grounded-research',sourceLabel:'Gemini web-grounded device research',
+        match:'research',query:q,confidence:String(out.confidence||'medium'),notes:String(out.notes||'').trim()
+      };
+      return cleaned;
+    }catch(e){}
   }
   return null;
 }
@@ -1024,11 +1080,21 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && u.pathname === '/api/device-research') {
       const q = u.searchParams.get('device') || '';
+      const runtimeContext = {
+        ua:u.searchParams.get('ua')||'',
+        screen:u.searchParams.get('screen')||'',
+        dpr:u.searchParams.get('dpr')||'',
+        touch:u.searchParams.get('touch')||'',
+        width:u.searchParams.get('width')||'',
+        height:u.searchParams.get('height')||''
+      };
       const hit = lookupDevice(q);
       if(hit) return json(res,200,{ok:true,device:hit,verified:true,query:q,notice:'Exact device profile found.',sourceType:hit.sourceType||'official'});
       const researched=await fetchExternalPhoneSpec(q);
-      if(researched) return json(res,200,{ok:true,device:researched,verified:true,researched:true,query:q,notice:'Device research profile found from external specifications database.',sourceType:'spec-database'});
-      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Device could not be verified from the available specification sources; hardware specs were not invented.'});
+      if(researched) return json(res,200,{ok:true,device:researched,verified:true,researched:true,query:q,notice:'Exact device research profile found from specification database.',sourceType:'spec-database'});
+      const grounded=await fetchGeminiDeviceResearch(q,runtimeContext);
+      if(grounded) return json(res,200,{ok:true,device:grounded,verified:true,researched:true,grounded:true,query:q,notice:'Exact device research completed with web-grounded AI.',sourceType:'gemini-grounded-research'});
+      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Exact device could not be verified. No hardware details were invented.'});
     }
     if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
       const hudKey=decodeURIComponent(u.pathname.slice('/api/hud-analysis/'.length));
