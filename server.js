@@ -410,7 +410,7 @@ async function fetchGsmArenaResearch(name){
       const dr=await fetch(detailUrl,{signal:dctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
       if(!dr.ok)return null;
       const dh=await dr.text();
-      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\s*\\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
+      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\s*\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
       const field=label=>{
         const re=new RegExp('<td[^>]*class="ttl"[^>]*>[\s\S]*?'+label+'[\s\S]*?<\\/td>\s*<td[^>]*class="nfo"[^>]*>([\s\S]*?)<\\/td>','i');
         const z=dh.match(re); return z?strip(z[1]):'';
