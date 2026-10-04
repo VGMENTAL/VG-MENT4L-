@@ -134,7 +134,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="sub">Agar sensitivity kisi aur website, friend, old phone, screenshot ya manual setting se mili hai aur AIMCRAFT Profile ID nahi hai, yahan six current values daalo. Import ke baad NEW Profile ID automatically banega aur server par save hoga. Is code ko Calibration Lab mein load karke adjustment kar sakte ho.</div>
 <div class="grid" style="margin-top:10px">
 <div><label>Sensitivity Mode</label><select id="manualSensMode"><option value="Default">Default</option><option value="High">High</option></select></div>
-<div><label>Device Name</label><input id="manualDevice" type="text" autocomplete="off" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15"></div>
+<div><label>Device Name</label><input id="manualDevice" type="text" autocomplete="off" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15"><button class="secondary" id="manualDeviceAnalyze" style="width:100%;margin-top:8px">DEVICE ANALYZING</button></div>
 </div>
 <div class="grid3" style="margin-top:10px">
 <div><label>General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
@@ -150,9 +150,9 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="problem-grid" id="manualProblems" style="margin-top:10px"></div>
 <label style="margin-top:12px">APNI PROBLEM / EXTRA ISSUE LIKHO</label>
 <textarea id="manualCustomProblem" rows="3" placeholder="Example: M1887 close range mein drag neck se upar chala jata hai aur MP40 spray chest pe rukta hai..."></textarea>
-<div id="manualDeviceResearch" class="notice" style="margin-top:10px">Device Name dalne ke baad device research automatically hogi.</div>
+<div id="manualDeviceResearch" class="notice" style="margin-top:10px">Device Name dalo → <b>DEVICE ANALYZING</b> dabao → device details verify/show hongi. Uske baad sensitivity + problems ke liye <b>SENSITIVITY ANALYZING</b> dabao.</div>
 </div>
-<button class="primary" id="importManual" style="margin-top:11px">ANALYZE PROBLEM + CREATE NEW SENSITIVITY</button>
+<button class="primary" id="importManual" style="margin-top:11px">SENSITIVITY ANALYZING + CREATE NEW PROFILE</button>
 <div id="manualImportStatus" class="resultMsg" style="margin-top:10px"></div>
 </div>
 <div id="updateResult"></div>
@@ -567,14 +567,17 @@ async function importManual(){
  const device=String($('manualDevice').value||'').trim();
  const selectedProblems=[...$('manualProblems').querySelectorAll('.problem.on')];
  const custom=String($('manualCustomProblem').value||'').trim();
- if(!device)return alert('Device Name dalo. Example: POCO M7 / Samsung A55 / iPhone 15 Pro Max');
+ if(!device)return alert('Pehle Device Name dalo.');
+ if(!deviceResearch || !deviceResearch.query || String(deviceResearch.query).toLowerCase()!==device.toLowerCase()){
+   return alert('Pehle DEVICE ANALYZING button dabao aur device research complete hone do.');
+ }
  if(!selectedProblems.length&&!custom)return alert('Kam se kam 1 problem select karo ya apni problem likho.');
- const btn=$('importManual');btn.disabled=true;btn.textContent='RESEARCHING DEVICE + ANALYSING SENSITIVITY…';
+ const btn=$('importManual');btn.disabled=true;btn.textContent='SENSITIVITY ANALYZING…';
+ $('manualImportStatus').innerHTML='<div class="notice warn"><b>SENSITIVITY ANALYZING…</b><br>Original sensitivity + selected problems + device profile compare karke new values calculate ki ja rahi hain.</div>';
  try{
-   const researched=await researchManualDevice(true);
    const issues=selectedProblems.map(x=>x.dataset.value);
    const runtime={ua:navigator.userAgent||'',screen:(screen.width||0)+'x'+(screen.height||0),dpr:window.devicePixelRatio||1,touch:navigator.maxTouchPoints||0,width:screen.width||0,height:screen.height||0};
-   const context={device,deviceResearch:researched||{canonical:device,verified:false},sensitivityMode:sensMode,source:'manual-import',browserRuntime:runtime,originalSensitivity:before};
+   const context={device,deviceResearch:deviceResearch,sensitivityMode:sensMode,source:'manual-import',browserRuntime:runtime,originalSensitivity:before};
    let after=null,diagnosis='',changes=[],usedAI=false;
    try{
      const rr=await fetch(HUD_API+'/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:{general:before[0],red_dot:before[1],scope_2x:before[2],scope_4x:before[3],sniper:before[4],free_look:before[5]},issues,customText:custom,context})});
@@ -585,31 +588,61 @@ async function importManual(){
        diagnosis=String(rd.diagnosis||'');changes=Array.isArray(rd.changes)?rd.changes:[];usedAI=!!rd.model;
      }
    }catch(e){}
-   if(!after){
-     const delta=[0,0,0,0,0,0];
-     selectedProblems.forEach(el=>manualProblemDelta(el.dataset.type).forEach((n,i)=>delta[i]+=n));
-     const t=custom.toLowerCase();
-     if(/head.*upar|over|overshoot|fast|aage/.test(t))manualProblemDelta('overshoot').forEach((n,i)=>delta[i]+=n);
-     if(/chest|neck|short|pahunch|slow|under/.test(t))manualProblemDelta('undershoot').forEach((n,i)=>delta[i]+=n);
-     if(/recoil|spray|shake|hil/.test(t))manualProblemDelta('recoil').forEach((n,i)=>delta[i]+=n);
-     for(let i=0;i<6;i++)delta[i]=Math.max(-8,Math.min(8,Math.round(delta[i])));
-     after=before.map((x,i)=>clamp(x+delta[i]));changes=['Conservative local problem-based fallback applied.'];
+
+   // Never accept an AI response that simply returns the imported values.
+   // Build a deterministic adjustment from every selected issue + custom text,
+   // then force a bounded minimum change if the combined issues cancel out.
+   let delta=[0,0,0,0,0,0];
+   selectedProblems.forEach(el=>manualProblemDelta(el.dataset.type).forEach((n,i)=>delta[i]+=n));
+   const t=custom.toLowerCase();
+   if(/head.*upar|over|overshoot|fast|aage|zyada upar|upar chala/.test(t))manualProblemDelta('overshoot').forEach((n,i)=>delta[i]+=n);
+   if(/chest|neck|short|pahunch|slow|under|head tak drag nahi|lock nahi/.test(t))manualProblemDelta('undershoot').forEach((n,i)=>delta[i]+=n);
+   if(/recoil|spray|shake|hil|crosshair/.test(t))manualProblemDelta('recoil').forEach((n,i)=>delta[i]+=n);
+   if(/scope|shift/.test(t))manualProblemDelta('scopeShift').forEach((n,i)=>delta[i]+=n);
+   for(let i=0;i<6;i++)delta[i]=Math.max(-10,Math.min(10,Math.round(delta[i])));
+
+   const aiSame=Array.isArray(after)&&after.length===6&&after.every((x,i)=>x===before[i]);
+   if(!Array.isArray(after)||after.length!==6||aiSame){
+     after=before.map((x,i)=>clamp(x+delta[i]));
+     if(after.every((x,i)=>x===before[i])){
+       // Multiple opposite problems can mathematically cancel. Still make a
+       // small, transparent correction on the most relevant axes.
+       const hasRecoil=/recoil|spray|shake|hil|crosshair/.test(t)||issues.some(x=>/recoil|shake|drift/.test(x));
+       const hasChest=/chest|neck|under|slow|pahunch/.test(t)||issues.some(x=>/chest|neck|slow|under/.test(x));
+       const fallback=[0,0,0,0,0,0];
+       if(hasRecoil){fallback[1]=-2;fallback[2]=-3;fallback[3]=-3;fallback[4]=-1;}
+       else if(hasChest){fallback[0]=4;fallback[1]=4;fallback[2]=3;fallback[3]=2;}
+       else {fallback[0]=-2;fallback[1]=-2;fallback[2]=-1;}
+       after=before.map((x,i)=>clamp(x+fallback[i]));
+       delta=fallback;
+     }
+     changes=[...changes,'Imported sensitivity was changed using the selected problems; unchanged AI output was rejected.'];
+   }else{
+     // AI produced a change: keep it, but report the actual delta explicitly.
+     delta=after.map((x,i)=>x-before[i]);
+     if(delta.every(n=>n===0)){
+       after=before.map((x,i)=>clamp(x+delta[i]));
+     }
    }
+
    const p=makeStarting();
-   p.v=after;p.device=device;p.deviceName=device;p.deviceResearch=researched;p.sensMode=sensMode;p.source='manual-import';
-   p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),originalValues:before,values:after,device,sensMode,problems:issues,customProblem:custom,diagnosis,changes,aiRefined:usedAI,browserRuntime:runtime};
+   p.v=after;p.device=device;p.deviceName=device;p.deviceResearch=deviceResearch;p.sensMode=sensMode;p.source='manual-import';
+   p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),originalValues:before,values:after,device,sensMode,problems:issues,customProblem:custom,diagnosis,changes,aiRefined:usedAI,browserRuntime:runtime,delta};
    p.ob=$('ob')?.value||'OB55';
    setCurrent(p,'MANUAL SENSITIVITY ANALYSED · NEW PROFILE ID CREATED');
    const code=codeFor(current);
    await backendSaveProfile(current);
    const labels=['General','Red Dot','2× Scope','4× Scope','Sniper','Free Look'];
-   const sensGrid=after.map((v,i)=>'<div class="manualSensiAxis"><small>'+labels[i]+'</small><strong>'+v+'</strong><em>BEFORE '+before[i]+' → '+v+'</em></div>').join('');
-   $('manualImportStatus').innerHTML='<div class="notice ok manualSensiResult"><b style="font-size:18px">NEW SENSITIVITY + NEW PROFILE ID CREATED</b><br><span style="font-size:14px">Device: '+esc(device)+' · Mode: '+esc(sensMode)+'</span><br><span style="font-size:13px">Problems: '+esc(issues.join(' + ')||'Custom issue')+'</span><div class="manualSensiGrid">'+sensGrid+'</div><div class="small" style="margin-top:10px">'+esc(diagnosis||changes.join(' · ')||'Device research + problem analysis used for adjustment.')+'</div><div style="margin-top:12px;font-weight:900">NEW PROFILE ID</div><div class="codebox" style="font-size:18px;margin-top:6px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Device research + problem analysis save ho gaya. Ye NEW Profile ID isi updated sensitivity profile ko identify karta hai.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%;font-size:14px">OPEN CALIBRATION FOR THIS NEW PROFILE</button></div>';
+   const sensGrid=after.map((v,i)=>{
+     const d=v-before[i], arrow=d>0?'↑':d<0?'↓':'→';
+     return '<div class="manualSensiAxis"><small>'+labels[i]+'</small><strong>'+v+'</strong><em>BEFORE '+before[i]+' → '+v+' ('+arrow+' '+(d>0?'+':'')+d+')</em></div>';
+   }).join('');
+   $('manualImportStatus').innerHTML='<div class="notice ok manualSensiResult"><b style="font-size:18px">NEW SENSITIVITY + NEW PROFILE ID CREATED</b><br><span style="font-size:14px">Device: '+esc(device)+' · Mode: '+esc(sensMode)+'</span><br><span style="font-size:13px">Problems: '+esc(issues.join(' + ')||'Custom issue')+'</span><div class="manualSensiGrid">'+sensGrid+'</div><div class="small" style="margin-top:10px"><b>WHAT CHANGED:</b> '+esc(changes.join(' · ')||'Problem-based adjustment applied.')+'</div><div style="margin-top:12px;font-weight:900">NEW PROFILE ID</div><div class="codebox" style="font-size:18px;margin-top:6px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Ye NEW Profile ID isi updated sensitivity profile ko identify karta hai. Original values aur changes bhi save hain.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%;font-size:14px">OPEN CALIBRATION FOR THIS NEW PROFILE</button></div>';
    const omc=$('openManualCalibration');if(omc)omc.onclick=()=>{ $('calCode').value=code;tab('calibrate');$('calCodeStatus').textContent='Manual problem-fixed profile ready: '+code; };
  }catch(e){
    $('manualImportStatus').innerHTML='<div class="notice warn">Analysis failed: '+esc(e.message||e)+'</div>';
  }finally{
-   btn.disabled=false;btn.textContent='ANALYZE PROBLEM + CREATE NEW SENSITIVITY';
+   btn.disabled=false;btn.textContent='SENSITIVITY ANALYZING + CREATE NEW PROFILE';
  }
 }
 $('hud').onchange=async()=>{
@@ -691,15 +724,29 @@ function wireAIMCRAFT(){
   $('loadUpdate').onclick=()=>loadForUpdate($('updateCode').value);
   $('applyOb').onclick=updateOB;
   $('importManual').onclick=importManual;
-  let manualResearchTimer=null;
-  $('manualDevice').addEventListener('input',()=>{
-    clearTimeout(manualResearchTimer);
-    deviceResearch=null;
+  $('manualDeviceAnalyze').onclick=async()=>{
     const v=$('manualDevice').value.trim();
-    if(!v){$('manualDeviceResearch').textContent='Device Name dalne ke baad device research automatically hogi.';return;}
-    manualResearchTimer=setTimeout(()=>researchManualDevice(false),700);
+    if(!v)return alert('Device Name dalo. Example: POCO M7 5G / Samsung A55 / iPhone 15 Pro Max');
+    const b=$('manualDeviceAnalyze');
+    b.disabled=true;b.textContent='DEVICE ANALYZING…';
+    try{
+      deviceResearch=null;
+      await researchManualDevice(true);
+      if(deviceResearch){
+        b.textContent='DEVICE ANALYZED ✓';
+      }else{
+        b.textContent='DEVICE ANALYZE FAILED';
+      }
+    }finally{
+      b.disabled=false;
+    }
+  };
+  $('manualDevice').addEventListener('input',()=>{
+    deviceResearch=null;
+    $('manualDeviceResearch').className='notice';
+    $('manualDeviceResearch').innerHTML='Device Name set karne ke baad <b>DEVICE ANALYZING</b> dabao.';
+    $('manualDeviceAnalyze').textContent='DEVICE ANALYZING';
   });
-  $('manualDevice').addEventListener('blur',()=>{if($('manualDevice').value.trim())researchManualDevice(false);});
 
   $('loadProfile').onclick=()=>loadCodeIntoProfile($('profileCode').value);
   $('copyProfile').onclick=()=>safeCopy(codeFor(current),$('copyProfile'),'CODE COPIED');
