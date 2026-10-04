@@ -387,7 +387,7 @@ async function fetchGsmArenaResearch(name){
     const clean=x=>decodeHtmlEntities(String(x||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
     const nq=normalizeDevice(q);
     const candidates=[];
-    const linkRe=/<a[^>]+href="([^"]+\.php)"[^>]*>([\s\S]*?)<\\/a>/gi;
+    const linkRe=/<a[^>]+href="([^"]+\.php)"[^>]*>([\s\S]*?)<\/a>/gi;
     let m;
     while((m=linkRe.exec(html))&&candidates.length<30){
       const href=m[1],title=clean(m[2]);
