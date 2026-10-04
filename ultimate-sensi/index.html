@@ -103,7 +103,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 
 <div class="card" id="calForm" style="display:none">
 <div class="title">Test context</div>
-<label style="margin-top:10px">Gun Profile</label><div class="sub" style="margin-bottom:8px">Yahi guns adjustment mein use hongi jo BUILD SENSI mein choose ki gayi thi. Calibration kisi doosri gun ko add nahi karega.</div><div class="chips" id="calGuns"></div><div class="notice" style="margin-top:10px">All Guns choose kiya tha → adjustment <b>All Guns</b> ka hoga. 3 guns choose kiye the → adjustment <b>sirf unhi 3 guns</b> ka hoga.</div><div class="card" style="margin:12px 0 0;padding:12px"><label>Profile Code — adjustment ke liye load karo</label><div class="sub" style="margin-bottom:8px">Code paste karke profile aur exact gun selection load karo.</div><input id="calCode" placeholder="12–15 digit Profile Code" style="width:100%"><div class="actions" style="margin-top:9px"><button class="secondary" id="calLoadCode">LOAD PROFILE CODE</button><button class="secondary" id="calCopyCode">COPY CURRENT CODE</button></div><div id="calCodeStatus" class="resultMsg" style="margin-top:8px"></div></div>
+<label style="margin-top:10px">Gun Profile</label><div class="sub" style="margin-bottom:8px">Yahi guns adjustment mein use hongi jo BUILD SENSI mein choose ki gayi thi. Calibration kisi doosri gun ko add nahi karega.</div><div class="chips" id="calGuns"></div><div class="notice" style="margin-top:10px">All Guns choose kiya tha → adjustment <b>All Guns</b> ka hoga. 3 guns choose kiye the → adjustment <b>sirf unhi 3 guns</b> ka hoga.</div><div class="card" style="margin:12px 0 0;padding:12px"><label>Profile Code — adjustment ke liye load karo</label><div class="sub" style="margin-bottom:8px">Code paste karke profile aur exact gun selection load karo.</div><input id="calCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code" style="width:100%"><div class="actions" style="margin-top:9px"><button class="secondary" id="calLoadCode">LOAD PROFILE CODE</button><button class="secondary" id="calCopyCode">COPY CURRENT CODE</button></div><div id="calCodeStatus" class="resultMsg" style="margin-top:8px"></div></div>
 <label style="margin-top:12px">Problem range(s) — multiple allowed</label><div class="chips" id="ranges"></div>
 <label style="margin-top:12px">Problem(s) — multiple allowed</label>
 <div class="problem-grid" id="problems"></div>
@@ -121,7 +121,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="title">OB UPDATE — KEEP THE PROFILE, UPDATE THE SENSITIVITY</div>
 <div class="sub">Load a profile code or paste six manual values. The updater preserves device, fingers, style and exact gun selection. Only sensitivity values are changed.</div>
 <div class="grid" style="margin-top:12px">
-<div class="full"><label>Profile code</label><input id="updateCode" placeholder="12–15 digit Profile Code"></div>
+<div class="full"><label>Profile code</label><input id="updateCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code"></div>
 <div><label>Old OB</label><select id="oldOb"><option>OB55</option><option>UNKNOWN</option></select></div>
 <div><label>Target OB</label><select id="targetOb"><option>OB55</option></select></div>
 </div>
