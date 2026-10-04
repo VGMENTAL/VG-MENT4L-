@@ -213,6 +213,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
 </div>
 
 <script>
+const API_BASE=(location.hostname==='vg-ment4l.onrender.com')?'':'https://vg-ment4l.onrender.com';
 const $=s=>document.querySelector(s);
 const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -286,7 +287,7 @@ async function fetchOfficialPatchText(ob){
   const url=OFFICIAL_OB_URLS[ob];
   if(!url) return null;
   try{
-    const r=await fetch('/api/patch-research?ob='+encodeURIComponent(ob),{cache:'no-store'});
+    const r=await fetch(API_BASE+'/api/patch-research?ob='+encodeURIComponent(ob),{cache:'no-store'});
     if(r.ok){const j=await r.json(); if(j.text) return {text:j.text,url:j.url||url,serverResearch:true};}
   }catch(e){}
   return null;
@@ -355,7 +356,7 @@ function setTargetOptions(){
 }
 async function loadServerConfig(){
   try{
-    const r=await fetch('/api/config',{cache:'no-store'});
+    const r=await fetch(API_BASE+'/api/config',{cache:'no-store'});
     if(!r.ok) throw new Error('config');
     const j=await r.json();
     const n=Number(j.latestObNumber);
@@ -390,7 +391,7 @@ function showObFacts(oldOb,targetOb){
 async function loadProfileRemoteOrLocal(code){
   code=String(code||'').trim().toUpperCase();
   try{
-    const r=await fetch('/api/profiles/'+encodeURIComponent(code),{cache:'no-store'});
+    const r=await fetch(API_BASE+'/api/profiles/'+encodeURIComponent(code),{cache:'no-store'});
     if(r.ok){const j=await r.json(); if(j.profile){BACKEND_AVAILABLE=true; localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(j.profile)); return {...j.profile,__source:'backend'};}}
   }catch(e){BACKEND_AVAILABLE=false;}
   const raw=localStorage.getItem('vg_ment4l_profile_'+code);
@@ -428,7 +429,7 @@ function saveUpdateHistory(kind,oldOb,targetOb,oldVals,newVals,code=''){
   let arr=[]; try{arr=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
   arr.unshift({time:new Date().toISOString(),kind,oldOb,targetOb,oldVals,newVals});
   localStorage.setItem(key,JSON.stringify(arr.slice(0,25)));
-  if(code){try{fetch('/api/updates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,kind,oldOb,targetOb,oldVals,newVals})}).catch(()=>{});}catch(e){}}
+  if(code){try{fetch(API_BASE+'/api/updates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,kind,oldOb,targetOb,oldVals,newVals})}).catch(()=>{});}catch(e){}}
 }
 
 function returningPlayerUpdate(base,p){
@@ -580,7 +581,7 @@ async function saveManualImportedProfile(code,sensitivity,preset,sourceOb,target
   const profile={code,manualImport:true,profileType:'manual-sensitivity',preset:String(preset||'Default'),obVersion:normalizeOb(targetOb)||LATEST_OB,sourceOb:normalizeOb(sourceOb)||'UNKNOWN',sensitivity:{...sensitivity},device:'Manual Import',playerMode:'Manual Import',playerStyle:'Manual',gameMode:'Manual',guns:[],allGuns:false,updatedAt:new Date().toISOString()};
   localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
   try{
-    const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
+    const r=await fetch(API_BASE+'/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
     return r.ok;
   }catch(e){return false;}
 }
@@ -647,7 +648,7 @@ function bindIssueFixers(){
     delete p.__source;
     localStorage.setItem('vg_ment4l_profile_'+(currentProfile.code||''),JSON.stringify(p));
     try{
-      const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+      const r=await fetch(API_BASE+'/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
       if(r.ok)BACKEND_AVAILABLE=true;
     }catch(e){BACKEND_AVAILABLE=false;}
     currentProfile={...p};
@@ -704,7 +705,7 @@ async function persistUpdatedProfile(profile,newVals,oldOb,target){
   delete next.__source;
   localStorage.setItem('vg_ment4l_profile_'+(next.code||''),JSON.stringify(next));
   try{
-    const r=await fetch('/api/profiles',{
+    const r=await fetch(API_BASE+'/api/profiles',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(next)
