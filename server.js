@@ -288,13 +288,13 @@ async function fetchWebSearchDeviceResearch(name){
       const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-Research/4.0)','Accept':'text/html'}});
       if(!r.ok)continue;
       const html=await r.text();
-      const blocks=[...html.matchAll(/<div[^>]*class="result__body"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>/gi)];
+      const blocks=[...html.matchAll(/<div[^>]*class="result__body"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi)];
       for(const m of blocks.slice(0,5)){
         const b=m[1];
         const a=b.match(/class="result__a"[^>]*href="([^"]+)"/i);
-        const sn=b.match(/class="result__snippet"[^>]*>([\\s\\S]*?)<\\/a?/i);
-        const title=decodeHtmlEntities((b.match(/class="result__a"[^>]*>([\\s\\S]*?)<\\/a>/i)||[])[1]||'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim();
-        const text=decodeHtmlEntities((sn?sn[1]:b).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+        const sn=b.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a?/i);
+        const title=decodeHtmlEntities((b.match(/class="result__a"[^>]*>([\s\S]*?)<\/a>/i)||[])[1]||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+        const text=decodeHtmlEntities((sn?sn[1]:b).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
         if(text)snippets.push(title+' '+text);
         if(a&&a[1])sources.push(a[1]);
       }
