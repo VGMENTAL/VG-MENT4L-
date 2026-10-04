@@ -148,7 +148,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="card">
 <div class="title">PROFILE TRANSFER</div>
 <div class="sub">The 12–15 digit code is a compact Profile ID. The server stores the complete profile behind it: device, HUD analysis, exact gun selection, settings, sensitivity and calibration state. A three-gun profile cannot silently become All Guns.</div>
-<input id="profileCode" placeholder="AUX2-..." style="margin-top:10px">
+<input id="profileCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code" style="margin-top:10px">
 <div class="actions" style="margin-top:9px"><button class="secondary" id="loadProfile">LOAD PROFILE</button><button class="secondary" id="copyProfile">COPY CURRENT CODE</button><button class="secondary" id="saveProfile">SAVE ON THIS PHONE</button></div>
 <div id="profileCodeBox" style="margin-top:10px"></div>
 </div>
@@ -190,7 +190,7 @@ function stableProfileObject(p){
    if(x&&typeof x==='object'){
      const o={};
      Object.keys(x).sort().forEach(k=>{
-       if(['code','createdAt','updatedAt','history','learning','time','refinedAt'].includes(k))return;
+       if(['code','createdAt','updatedAt','history','learning','time','refinedAt','calibrationGuns'].includes(k))return;
        o[k]=clean(x[k]);
      });
      return o;
@@ -380,9 +380,10 @@ function setCurrent(p,msg){
  backendSaveProfile(current);
 }
 function renderBuild(p){
+ setCurrent(p,'PROFILE READY');
+ p=current;
  $('buildResult').innerHTML='<div class="card"><div class="title">STARTING SENSITIVITY — TEST THIS FIRST</div>'+renderSensi(p.v)+'<div class="notice" style="margin-top:11px"><b>Profile Code</b><div class="sub">Ye 12–15 digit Profile ID hai. Is ID ke peeche server par device, HUD analysis, exact gun profile, settings aur current sensitivity stored hain. Same profile + same sensitivity = same code. Sensitivity/profile badlegi to code automatically naya hoga.</div><div class="codebox" style="margin-top:9px">'+esc(codeFor(p))+'</div><button class="secondary" id="copyBuildCode" style="margin-top:9px;width:100%">COPY PROFILE CODE</button></div><div class="notice" style="margin-top:11px"><b>Important:</b> these are starting values, not a guaranteed headshot preset. Test the same gun/range and feed the real problem into Calibration Lab.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="goCal">OPEN CALIBRATION LAB</button><button class="secondary" id="saveNow">SAVE PROFILE</button></div></div>';
  $('goCal').onclick=()=>tab('calibrate');$('copyBuildCode').onclick=async()=>{const code=codeFor(p);try{await navigator.clipboard.writeText(code);$('copyBuildCode').textContent='PROFILE CODE COPIED'}catch(e){alert(code)}};$('saveNow').onclick=()=>{setCurrent(p,'PROFILE SAVED');alert('Profile saved. The same code is also shown in Profile tab.')}
- setCurrent(p,'PROFILE READY');
 }
 function tab(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.tab===id));$(id).classList.add('on');window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
