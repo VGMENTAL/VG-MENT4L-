@@ -476,6 +476,47 @@ function profileHTML(p){
    (d.source?'<div class="small" style="margin-top:8px">Research source: '+esc(d.source)+'</div>':'')+
    (!p.deviceResearch?'<div class="notice warn" style="margin-top:9px"><b>DEVICE RESEARCH PENDING</b><br>Profile load ke waqt exact phone name se same VG MENT4L research engine chalaya jayega.</div>':'');
 }
+async function refreshCurrentDeviceResearch(targetProfile){
+ const out=targetProfile||current;
+ const deviceName=String(out?.device||out?.deviceName||out?.model||out?.phoneModel||'').trim();
+ if(!deviceName)return;
+ const status=document.querySelector('#calStatus');
+ if(status && (!out.deviceResearch || !out.deviceResearch.chipset)){
+   status.className='notice warn';
+   status.innerHTML='<b>DEVICE RESEARCHING…</b><br>'+esc(deviceName)+' ke exact model ki specifications live research se load ho rahi hain. Page ko band mat karo.';
+ }
+ try{
+   const runtime={ua:navigator.userAgent||'',screen:(screen?.width||0)+'x'+(screen?.height||0),dpr:window.devicePixelRatio||1,touch:navigator.maxTouchPoints||0,width:screen?.width||0,height:screen?.height||0};
+   const qs=new URLSearchParams({device:deviceName,ua:runtime.ua,screen:runtime.screen,dpr:String(runtime.dpr),touch:String(runtime.touch),width:String(runtime.width),height:String(runtime.height)});
+   const r=await fetch(HUD_API+'/api/device-research?'+qs.toString(),{cache:'no-store'});
+   const j=await r.json();
+   if(!r.ok)throw new Error(j?.notice||('HTTP '+r.status));
+   if(j?.device){
+     current.deviceResearch=j.device;
+     current.deviceResearchStatus={ok:true,notice:j.notice||'Device information collected and cross-checked.',at:new Date().toISOString()};
+     save();
+     // Research is excluded from the Profile ID fingerprint, so refreshing specs
+     // never changes the user's code.
+     const msg=$('calStatus');
+     if(msg){msg.className='notice ok';msg.innerHTML='<b>DEVICE RESEARCH COMPLETE ✓</b><br>'+esc(j.device.canonical||deviceName)+' · '+esc(j.device.chipset||'Chipset verified')+' · '+esc(j.device.refreshRate||'Refresh verified');}
+     $('profileView').innerHTML='<div class="card"><div class="title">PROFILE LOADED · DEVICE RESEARCH COMPLETE ✓</div>'+profileHTML(current)+'</div><div class="card">'+renderSensi(current.v)+'</div>';
+     renderCalibrationLoadedProfile();
+     await backendSaveProfile(current);
+   }else{
+     current.deviceResearchStatus={ok:false,notice:j?.notice||'Exact device research did not return a verified profile.',at:new Date().toISOString()};
+     save();
+     const msg=$('calStatus');
+     if(msg){msg.className='notice warn';msg.innerHTML='<b>DEVICE RESEARCH COULD NOT VERIFY THIS MODEL</b><br>'+esc(j?.notice||'No verified exact model was returned.');}
+     $('profileView').innerHTML='<div class="card"><div class="title">PROFILE LOADED · RESEARCH RESULT</div>'+profileHTML(current)+'</div><div class="card">'+renderSensi(current.v)+'</div>';
+     renderCalibrationLoadedProfile();
+   }
+ }catch(e){
+   current.deviceResearchStatus={ok:false,notice:'Device research request failed: '+String(e.message||e),at:new Date().toISOString()};
+   save();
+   const msg=$('calStatus');
+   if(msg){msg.className='notice warn';msg.innerHTML='<b>DEVICE RESEARCH REQUEST FAILED</b><br>'+esc(e.message||e);}
+ }
+}
 function setCurrent(p,msg){
  current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],calibrationGuns:Array.isArray(p.calibrationGuns)?p.calibrationGuns.slice(0,MAX_FOCUS_GUNS):[],v:p.v.map(clamp)};
  const code=codeFor(current);
@@ -485,6 +526,10 @@ function setCurrent(p,msg){
  $('calForm').style.display='block';$('calStatus').className='notice ok';$('calStatus').innerHTML='<b>COMPLETE PROFILE RESTORED.</b> Device age, RAM, DPI, refresh, touch, fingers, fire button, game/player settings, sensitivity mode, aim precision, OB, HUD evidence, device research, exact gun profile and current sensitivity are loaded from this Profile ID.';
  renderCalibrationGuns();renderCalibrationLoadedProfile();renderHistory();save();
  backendSaveProfile(current);
+ // Always refresh the phone specs after a profile is shown. This is a
+ // second safety path, so old profiles cannot remain stuck at "Auto research
+ // could not verify" when the normal hydration path was skipped/failed.
+ refreshCurrentDeviceResearch(current);
 }
 function renderBuild(p){
  setCurrent(p,'PROFILE READY');
