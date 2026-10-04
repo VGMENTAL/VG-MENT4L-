@@ -334,8 +334,9 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.
 function renderCalibrationGuns(){
  const box=$('calGuns');
  const baseGuns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
- const testGuns=Array.isArray(current?.calibrationGuns)?current.calibrationGuns:[];
  const allProfile=baseGuns.includes('All Guns');
+ const savedTestGuns=Array.isArray(current?.calibrationGuns)?current.calibrationGuns:[];
+ const testGuns=allProfile?savedTestGuns:(savedTestGuns.length?savedTestGuns:baseGuns.slice(0,3));
  // All Guns is the base profile, not a calibration test weapon.
  // For an All Guns profile, allow up to 3 independent test guns.
  // For an exact-gun profile, keep calibration limited to that profile's guns.
