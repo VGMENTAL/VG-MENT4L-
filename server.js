@@ -186,7 +186,8 @@ async function fetchExternalPhoneSpec(name){
   if(!q) return null;
   const urls=[
     'https://phone-specs-api.vercel.app/search?query='+encodeURIComponent(q),
-    'https://phone-specs-api.vercel.app/search?q='+encodeURIComponent(q)
+    'https://phone-specs-api.vercel.app/search?q='+encodeURIComponent(q),
+    'https://api-mobilespecs.azharimm.dev/search?query='+encodeURIComponent(q)
   ];
   for(const url of urls){
     const ctl=new AbortController();
