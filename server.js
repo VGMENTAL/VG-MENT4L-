@@ -1524,7 +1524,40 @@ const server = http.createServer(async (req, res) => {
       };
       candidates.sort((a,b)=>score(b)-score(a));
       const best=candidates[0];
-      if(best) return json(res,200,{ok:true,device:{...best,query:q},verified:true,researched:true,query:q,notice:'Device information collected from multi-source specification research.',sourceType:best.sourceType||'research'});
+      if(best){
+        // Do not trust one weak source when another source has a verified field.
+        // Merge only candidates that clearly refer to the same model/variant.
+        const compatible=candidates.filter(d=>{
+          const dn=normalizeDevice(d.canonical||'');
+          const same=dn===nq || dn.includes(nq) || nq.includes(dn);
+          const dv=normalizeDevice(d.variant||'');
+          const q5=/\b5g\b/.test(nq), d5=/\b5g\b/.test(dn+' '+dv);
+          const q4=/\b4g\b/.test(nq), d4=/\b4g\b/.test(dn+' '+dv);
+          return same && (!q5 || d5) && (!q4 || d4);
+        });
+        const merged={...best};
+        const usable=v=>{const x=String(v||'').trim().toLowerCase();return x && !/^(not|unknown|auto research|could not|not officially|n\/a|-)/i.test(x);};
+        const fields=['brand','platform','variant','chipset','gpu','ram','display','resolution','refreshRate','touchSampling','touchResponse','storage','battery','charging','network','os','gaming'];
+        fields.forEach(k=>{
+          if(usable(merged[k]))return;
+          for(const d of compatible){
+            if(usable(d[k])){merged[k]=d[k];break;}
+          }
+        });
+        const sourceUrls=[];
+        compatible.forEach(d=>{
+          [d.source,...(Array.isArray(d.sources)?d.sources:[])].filter(Boolean).forEach(x=>{if(!sourceUrls.includes(x))sourceUrls.push(x)});
+        });
+        merged.sources=sourceUrls.slice(0,10);
+        merged.source=merged.source||sourceUrls[0]||'';
+        merged.sourceLabel='Multi-source device specification research';
+        merged.sourceType='multi-source-research';
+        merged.match='research';
+        merged.query=q;
+        merged.confidence=compatible.some(d=>d.confidence==='high')?'high':(compatible.length>1?'medium':(merged.confidence||'medium'));
+        merged.notes='Fields are merged only from sources matching the requested model/variant. Unknown fields are not invented.';
+        return json(res,200,{ok:true,device:merged,verified:true,researched:true,query:q,notice:'Device information collected and cross-checked from multiple specification sources.',sourceType:merged.sourceType});
+      }
       return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'No reliable specification source returned a usable exact match. No guessed hardware values were used.'});
     }
     if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
