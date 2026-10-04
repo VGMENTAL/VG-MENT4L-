@@ -845,8 +845,58 @@ function calculate(device,style,mode,ram,fingers,hud,guns,preset,playerStyle='Fr
   best[4]=clamp(best[4]);
   best[5]=clamp(best[5]);
 
-  // If the evidence says low sensitivity is needed, don't push it back up.
-  // If the evidence says fast response is needed, don't artificially lower it.
+  /*
+    HEAD-LEVEL CONTROL CALIBRATION — video reference prior
+    The supplied reference gameplay shows the useful pattern we want the
+    sensitivity engine to reproduce: upward drag reaches head level, then
+    remains controllable instead of continuing above the target.
+    This is a sensitivity prior only; it never automates aim or game input.
+
+    The prior is deliberately blended AFTER device/HUD/gameplay evidence so
+    the engine does not collapse every phone to one universal sensitivity.
+    It mainly shapes General/Red Dot and the scope ladder.
+  */
+  const headControlPrior=[190,182,165,145,98,140];
+  let headPriorWeight=0.16;
+  if(/one.?tap|drag headshot|aggressive drag/.test(String(style).toLowerCase())) headPriorWeight+=0.07;
+  if(/overshoot|fly over|too high|over.?drag/.test(evidenceText)||issues.includes('overshoot')||issues.includes('dragFast')) headPriorWeight=0.08;
+  if(/chest|under.?drag|stuck low|too low/.test(evidenceText)||issues.includes('chest')||issues.includes('dragSlow')) headPriorWeight=0.21;
+  if(gameplayAIAnalysis?.confidence&&String(gameplayAIAnalysis.confidence).toLowerCase()==='high') headPriorWeight+=0.04;
+  headPriorWeight=Math.max(0.06,Math.min(0.24,headPriorWeight));
+
+  for(let i=0;i<6;i++){
+    best[i]=Math.round(best[i]*(1-headPriorWeight)+headControlPrior[i]*headPriorWeight);
+  }
+
+  // Head-level stopping geometry:
+  // General > Red Dot > 2x > 4x > Sniper, with enough separation that
+  // a fast upward drag is less likely to carry the scoped curve upward.
+  best[0]=clamp(best[0]);
+  best[1]=clamp(Math.min(best[1],best[0]-4));
+  best[2]=clamp(Math.min(best[2],best[1]-10));
+  best[3]=clamp(Math.min(best[3],best[2]-18));
+  best[4]=clamp(Math.min(best[4],best[3]-42));
+
+  // When the evidence explicitly says the aim is going above the head,
+  // prioritize stopping control rather than raising sensitivity.
+  if(issues.includes('overshoot')||issues.includes('dragFast')||/overshoot|too high|over.?drag/.test(evidenceText)){
+    best[0]=clamp(best[0]-3);
+    best[1]=clamp(best[1]-4);
+    best[2]=clamp(best[2]-2);
+  }
+  // When the evidence says the drag stops at chest/too low, give the
+  // upward axes a small recovery while preserving the same head-level ladder.
+  if(issues.includes('chest')||issues.includes('dragSlow')||/chest|under.?drag|stuck low|too low/.test(evidenceText)){
+    best[0]=clamp(best[0]+3);
+    best[1]=clamp(best[1]+3);
+  }
+
+  best[1]=clamp(Math.min(best[1],best[0]-4));
+  best[2]=clamp(Math.min(best[2],best[1]-10));
+  best[3]=clamp(Math.min(best[3],best[2]-18));
+  best[4]=clamp(Math.min(best[4],best[3]-42));
+  best[5]=clamp(best[5]);
+
   return {
     general:clamp(best[0]),
     red_dot:clamp(best[1]),
