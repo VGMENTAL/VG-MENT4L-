@@ -442,39 +442,30 @@ function makeStarting(){
 }
 function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="axis"><small>'+AXIS[i]+'</small><strong>'+x+'</strong><div class="meter"><i style="width:'+x/2+'%"></i></div></div>').join('')+'</div>'}
 function profileHTML(p){
- const d=p.deviceResearch||{},gun=p.guns?.includes('All Guns')?'All Guns · Full Weapon Pool':(p.guns||[]).join(' + ');
- const hudState=p.hud?.analysis?'Deep HUD analysis stored':'HUD evidence not stored';
- const status=p.deviceResearchStatus?.ok?'✓ Research loaded':(p.deviceResearch?'✓ Research available':'⚠ Research pending');
- const val=(x,fallback)=>{const s=String(x??'').trim();return s&& !/^(undefined|null)$/i.test(s)?s:fallback};
+ const gun=p.guns?.includes('All Guns')?'All Guns · Full Weapon Pool':(p.guns||[]).join(' + ');
  const rows=[
-  ['Device',val(p.device,'Unknown device')],
-  ['Phone Age',val(p.age,'Not specified')],['RAM',val(p.ram,'Not set')],
-  ['DPI / Smallest Width',val(p.dpi,'Not set')],['Refresh Rate (Runtime)',val(p.hz,'Not detected')+' Hz'],
-  ['Touch Sampling (Runtime)',val(p.touch,'Not detected')+' Hz'],['Fingers',val(p.fingers,'Not set')],
-  ['Fire Button',val(p.fire,'Not set')],['Game Mode',val(p.gameMode,'Not set')],
-  ['Player Mode',val(p.playerMode,'Not set')],['Player Style',val(p.style,'Not set')],
-  ['Sensitivity Mode',val(p.sensMode,'Default')],['Aim Precision',val(p.aimMode,'Default')],
-  ['OB',val(p.ob,'OB55')],['Gun Profile',gun],
-  ['Processor / Chipset',val(d.chipset,'Auto research could not verify')],
-  ['GPU',val(d.gpu,'Auto research could not verify')],
-  ['Display',val(d.display,'Auto research could not verify')],
-  ['Resolution',val(d.resolution,'Auto research could not verify')],
-  ['Refresh Rate (Research)',val(d.refreshRate,'Auto research could not verify')],
-  ['Touch Sampling (Research)',val(d.touchSampling,'Auto research could not verify')],
-  ['Touch Response',val(d.touchResponse,'Not officially documented')],
-  ['Storage',val(d.storage,'Auto research could not verify')],
-  ['Battery',val(d.battery,'Auto research could not verify')],
-  ['Charging',val(d.charging,'Auto research could not verify')],
-  ['Network',val(d.network,'Auto research could not verify')],
-  ['Device OS',val(d.os,'Auto research could not verify')],
-  ['Gaming Profile',val(d.gaming,'Auto research could not verify')],
-  ['Research Status',status],
-  ['Research Source',val(d.sourceLabel||d.sourceType,'Not available')],
-  ['HUD Evidence',hudState]
+  ['Device',valProfile(p.device,'Unknown device')],
+  ['Phone Age',valProfile(p.age,'Not specified')],
+  ['RAM',valProfile(p.ram,'Not set')],
+  ['DPI / Smallest Width',valProfile(p.dpi,'Not set')],
+  ['Refresh Rate (Runtime)',valProfile(p.hz,'Not detected')+' Hz'],
+  ['Touch Sampling (Runtime)',valProfile(p.touch,'Not detected')+' Hz'],
+  ['Fingers',valProfile(p.fingers,'Not set')],
+  ['Fire Button',valProfile(p.fire,'Not set')],
+  ['Game Mode',valProfile(p.gameMode,'Not set')],
+  ['Player Mode',valProfile(p.playerMode,'Not set')],
+  ['Player Style',valProfile(p.style,'Not set')],
+  ['Sensitivity Mode',valProfile(p.sensMode,'Default')],
+  ['Aim Precision',valProfile(p.aimMode,'Default')],
+  ['OB',valProfile(p.ob,'OB55')],
+  ['Gun Profile',gun],
+  ['HUD Evidence',p.hud?.analysis?'Deep HUD analysis stored':'HUD evidence not stored']
  ];
- return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>'+
-   (d.source?'<div class="small" style="margin-top:8px">Research source: '+esc(d.source)+'</div>':'')+
-   (!p.deviceResearch?'<div class="notice warn" style="margin-top:9px"><b>DEVICE RESEARCH PENDING</b><br>Profile load ke waqt exact phone name se same VG MENT4L research engine chalaya jayega.</div>':'');
+ return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
+}
+function valProfile(x,fallback){
+ const s=String(x??'').trim();
+ return s&& !/^(undefined|null)$/i.test(s)?s:fallback;
 }
 async function refreshCurrentDeviceResearch(targetProfile){
  const out=targetProfile||current;
