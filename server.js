@@ -384,14 +384,14 @@ async function fetchGsmArenaResearch(name){
     const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
     if(!r.ok)return null;
     const html=await r.text();
-    const clean=x=>decodeHtmlEntities(String(x||'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+    const clean=x=>decodeHtmlEntities(String(x||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
     const nq=normalizeDevice(q);
     const candidates=[];
-    const linkRe=/<a[^>]+href="([^"]+\\.php)"[^>]*>([\\s\\S]*?)<\\/a>/gi;
+    const linkRe=/<a[^>]+href="([^"]+\.php)"[^>]*>([\s\S]*?)<\\/a>/gi;
     let m;
     while((m=linkRe.exec(html))&&candidates.length<30){
       const href=m[1],title=clean(m[2]);
-      if(!/-\\d+\\.php$/i.test(href)||!title)continue;
+      if(!/-\d+\.php$/i.test(href)||!title)continue;
       const nt=normalizeDevice(title);
       let score=0;
       if(nt===nq)score+=120;
@@ -410,9 +410,9 @@ async function fetchGsmArenaResearch(name){
       const dr=await fetch(detailUrl,{signal:dctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
       if(!dr.ok)return null;
       const dh=await dr.text();
-      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\\s*\\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\s*\\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
       const field=label=>{
-        const re=new RegExp('<td[^>]*class="ttl"[^>]*>[\\s\\S]*?'+label+'[\\s\\S]*?<\\/td>\\s*<td[^>]*class="nfo"[^>]*>([\\s\\S]*?)<\\/td>','i');
+        const re=new RegExp('<td[^>]*class="ttl"[^>]*>[\s\S]*?'+label+'[\s\S]*?<\\/td>\s*<td[^>]*class="nfo"[^>]*>([\s\S]*?)<\\/td>','i');
         const z=dh.match(re); return z?strip(z[1]):'';
       };
       const chipset=field('Chipset'),gpu=field('GPU'),ram=field('Internal')||field('RAM');
@@ -422,7 +422,7 @@ async function fetchGsmArenaResearch(name){
       const display=[size,displayType,resolution].filter(Boolean).join(' · ');
       if(!chipset&&!display&&!refresh&&!ram)return null;
       return {
-        canonical:best.title||q,brand:(best.title.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
+        canonical:best.title||q,brand:(best.title.match(/^([A-Za-z0-9]+)\b/i)||[])[1]||'',
         platform:/iphone|ios/i.test(best.title+' '+os)?'iOS':'Android',
         variant:/5g/i.test(best.title)?'5G':(/4g/i.test(best.title)?'4G':''),
         chipset:chipset||'Not listed',gpu:gpu||'Not listed',ram:ram||'Not listed',
@@ -478,11 +478,11 @@ async function fetchWebSearchDeviceResearch(name){
   const first=(re)=>{const m=all.match(re);return m?m[1].trim():''};
   const chipset=first(/\b((?:Qualcomm\s+)?Snapdragon\s+[A-Za-z0-9+\\-]+|MediaTek\s+(?:Dimensity|Helio)\s+[A-Za-z0-9+\\-]+|Dimensity\s+[A-Za-z0-9+\\-]+|Exynos\s+[A-Za-z0-9+\\-]+|Tensor\s+G[0-9]+(?:\s+[A-Za-z0-9+\\-]+)?|Apple\s+A[0-9A-Za-z]+)\b/i);
   const gpu=first(/\b((?:Adreno\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\s+GPU))\b/i);
-  const refresh=first(/\b(\\d{2,3}\s*Hz)\b(?:\s+(?:refresh|display|screen))?/i);
-  const touch=first(/\b(\\d{2,4}\s*Hz)\b[^.]{0,45}?(?:touch sampling|touch response|touch sampling rate)/i);
+  const refresh=first(/\b(\d{2,3}\s*Hz)\b(?:\s+(?:refresh|display|screen))?/i);
+  const touch=first(/\b(\d{2,4}\s*Hz)\b[^.]{0,45}?(?:touch sampling|touch response|touch sampling rate)/i);
   const ram=first(/\b((?:2|3|4|6|8|12|16|18|24)\s*GB(?:\s+RAM)?)\b/i);
-  const resolution=first(/\b(\\d{3,5}\s*[x×]\s*\\d{3,5})\b/);
-  const size=first(/\b(\\d(?:\\.\\d)?(?:-inch|\s*inch|")\s*(?:display|screen)?)\b/i);
+  const resolution=first(/\b(\d{3,5}\s*[x×]\s*\d{3,5})\b/);
+  const size=first(/\b(\d(?:\.\d)?(?:-inch|\s*inch|")\s*(?:display|screen)?)\b/i);
   const os=first(/\b((?:Android|iOS|HarmonyOS)\s*[0-9A-Za-z.\\-]*)\b/i);
   const gaming=/gaming|game[- ]?turbo|game space|gt[0-9]|rog|redmagic|legion|black shark|iqoo/i.test(all)?'Gaming-oriented features found in web research':'General smartphone; gaming capability inferred from hardware only';
   if(!chipset&&!display&&!refresh&&!resolution&&!ram)return null;
@@ -560,11 +560,11 @@ async function fetchBroadWebDeviceResearch(name){
   const first=function(re){const m=all.match(re);return m?m[1].trim():''};
   const chipset=first(/\b((?:Qualcomm\s+)?Snapdragon\s+[A-Za-z0-9+\\-]+|MediaTek\s+(?:Dimensity|Helio)\s+[A-Za-z0-9+\\-]+|Dimensity\s+[A-Za-z0-9+\\-]+|Exynos\s+[A-Za-z0-9+\\-]+|Tensor\s+G[0-9]+(?:\s+[A-Za-z0-9+\\-]+)?|Apple\s+A[0-9A-Za-z]+)\b/i);
   const gpu=first(/\b((?:Adreno\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\s+GPU))\b/i);
-  const refresh=first(/\b(\\d{2,3}\s*Hz)\b/i);
-  const touch=first(/\b(\\d{2,4}\s*Hz)\b[^.]{0,80}(?:touch sampling|touch response|sampling rate)/i);
+  const refresh=first(/\b(\d{2,3}\s*Hz)\b/i);
+  const touch=first(/\b(\d{2,4}\s*Hz)\b[^.]{0,80}(?:touch sampling|touch response|sampling rate)/i);
   const ram=first(/\b((?:2|3|4|6|8|12|16|18|24)\s*GB(?:\s+RAM)?)\b/i);
-  const resolution=first(/\b(\\d{3,5}\s*[x×]\s*\\d{3,5})\b/);
-  const size=first(/\b(\\d(?:\\.\\d)?(?:-inch|\s*inch|")\s*(?:display|screen)?)\b/i);
+  const resolution=first(/\b(\d{3,5}\s*[x×]\s*\d{3,5})\b/);
+  const size=first(/\b(\d(?:\.\d)?(?:-inch|\s*inch|")\s*(?:display|screen)?)\b/i);
   const os=first(/\b((?:Android|iOS|HarmonyOS)\s*[0-9A-Za-z.\\-]*)\b/i);
   const gaming=/gaming|game[- ]?turbo|game space|game boost|cooling|vc cooling|fps|touch response/i.test(all)
     ?'Gaming-relevant features found in web research'
