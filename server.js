@@ -919,12 +919,69 @@ async function updateExistingProfileSensitivity(code, sensitivity) {
   return updated;
 }
 
+function profileCodeFingerprint(profile) {
+  const clean = x => {
+    if (Array.isArray(x)) return x.map(clean);
+    if (x && typeof x === 'object') {
+      const o = {};
+      Object.keys(x).sort().forEach(k => {
+        if (['code','createdAt','updatedAt','history','learning','time','refinedAt','calibrationGuns'].includes(k)) return;
+        o[k] = clean(x[k]);
+      });
+      return o;
+    }
+    return x;
+  };
+  const str = JSON.stringify(clean(profile));
+  let h = 1469598103934665603n;
+  const prime = 1099511628211n;
+  const mask = (1n << 64n) - 1n;
+  for (let i = 0; i < str.length; i++) {
+    h ^= BigInt(str.charCodeAt(i));
+    h = (h * prime) & mask;
+  }
+  return ((h % 900000000000000n) + 100000000000000n).toString();
+}
+
+async function findLegacyDerivedProfile(code) {
+  // Older AIMCRAFT builds displayed the ID before setCurrent() added
+  // calibrationGuns. Their stored profile therefore has a different hash.
+  // Recompute the now-canonical hash while ignoring that derived field so
+  // already-issued codes continue to load instead of becoming "invalid".
+  if (dbReady && pool) {
+    const r = await pool.query('SELECT profile FROM vg_profiles');
+    for (const row of r.rows) {
+      if (profileCodeFingerprint(row.profile) === code) return row.profile;
+    }
+  }
+  try {
+    for (const name of fs.readdirSync(PROFILES)) {
+      if (!name.endsWith('.json')) continue;
+      const p = readJson(path.join(PROFILES, name));
+      if (p && profileCodeFingerprint(p) === code) return p;
+    }
+  } catch {}
+  return null;
+}
+
 async function loadProfile(code) {
   if (dbReady) {
     const p = await dbGetProfile(code);
     if (p) return p;
   }
-  return readJson(fileFor(PROFILES, code));
+  const local = readJson(fileFor(PROFILES, code));
+  if (local) return local;
+
+  const legacyDerived = await findLegacyDerivedProfile(code);
+  if (legacyDerived) {
+    // Migrate the old hash to the canonical ID so the same code remains
+    // usable on every later load.
+    const migrated = cleanProfile(legacyDerived, code);
+    if (dbReady) await dbSaveProfile(migrated);
+    else writeJson(fileFor(PROFILES, code), migrated);
+    return migrated;
+  }
+  return null;
 }
 
 const routes = {
