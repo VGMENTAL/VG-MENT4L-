@@ -508,7 +508,7 @@ function updateOB(){
  backendSaveProfile(current);
  $('updateStatus').innerHTML='<div class="notice ok"><b>OB Update complete.</b> Device, HUD, exact gun profile and all other information preserved.<br>Old sensitivity: '+esc(before.join(' / '))+'<br>New sensitivity: '+esc(current.v.join(' / '))+'<br><div class="codebox" style="margin-top:9px">'+esc(newCode)+'</div></div>';
 }
-async function importManual(){
+async async function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
  const p=makeStarting();
  p.v=v;
@@ -516,8 +516,10 @@ async function importManual(){
  p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),values:[...v]};
  setCurrent(p,'MANUAL SENSITIVITY IMPORTED · NEW PROFILE ID CREATED');
  const code=codeFor(current);
- $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW PROFILE ID CREATED</b><br>Imported: '+esc(v.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Is code ko Calibration Lab mein load karke problem + range ke basis par adjustment karo.</div></div>';
- try{await backendSaveProfile(current)}catch{}
+ await backendSaveProfile(current);
+ $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW PROFILE ID CREATED</b><br>Imported: '+esc(v.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Website 2 ki tarah import ke turant baad profile adjustment ke liye ready hai. Is code ko dobara type/paste karne ki zarurat nahi.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%">OPEN CALIBRATION FOR THIS IMPORTED PROFILE</button></div>';
+ const omc=$('openManualCalibration');
+ if(omc) omc.onclick=()=>{ $('calCode').value=code; tab('calibrate'); $('calCodeStatus').textContent='Manual imported profile ready for adjustment: '+code; };
 }
 $('hud').onchange=async()=>{
  const f=$('hud').files?.[0];if(!f)return;
