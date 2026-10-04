@@ -374,7 +374,7 @@ function calibrate(){
  pendingCalibration={guns,ranges,problems,before,after,delta};
  current.v=after;
  setCurrent(current,changed?'CALIBRATION CANDIDATE · TEST IT':'NO VALUE CHANGED');
- $('calResult').innerHTML='<div class="card"><div class="title">DID THE NEW SENSITIVITY FEEL BETTER?</div><div class="sub">Test the exact same gun + range again. Do not change other sliders during this check. Your answer teaches this profile instead of blindly repeating the same adjustment.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="fbBetter">✓ BETTER</button><button class="secondary" id="fbSame">≈ SAME</button><button class="secondary" id="fbWorse">✕ WORSE — REVERT</button></div></div>';
+ $('calResult').innerHTML='<div class="card"><div class="title">DID THE NEW SENSITIVITY FEEL BETTER?</div><div class="sub">Test the same '+esc(guns.join(' + '))+' again. The profile code has already been updated automatically.</div><div class="codebox" style="margin-top:10px">'+esc(codeFor(current))+'</div><button class="secondary" id="calCopyUpdatedCode" style="margin-top:9px;width:100%">COPY UPDATED CODE</button><div class="actions" style="margin-top:10px"><button class="secondary" id="fbBetter">✓ BETTER</button><button class="secondary" id="fbSame">≈ SAME</button><button class="secondary" id="fbWorse">✕ WORSE — REVERT</button></div></div>';const ccb=$('calCopyUpdatedCode');if(ccb)ccb.onclick=async()=>{try{await navigator.clipboard.writeText(codeFor(current));ccb.textContent='UPDATED CODE COPIED'}catch(e){alert(codeFor(current))}};
  $('fbBetter').onclick=()=>finishFeedback('better');
  $('fbSame').onclick=()=>finishFeedback('same');
  $('fbWorse').onclick=()=>finishFeedback('worse');
