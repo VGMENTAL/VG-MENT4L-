@@ -137,12 +137,12 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div><label>Device Name</label><input id="manualDevice" type="text" autocomplete="off" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15"><button class="secondary" id="manualDeviceAnalyze" style="width:100%;margin-top:8px">DEVICE ANALYZING</button></div>
 </div>
 <div class="grid3" style="margin-top:10px">
-<div><label>Current General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
-<div><label>Current Red Dot</label><input id="m1" type="number" min="0" max="200" value="180"></div>
-<div><label>Current 2× Scope</label><input id="m2" type="number" min="0" max="200" value="160"></div>
-<div><label>Current 4× Scope</label><input id="m3" type="number" min="0" max="200" value="140"></div>
-<div><label>Current Sniper</label><input id="m4" type="number" min="0" max="200" value="85"></div>
-<div><label>Current Free Look</label><input id="m5" type="number" min="0" max="200" value="120"></div>
+<div><label>Current General</label><input id="m0" type="number" min="0" max="200" placeholder="Enter current value"></div>
+<div><label>Current Red Dot</label><input id="m1" type="number" min="0" max="200" placeholder="Enter current value"></div>
+<div><label>Current 2× Scope</label><input id="m2" type="number" min="0" max="200" placeholder="Enter current value"></div>
+<div><label>Current 4× Scope</label><input id="m3" type="number" min="0" max="200" placeholder="Enter current value"></div>
+<div><label>Current Sniper</label><input id="m4" type="number" min="0" max="200" placeholder="Enter current value"></div>
+<div><label>Current Free Look</label><input id="m5" type="number" min="0" max="200" placeholder="Enter current value"></div>
 </div>
 <div class="card" style="margin-top:12px;border-color:#294067;background:#071020">
 <div class="title">ACTUAL SENSITIVITY PROBLEM</div>
@@ -555,15 +555,20 @@ async function researchManualDevice(force=false){
 '<div class="deviceResearchItem"><b>Processor / Chipset</b><span>'+esc(d.chipset||'Not verified')+'</span></div>'+
 '<div class="deviceResearchItem"><b>GPU</b><span>'+esc(d.gpu||'Not verified')+'</span></div>'+
 '<div class="deviceResearchItem"><b>Display</b><span>'+esc(d.display||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Resolution</b><span>'+esc(d.resolution||'Not verified')+'</span></div>'+
 '<div class="deviceResearchItem"><b>Refresh Rate</b><span>'+esc(d.refreshRate||'Not verified')+'</span></div>'+
 '<div class="deviceResearchItem"><b>Touch Sampling Rate</b><span>'+esc(d.touchSampling||'Not verified')+'</span></div>'+
-'<div class="deviceResearchItem"><b>Touch Response</b><span>'+esc(d.touchResponse||d.touchSampling||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Touch Response</b><span>'+esc(d.touchResponse||'Not officially documented')+'</span></div>'+
 '<div class="deviceResearchItem"><b>RAM</b><span>'+esc(d.ram||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Storage</b><span>'+esc(d.storage||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Battery</b><span>'+esc(d.battery||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Charging</b><span>'+esc(d.charging||'Not verified')+'</span></div>'+
+'<div class="deviceResearchItem"><b>Network</b><span>'+esc(d.network||'Not verified')+'</span></div>'+
 '<div class="deviceResearchItem"><b>OS</b><span>'+esc(d.os||'Not verified')+'</span></div>'+
 '<div class="deviceResearchItem"><b>Gaming Profile</b><span>'+esc(d.gaming||'Not verified')+'</span></div>'+
-'</div><div class="researchSource"><b>Research Source:</b> '+esc(d.sourceLabel||d.sourceType||'web research')+(d.confidence?' · Confidence: '+esc(d.confidence):'')+'</div>';
+'</div><div class="researchSource"><b>Research Source:</b> '+esc(d.sourceLabel||d.sourceType||'web research')+(d.confidence?' · Confidence: '+esc(d.confidence):'')+(d.source?' · '+esc(d.source):'')+'</div>';
    }else{
-     box.innerHTML='<b>DEVICE RESEARCH FAILED</b><br>Exact model verify nahi hua. Isliye guessed chipset/specs sensitivity mein use nahi kiye jayenge.';
+     box.innerHTML='<b>DEVICE RESEARCH COULD NOT VERIFY THIS MODEL</b><br>Live sources ne exact specs nahi diye. Koi chipset/refresh/touch value guess nahi ki gayi; sensitivity analysis can still use your manually entered CURRENT values and selected problems.';
    }
  }catch(e){
    deviceResearch=null;
@@ -572,14 +577,18 @@ async function researchManualDevice(force=false){
  return deviceResearch;
 }
 async function importManual(){
- const before=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
+ const raw=[0,1,2,3,4,5].map(i=>String($('m'+i).value||'').trim());
  const sensMode=$('manualSensMode').value;
  const device=String($('manualDevice').value||'').trim();
  const selectedProblems=[...$('manualProblems').querySelectorAll('.problem.on')];
  const custom=String($('manualCustomProblem').value||'').trim();
  if(!device)return alert('Pehle Device Name dalo.');
+ if(raw.some(x=>x===''||Number(x)<0||Number(x)>200))return alert('General, Red Dot, 2×, 4×, Sniper aur Free Look — sabhi CURRENT values manually bharo (0–200).');
+ const before=raw.map(Number);
  if(!deviceResearch || !deviceResearch.query || String(deviceResearch.query).toLowerCase()!==device.toLowerCase()){
-   return alert('Pehle DEVICE ANALYZING button dabao aur device research complete hone do.');
+   $('manualDeviceResearch').className='notice warn';
+   $('manualDeviceResearch').innerHTML='<b>DEVICE RESEARCHING…</b><br>Import se pehle exact device profile automatically verify ki ja rahi hai.';
+   await researchManualDevice(true);
  }
  if(!selectedProblems.length&&!custom)return alert('Kam se kam 1 problem select karo ya apni problem likho.');
  const btn=$('importManual');btn.disabled=true;btn.textContent='SENSITIVITY ANALYZING…';
@@ -587,7 +596,7 @@ async function importManual(){
  try{
    const issues=selectedProblems.map(x=>x.dataset.value);
    const runtime={ua:navigator.userAgent||'',screen:(screen.width||0)+'x'+(screen.height||0),dpr:window.devicePixelRatio||1,touch:navigator.maxTouchPoints||0,width:screen.width||0,height:screen.height||0};
-   const context={device,deviceResearch:deviceResearch,sensitivityMode:sensMode,source:'manual-import',browserRuntime:runtime,originalSensitivity:before};
+   const context={device,deviceResearch:deviceResearch||{canonical:device,match:'research-pending'},sensitivityMode:sensMode,source:'manual-import',browserRuntime:runtime,originalSensitivity:before};
    let after=null,diagnosis='',changes=[],usedAI=false;
    try{
      const rr=await fetch(HUD_API+'/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:{general:before[0],red_dot:before[1],scope_2x:before[2],scope_4x:before[3],sniper:before[4],free_look:before[5]},issues,customText:custom,context})});
