@@ -220,7 +220,25 @@ async function backendLoadProfile(code){
  const r=await fetch('https://vg-ment4l.onrender.com/api/profiles/'+encodeURIComponent(code));
  const j=await r.json();
  if(!r.ok||!j.profile)throw new Error(j.error||'Profile not found');
- return j.profile;
+ return await hydrateLoadedProfile(j.profile);
+}
+async function hydrateLoadedProfile(p){
+ const out={...p};
+ if(!out.deviceResearch && out.device){
+   try{
+     const r=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent(out.device));
+     const j=await r.json();
+     if(j?.device) out.deviceResearch=j.device;
+   }catch{}
+ }
+ if(!out.hud?.analysis && out.hud?.hudKey){
+   try{
+     const r=await fetch(HUD_API+'/api/hud-analysis/'+encodeURIComponent(out.hud.hudKey));
+     const j=await r.json();
+     if(j?.analysis) out.hud={...out.hud,analysis:j.analysis};
+   }catch{}
+ }
+ return out;
 }
 function decode(code){
  const s=String(code||'').trim().replace(/\s+/g,'');
@@ -369,7 +387,7 @@ function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="a
 function profileHTML(p){
  const d=p.deviceResearch||{},gun=p.guns?.includes('All Guns')?'All Guns · Full Weapon Pool':(p.guns||[]).join(' + ');
  const hudState=p.hud?.analysis?'Deep HUD analysis stored':'HUD evidence not stored';
- const rows=[['Device',p.device],['Phone Age',p.age],['RAM',p.ram],['DPI / Smallest Width',p.dpi],['Refresh Rate',p.hz+' Hz'],['Touch Sampling',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['Sensitivity Mode',p.sensMode],['Aim Precision',p.aimMode],['OB',p.ob],['Gun Profile',gun],['Chipset',d.chipset||'Not separately researched'],['GPU',d.gpu||'Not separately researched'],['Display',d.display||'Not separately researched'],['Device OS',d.os||'Not separately researched'],['HUD Evidence',hudState]];
+ const rows=[['Device',p.device],['Phone Age',p.age],['RAM',p.ram],['DPI / Smallest Width',p.dpi],['Refresh Rate',p.hz+' Hz'],['Touch Sampling',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['Sensitivity Mode',p.sensMode],['Aim Precision',p.aimMode],['OB',p.ob],['Gun Profile',gun],['Chipset',d.chipset||'Auto research could not verify'],['GPU',d.gpu||'Auto research could not verify'],['Display',d.display||'Auto research could not verify'],['Device OS',d.os||'Auto research could not verify'],['HUD Evidence',hudState]];
  return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
 }
 function setCurrent(p,msg){
@@ -467,8 +485,8 @@ async function loadCodeIntoProfile(code){
  const s=String(code||'').trim().replace(/\s+/g,'');
  if(!s)return alert('12–15 digit Profile Code paste karo.');
  try{
-   const p=isNumericProfileCode(s)?await backendLoadProfile(s):decode(s);
-   setCurrent(p,'PROFILE LOADED · EXACT GUNS + HUD + DEVICE RESTORED');tab('profile');
+   const p=isNumericProfileCode(s)?await backendLoadProfile(s):await hydrateLoadedProfile(decode(s));
+   setCurrent(p,'PROFILE LOADED · COMPLETE PROFILE RESTORED');await backendSaveProfile(current);tab('profile');
  }catch(e){alert('Profile code invalid, incomplete, ya server par nahi mila.')}
 }
 function updateOB(){
@@ -523,7 +541,7 @@ $('buildBtn').onclick=async()=>{
 };
 $('calBtn').onclick=calibrate;
 renderLearning();
-$('calLoadCode').onclick=async()=>{const code=$('calCode').value.trim();if(!code)return alert('12–15 digit Profile Code paste karo.');try{const p=isNumericProfileCode(code)?await backendLoadProfile(code):decode(code);setCurrent(p,'PROFILE LOADED FOR CALIBRATION');$('calCode').value=codeFor(current);$('calCodeStatus').innerHTML='<b>Complete profile loaded.</b> Device: '+esc(current.device)+' · Age: '+esc(current.age)+' · RAM: '+esc(current.ram)+' · Game: '+esc(current.gameMode)+' · Player: '+esc(current.playerMode)+' · Style: '+esc(current.style)+' · Guns: '+esc(current.guns.join(' + '))+' · HUD + device context restored.';}catch(e){$('calCodeStatus').textContent='Invalid / unavailable profile code.';alert('Profile code invalid, incomplete, ya server par nahi mila.')}};
+$('calLoadCode').onclick=async()=>{const code=$('calCode').value.trim();if(!code)return alert('12–15 digit Profile Code paste karo.');try{const p=isNumericProfileCode(code)?await backendLoadProfile(code):await hydrateLoadedProfile(decode(code));setCurrent(p,'PROFILE LOADED FOR CALIBRATION');await backendSaveProfile(current);$('calCode').value=codeFor(current);$('calCodeStatus').innerHTML='<b>Complete profile loaded.</b> Device: '+esc(current.device)+' · Age: '+esc(current.age)+' · RAM: '+esc(current.ram)+' · Game: '+esc(current.gameMode)+' · Player: '+esc(current.playerMode)+' · Style: '+esc(current.style)+' · Guns: '+esc(current.guns.join(' + '))+' · HUD + device context restored.';}catch(e){$('calCodeStatus').textContent='Invalid / unavailable profile code.';alert('Profile code invalid, incomplete, ya server par nahi mila.')}};
 $('calCopyCode').onclick=async()=>{if(!current)return alert('Pehle profile build/load karo.');const code=codeFor(current);try{await navigator.clipboard.writeText(code);$('calCopyCode').textContent='UPDATED CODE COPIED';setTimeout(()=>$('calCopyCode').textContent='COPY CURRENT CODE',1400)}catch(e){alert(code)}};
 $('loadProfile').onclick=async()=>loadCodeIntoProfile($('profileCode').value);
 $('copyProfile').onclick=async()=>{if(!current)return alert('No profile');const c=codeFor(current);try{await navigator.clipboard.writeText(c);$('copyProfile').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyProfile').textContent='COPY CURRENT CODE',1200)}catch(e){alert(c)}};
