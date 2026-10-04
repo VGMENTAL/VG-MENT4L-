@@ -765,7 +765,7 @@ Keep values 0-200. Make the smallest useful changes supported by the evidence. R
   return out;
 }
 
-async function runGeminiHudAnalysis(payload) {
+async async function runGeminiHudAnalysis(payload) {
   const key=String(process.env.GEMINI_API_KEY||'').trim();
   const configuredModel=String(process.env.GEMINI_MODEL||'gemini-3.8-flash').trim();
   if(!key) return null;
@@ -773,95 +773,57 @@ async function runGeminiHudAnalysis(payload) {
   const m=raw.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
   if(!m) throw new Error('Valid compressed HUD image is required');
   const mime=m[1].toLowerCase().replace('image/jpg','image/jpeg');
-  const prompt=`Analyze this Free Fire MAX HUD screenshot specifically for sensitivity calibration.
+  const prompt=`You are the DEEP HUD VISION analyst for VG MENT4L Free Fire MAX sensitivity calibration.
 
-IMPORTANT:
-- Analyze the actual uploaded HUD layout, not a generic HUD.
-- Inspect fire-button position/size, joystick position, scope/aim controls, crouch/jump/prone/action cluster, spacing, edge distances, control density, portrait/landscape geometry, and likely drag path length.
-- Return JSON only.
-- sensitivityDelta is a RELATIVE adjustment from the normal device/mode/style baseline, not the final 0-200 sensitivity.
-- Keep each delta between -15 and +15. Do not invent exact hardware specifications.
-- If an element is not clearly visible, mark it unknown rather than guessing.
+Analyze the ENTIRE uploaded HUD screenshot as a coordinate map. Do NOT give generic HUD advice.
+
+MANDATORY: inspect every clearly visible relevant element:
+1) screen orientation, usable area, crop/black bars;
+2) every fire button: approximate x/y position, relative size, edge distance, overlap, upward drag corridor;
+3) joystick: position, size, edge distance and thumb travel;
+4) every scope/aim control and its relation to fire;
+5) jump, crouch, prone/slide and action controls;
+6) weapon switch/slots, reload, melee, grenade, gloo/utility, medkit/interaction;
+7) left/right or duplicate fire controls;
+8) control density in left/center/right and all quadrants;
+9) spacing between fire, scope, joystick and action clusters;
+10) likely finger travel and drag length using supplied finger count;
+11) whether upward head drag is short/medium/long and whether it crosses controls;
+12) accidental-touch/overlap risks;
+13) which sensitivity axes should change and why;
+14) distinguish visible fact from inference; unknown when not visible.
+
+Use the full screenshot before deciding. sensitivityDelta is relative to the normal device/mode/style baseline, not final 0-200 values. Keep each delta -15..+15. Do not promise headshots or automatic aim. Return JSON only.
 
 PLAYER CONTEXT:
-${JSON.stringify({
-  device:payload.device||'', playerMode:payload.playerMode||'', playerStyle:payload.playerStyle||'',
-  mode:payload.mode||'', fingers:payload.fingers||'', imageWidth:payload.width||0, imageHeight:payload.height||0
-})}
+${JSON.stringify({device:payload.device||'',playerMode:payload.playerMode||'',playerStyle:payload.playerStyle||'',mode:payload.mode||'',fingers:payload.fingers||'',imageWidth:payload.width||0,imageHeight:payload.height||0})}
 
 JSON:
-{
-  "confidence":"low|medium|high",
-  "layoutSummary":"",
-  "fireButton":{"position":"left|center|right|unknown","size":"small|medium|large|unknown","edgeDistance":"near|medium|far|unknown"},
-  "joystick":{"position":"left|center|right|unknown","size":"small|medium|large|unknown"},
-  "scopeCluster":"left|center|right|mixed|unknown",
-  "actionCluster":"left|center|right|mixed|unknown",
-  "controlDensity":"low|medium|high",
-  "dragPath":"short|medium|long|mixed|unknown",
-  "sensitivityDelta":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},
-  "reasons":[""],
-  "warnings":[""]
-}`;
+{"confidence":"low|medium|high","screen":{"orientation":"portrait|landscape|unknown","usableArea":"full|cropped|blackBars|unknown","notes":""},"layoutSummary":"","fireControls":[{"side":"left|right|unknown","position":{"x":0,"y":0},"size":"small|medium|large|unknown","edgeDistance":"near|medium|far|unknown","overlapRisk":"low|medium|high|unknown","dragCorridor":"short|medium|long|blocked|unknown"}],"joystick":{"position":{"x":0,"y":0},"size":"small|medium|large|unknown","edgeDistance":"near|medium|far|unknown"},"scopeControls":[{"position":{"x":0,"y":0},"size":"small|medium|large|unknown","relationToFire":"near|medium|wide|unknown"}],"movementControls":{"jump":"visible|notVisible|unknown","crouch":"visible|notVisible|unknown","proneOrSlide":"visible|notVisible|unknown","layout":"left|right|mixed|unknown"},"combatControls":{"weaponSwitch":"visible|notVisible|unknown","reload":"visible|notVisible|unknown","glooOrUtility":"visible|notVisible|unknown","grenade":"visible|notVisible|unknown","medkitOrInteraction":"visible|notVisible|unknown"},"controlDensity":{"left":"low|medium|high","center":"low|medium|high","right":"low|medium|high","overall":"low|medium|high"},"spacing":{"fireToScope":"tight|medium|wide|unknown","fireToActionCluster":"tight|medium|wide|unknown","joystickToActions":"tight|medium|wide|unknown"},"dragGeometry":{"primaryPath":"short|medium|long|mixed|blocked|unknown","upwardHeadDrag":"easy|moderate|difficult|unknown","freeDragArea":"small|medium|large|unknown","accidentalTouchRisk":"low|medium|high|unknown"},"sensitivityDelta":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"reasons":[""],"visibleElements":[""],"warnings":[""]}`;
 
-  // Prefer the currently configured stable model first. If it is slow/unavailable,
-  // fall through quickly to the low-latency Flash-Lite model instead of leaving the
-  // browser stuck at 100% while one model request hangs.
-  const models=[configuredModel,'gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.7-flash']
-    .filter((m,i,a)=>m&&a.indexOf(m)===i);
+  const models=[configuredModel,'gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.7-flash'].filter((m,i,a)=>m&&a.indexOf(m)===i);
   let lastError=null;
-
   for(const candidate of models){
     for(let attempt=0;attempt<2;attempt++){
       try{
-        const r=await fetchWithTimeout(
-          'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(candidate)+':generateContent',
-          {
-            method:'POST',
-            headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
-            body:JSON.stringify({
-              contents:[{role:'user',parts:[
-                {inline_data:{mime_type:mime,data:m[2]}},
-                {text:prompt}
-              ]}],
-              generationConfig:{
-                temperature:0,
-                seed:42,
-                thinkingConfig:{thinkingLevel:'minimal'},
-                maxOutputTokens:700,
-                responseMimeType:'application/json'
-              }
-            })
-          },
-          25000
-        );
+        const r=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(candidate)+':generateContent',{method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{inline_data:{mime_type:mime,data:m[2]}},{text:prompt}]}],generationConfig:{temperature:0,seed:42,thinkingConfig:{thinkingLevel:'minimal'},maxOutputTokens:1600,responseMimeType:'application/json'}})},25000);
         const responseText=await r.text();
         if(r.ok){
           const out=parseJsonOutput(extractText(JSON.parse(responseText)));
-          const d=out.sensitivityDelta||{};
-          out.sensitivityDelta={};
-          for(const k of ['general','red_dot','scope_2x','scope_4x','sniper','free_look']){
-            out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
-          }
-          out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,12):[];
-          out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,8):[];
-          out.model=candidate;
-          out.configured=true;
-          return out;
+          const d=out.sensitivityDelta||{}; out.sensitivityDelta={};
+          for(const k of ['general','red_dot','scope_2x','scope_4x','sniper','free_look'])out.sensitivityDelta[k]=Math.max(-15,Math.min(15,Math.round(Number(d[k])||0)));
+          out.reasons=Array.isArray(out.reasons)?out.reasons.slice(0,16):[];
+          out.visibleElements=Array.isArray(out.visibleElements)?out.visibleElements.slice(0,40):[];
+          out.warnings=Array.isArray(out.warnings)?out.warnings.slice(0,12):[];
+          out.model=candidate;out.configured=true;out.analysisVersion='2.0-deep-hud';return out;
         }
         lastError=new Error('Gemini HUD analysis HTTP '+r.status+': '+responseText.slice(0,1200));
-        if(r.status===503 && attempt===0) await new Promise(resolve=>setTimeout(resolve,500));
-        else break;
-      }catch(e){
-        lastError=e;
-        // A timeout/AbortError on one model should not block the next fallback model.
-        break;
-      }
+        if(r.status===503&&attempt===0)await new Promise(resolve=>setTimeout(resolve,500));else break;
+      }catch(e){lastError=e;break;}
     }
   }
-  throw lastError || new Error('Gemini HUD analysis failed');
+  throw lastError||new Error('Gemini HUD analysis failed');
 }
-
 
 async function runGeminiTextFix(payload) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
@@ -978,22 +940,22 @@ const server = http.createServer(async (req, res) => {
       if(!b.imageData) return json(res,400,{error:'HUD image is required'});
       const hudKey=String(b.hudKey||'').trim();
       const fingerprint=normalizeHudFingerprint(b.fingerprint);
+      const analysisVersion=String(b.analysisVersion||'1.0').trim();
+      const cacheKey=hudKey ? (hudKey+'::'+analysisVersion) : '';
       try {
-        // Exact key first, then a perceptual fingerprint match so Android
-        // screenshot resolution/compression differences do not split a profile.
-        if(hudKey){
-          const cached=dbReady ? await dbGetHudAnalysis(hudKey) : localGetHudAnalysis(hudKey);
-          if(cached) return json(res,200,{ok:true,analysis:cached,hudKey,cached:true});
+        if(cacheKey){
+          const cached=dbReady ? await dbGetHudAnalysis(cacheKey) : localGetHudAnalysis(cacheKey);
+          if(cached) return json(res,200,{ok:true,analysis:cached,hudKey,cached:true,analysisVersion});
         }
         const similar=dbReady ? await dbFindSimilarHudAnalysis(fingerprint) : localFindSimilarHudAnalysis(fingerprint);
         if(similar) return json(res,200,{ok:true,analysis:similar.analysis,hudKey:similar.hudKey,cached:true,similar:true});
         const analysis=await runGeminiHudAnalysis(b);
         if(!analysis) return json(res,503,{error:'GEMINI_API_KEY is not configured'});
-        if(hudKey){
-          if(dbReady) await dbSaveHudAnalysis(hudKey,analysis,fingerprint);
-          else localSaveHudAnalysis(hudKey,analysis,fingerprint);
+        if(cacheKey){
+          if(dbReady) await dbSaveHudAnalysis(cacheKey,analysis,fingerprint);
+          else localSaveHudAnalysis(cacheKey,analysis,fingerprint);
         }
-        return json(res,200,{ok:true,analysis,cached:false,hudKey});
+        return json(res,200,{ok:true,analysis,cached:false,hudKey,analysisVersion});
       } catch(e) {
         console.error('HUD AI analysis failed:',e.message);
         return json(res,502,{error:e.message||'HUD AI analysis failed'});
