@@ -71,7 +71,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 
 <div class="card">
 <div class="title">03 · Exact Gun Profile</div>
-<div class="sub">This is critical. <b>All Guns</b> means the whole weapon pool. Selecting three guns means the profile is locked to those exact three guns and that information is preserved in the transfer code.</div>
+<div class="sub">This is critical. <b>All Guns</b> means the whole weapon pool. Selecting up to five guns means the profile is locked to those exact guns and that information is preserved in the transfer code.</div>
 <div class="chips" id="guns" style="margin-top:10px"></div>
 <div class="small" id="gunCount" style="margin-top:8px"></div>
 </div>
@@ -184,6 +184,7 @@ const WEAPONS=[
 ['GROZA','AR'],['AK47','AR'],['FAMAS','AR'],['PARAFAL','AR'],['M14','AR'],['M249','AR'],['RPK','AR'],['M7','AR'],
 ['AWM','SNIPER'],['Kar98k','SNIPER'],['M82B','SNIPER'],['M24','SNIPER'],['VSS','DMR']
 ];
+const MAX_FOCUS_GUNS=5;
 const GUN_BIAS={SHOTGUN:[5,5,-1,-3,-5,0],PISTOL:[3,4,0,-1,-2,0],SMG:[3,3,1,0,-2,0],AR:[1,1,1,1,0,0],DMR:[-1,-1,1,3,2,0],SNIPER:[-3,-2,-1,0,5,0],SPECIAL:[1,1,1,0,0,0],ALL:[0,0,0,0,0,0]};
 const PROBLEMS=[
 ['Head goes over','overshoot'],['Stays on chest','undershoot'],['Head tak drag nahi pahunchta','undershoot'],
@@ -247,15 +248,15 @@ async function backendLoadProfile(code){
 async function hydrateLoadedProfile(p){
  const out={...p};
  const dr0=out.deviceResearch||{};
+ const bad=v=>!v || /could not verify|not verified|unknown|not listed|not found|auto research/i.test(String(v));
  const researchIncomplete=!!out.device && (
-   !out.deviceResearch ||
-   !dr0.chipset || /could not verify|not verified|unknown/i.test(String(dr0.chipset)) ||
-   !dr0.display || /could not verify|not verified|unknown/i.test(String(dr0.display)) ||
-   !dr0.refreshRate || /could not verify|not verified|unknown/i.test(String(dr0.refreshRate))
+   !out.deviceResearch || bad(dr0.canonical) || bad(dr0.chipset) || bad(dr0.gpu) ||
+   bad(dr0.display) || bad(dr0.resolution) || bad(dr0.refreshRate) ||
+   bad(dr0.storage) || bad(dr0.battery) || bad(dr0.charging) || bad(dr0.network) || bad(dr0.os)
  );
  if(researchIncomplete && out.device){
    try{
-     const r=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent(out.device));
+     const r=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent(out.device)+'&refresh=1');
      const j=await r.json();
      if(j?.device) out.deviceResearch=j.device;
    }catch{}
@@ -283,12 +284,19 @@ function save(){
  localStorage.setItem('AIMCRAFT_ULTIMATE_HISTORY',JSON.stringify(history));
  localStorage.setItem('AIMCRAFT_ULTIMATE_LEARNING',JSON.stringify(learning));
 }
-function loadSaved(){
+async function loadSaved(){
  try{
   const p=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_PROFILE')||'null');
   history=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_HISTORY')||'[]');
   learning=JSON.parse(localStorage.getItem('AIMCRAFT_ULTIMATE_LEARNING')||'{}');
-  if(p) setCurrent(p,'Saved profile loaded');
+  if(p){
+    const status=$('calStatus');
+    if(status){status.className='notice warn';status.innerHTML='<b>DEVICE RESEARCHING…</b><br>Saved profile ke phone model ki specification web sources se refresh ho rahi hai.';}
+    const hydrated=await hydrateLoadedProfile(p);
+    setCurrent(hydrated,'Saved profile loaded · device research refreshed');
+    save();
+    backendSaveProfile(current);
+  }
  }catch(e){}
 }
 function learningKey(p){
@@ -321,7 +329,7 @@ function renderLearning(){
 }
 function selected(id){return [...$(id).querySelectorAll('.on')].map(x=>x.dataset.value||x.textContent.trim())}
 function toggleGroup(id){$(id).addEventListener('click',e=>{const c=e.target.closest('[data-value]');if(!c)return;c.classList.toggle('on');if(id==='guns')syncGuns(c);})}
-function syncGuns(chip){const box=$('guns'),all=box.querySelector('[data-value="All Guns"]');if(chip.dataset.value==='All Guns'&&chip.classList.contains('on'))box.querySelectorAll('[data-value]').forEach(x=>{if(x!==chip)x.classList.remove('on')});if(chip.dataset.value!=='All Guns'&&chip.classList.contains('on')){all.classList.remove('on');const focus=box.querySelectorAll('[data-value].on').length;if(focus>3)chip.classList.remove('on')}const g=selected('guns');$('gunCount').textContent=g.includes('All Guns')?'All Guns · full weapon pool':('Exact focus guns: '+g.length+'/3 · '+(g.join(' + ')||'none'))}
+function syncGuns(chip){const box=$('guns'),all=box.querySelector('[data-value="All Guns"]');if(chip.dataset.value==='All Guns'&&chip.classList.contains('on'))box.querySelectorAll('[data-value]').forEach(x=>{if(x!==chip)x.classList.remove('on')});if(chip.dataset.value!=='All Guns'&&chip.classList.contains('on')){all.classList.remove('on');const focus=box.querySelectorAll('[data-value].on').length;if(focus>MAX_FOCUS_GUNS)chip.classList.remove('on')}const g=selected('guns');$('gunCount').textContent=g.includes('All Guns')?'All Guns · full weapon pool':('Exact focus guns: '+g.length+'/'+MAX_FOCUS_GUNS+' · '+(g.join(' + ')||'none'))}
 
 // Website 3 is integrated into AIMCRAFT: video evidence -> diagnosis -> targeted refinement.
 let gpFile=null,gpMeta=null,gpResult=null,gpBusy=false;
@@ -420,7 +428,7 @@ function profileHTML(p){
  return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
 }
 function setCurrent(p,msg){
- current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],calibrationGuns:Array.isArray(p.calibrationGuns)?p.calibrationGuns.slice(0,3):[],v:p.v.map(clamp)};
+ current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],calibrationGuns:Array.isArray(p.calibrationGuns)?p.calibrationGuns.slice(0,MAX_FOCUS_GUNS):[],v:p.v.map(clamp)};
  const code=codeFor(current);
  $('profileView').innerHTML='<div class="card"><div class="title">'+esc(msg||'PROFILE LOADED')+'</div>'+profileHTML(current)+'</div><div class="card">'+renderSensi(current.v)+'</div>';
  $('profileCodeBox').innerHTML='<div class="codebox">'+esc(code)+'</div>';
