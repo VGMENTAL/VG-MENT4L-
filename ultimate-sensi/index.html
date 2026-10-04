@@ -508,7 +508,7 @@ function updateOB(){
  backendSaveProfile(current);
  $('updateStatus').innerHTML='<div class="notice ok"><b>OB Update complete.</b> Device, HUD, exact gun profile and all other information preserved.<br>Old sensitivity: '+esc(before.join(' / '))+'<br>New sensitivity: '+esc(current.v.join(' / '))+'<br><div class="codebox" style="margin-top:9px">'+esc(newCode)+'</div></div>';
 }
-async async function importManual(){
+async function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
  const p=makeStarting();
  p.v=v;
