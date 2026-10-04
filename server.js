@@ -333,6 +333,88 @@ async function fetchWebSearchDeviceResearch(name){
   };
 }
 
+async function fetchBroadWebDeviceResearch(name){
+  const q=String(name||'').trim();
+  if(!q)return null;
+  const queries=[
+    '"'+q+'" official specifications chipset processor GPU',
+    '"'+q+'" display refresh rate touch sampling rate',
+    '"'+q+'" RAM Android OS specifications',
+    '"'+q+'" gaming performance touch response'
+  ];
+  const snippets=[],sources=[];
+  const addText=(s,u)=>{if(s&&String(s).trim())snippets.push(String(s).replace(/\\s+/g,' ').trim());if(u)sources.push(u)};
+  const decode=s=>String(s||'').replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;|&#x27;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\\s+/g,' ').trim();
+  for(const term of queries){
+    const engines=[
+      'https://www.google.com/search?q='+encodeURIComponent(term),
+      'https://www.bing.com/search?q='+encodeURIComponent(term),
+      'https://html.duckduckgo.com/html/?q='+encodeURIComponent(term)
+    ];
+    for(const url of engines){
+      const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),6500);
+      try{
+        const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36','Accept':'text/html,application/xhtml+xml'}});
+        if(!r.ok)continue;
+        const html=await r.text();
+        if(/google\\.com/.test(url)){
+          const blocks=[...html.matchAll(/<div[^>]+class="[^"]*MjjYud[^"]*"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>/gi)];
+          for(const m of blocks.slice(0,6)){
+            const h=decode(m[1]); const link=(m[1].match(/<a[^>]+href="([^"]+)"/i)||[])[1]||'';
+            addText(h,link.startsWith('http')?link:'');
+          }
+        }else if(/bing\\.com/.test(url)){
+          const blocks=[...html.matchAll(/<li[^>]+class="b_algo"[^>]*>([\\s\\S]*?)<\\/li>/gi)];
+          for(const m of blocks.slice(0,6)){
+            const h=decode(m[1]); const link=(m[1].match(/<a[^>]+href="([^"]+)"/i)||[])[1]||'';
+            addText(h,link);
+          }
+        }else{
+          const blocks=[...html.matchAll(/<div[^>]+class="result[^"]*"[^>]*>([\\s\\S]*?)<\\/div>/gi)];
+          for(const m of blocks.slice(0,8)){
+            const h=decode(m[1]); const link=(m[1].match(/href="(https?:\\/\\/[^"]+)"/i)||[])[1]||'';
+            addText(h,link);
+          }
+        }
+        if(snippets.length>=12)break;
+      }catch{} finally{clearTimeout(timer);}
+    }
+  }
+  const all=snippets.join(' ');
+  if(!all)return null;
+  const nq=normalizeDevice(q);
+  const mention=nq.length>2 && normalizeDevice(all).includes(nq);
+  const first=(re)=>{const m=all.match(re);return m?m[1].trim():''};
+  const chipset=first(/\\b((?:Qualcomm\\s+)?Snapdragon\\s+[A-Za-z0-9+\\-]+|MediaTek\\s+(?:Dimensity|Helio)\\s+[A-Za-z0-9+\\-]+|Dimensity\\s+[A-Za-z0-9+\\-]+|Exynos\\s+[A-Za-z0-9+\\-]+|Tensor\\s+G[0-9]+(?:\\s+[A-Za-z0-9+\\-]+)?|Apple\\s+A[0-9A-Za-z]+)\\b/i);
+  const gpu=first(/\\b((?:Adreno\\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\\s+GPU))\\b/i);
+  const refresh=first(/\\b(\\d{2,3}\\s*Hz)\\b(?:\\s+(?:refresh|display|screen))?/i);
+  const touch=first(/\\b(\\d{2,4}\\s*Hz)\\b[^.]{0,80}?(?:touch sampling|touch response|sampling rate)/i);
+  const ram=first(/\\b((?:2|3|4|6|8|12|16|18|24)\\s*GB(?:\\s+RAM)?)\\b/i);
+  const resolution=first(/\\b(\\d{3,5}\\s*[x×]\\s*\\d{3,5})\\b/);
+  const size=first(/\\b(\\d(?:\\.\\d)?(?:-inch|\\s*inch|")\\s*(?:display|screen)?)\\b/i);
+  const os=first(/\\b((?:Android|iOS|HarmonyOS)\\s*[0-9A-Za-z.\\-]*)\\b/i);
+  const gaming=/gaming|game[- ]?turbo|game space|game boost|cooling|vc cooling|fps|touch response/i.test(all)
+    ?'Gaming-relevant features found in web research':'Hardware profile available; dedicated gaming feature not verified';
+  if(!chipset&&!gpu&&!refresh&&!resolution&&!ram&&!display)return null;
+  return {
+    canonical:q,brand:(q.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
+    platform:/iphone|ios/i.test(q+' '+os)?'iOS':'Android',
+    variant:/5g/i.test(q)?'5G':(/4g/i.test(q)?'4G':''),
+    chipset:chipset||'Not verified in indexed results',gpu:gpu||'Not verified in indexed results',
+    ram:ram||'Not verified in indexed results',
+    display:[size,resolution].filter(Boolean).join(' · ')||'Not verified in indexed results',
+    refreshRate:refresh||'Not verified in indexed results',
+    touchSampling:touch||'Not verified in indexed results',
+    touchResponse:touch||'Not verified in indexed results',
+    os:os||'Not verified in indexed results',gaming,
+    source:sources.find(x=>/^https?:\\/\\//.test(x))||'',
+    sources:sources.filter(x=>/^https?:\\/\\//.test(x)).slice(0,8),
+    sourceType:'live-web-research',sourceLabel:'Google / Bing / DuckDuckGo indexed specification research',
+    match:mention?'research':'web-research',query:q,confidence:mention?'medium':'low',
+    notes:'Only fields found in indexed results are shown; unverified fields are not used as invented facts.'
+  };
+}
+
 async function fetchGeminiDeviceResearch(name, runtimeContext={}){
   const key=String(process.env.GEMINI_API_KEY||'').trim();
   const q=String(name||'').trim();
@@ -1217,6 +1299,8 @@ const server = http.createServer(async (req, res) => {
       if(researched) return json(res,200,{ok:true,device:researched,verified:true,researched:true,query:q,notice:'Exact device research profile found from specification database.',sourceType:'spec-database'});
       const railway=await fetchRailwayPhoneSpec(q);
       if(railway) return json(res,200,{ok:true,device:railway,verified:true,researched:true,query:q,notice:'Exact device research profile found from extended specification database.',sourceType:'spec-database'});
+      const broad=await fetchBroadWebDeviceResearch(q);
+      if(broad) return json(res,200,{ok:true,device:broad,verified:true,researched:true,query:q,notice:'Device information collected from live multi-engine web research.',sourceType:'live-web-research'});
       const grounded=await fetchGeminiDeviceResearch(q,runtimeContext);
       if(grounded) return json(res,200,{ok:true,device:grounded,verified:true,researched:true,grounded:true,query:q,notice:'Exact device research completed with web-grounded AI.',sourceType:'gemini-grounded-research'});
       const webResearch=await fetchWebSearchDeviceResearch(q);
