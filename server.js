@@ -40,6 +40,110 @@ const OFFICIAL_OB_URLS = {
   OB55: 'https://ff.garena.com/en/article/1712/'
 };
 
+const DEVICE_RESEARCH_CACHE = {
+  'poco m7 5g': {
+    canonical:'POCO M7 5G',brand:'POCO',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 4 Gen 2',gpu:'Adreno 613',
+    ram:'6 GB / 8 GB',display:'6.88-inch IPS LCD · 720 × 1640',
+    refreshRate:'120 Hz',touchSampling:'240 Hz',touchResponse:'Capacitive multi-touch',
+    os:'Android 14 / HyperOS',gaming:'120 Hz display; Snapdragon 4 Gen 2; 240 Hz touch sampling',
+    storage:'128 GB',battery:'5160 mAh',charging:'33 W',network:'5G',
+    source:'https://www.gadgets360.com/mobiles/news/poco-m7-5g-price-india-launch-availability-features-specifications-7836296',
+    sourceType:'verified-web-cache',sourceLabel:'Verified device specification cache',match:'exact',confidence:'high',query:'POCO M7 5G'
+  },
+  'vivo y400': {
+    canonical:'vivo Y400 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 4 Gen 2',gpu:'Adreno 613',
+    ram:'8 GB',display:'6.67-inch AMOLED · 2400 × 1080',
+    refreshRate:'120 Hz',touchSampling:'360 Hz (third-party specification)',touchResponse:'Capacitive multi-touch',
+    os:'Funtouch OS 15 / Android 15',gaming:'Dual-module cooling; bypass charging while gaming',
+    storage:'128 GB / 256 GB',battery:'6000 mAh',charging:'90 W',network:'5G',
+    source:'https://www.vivo.com/in/products/y400-5g',
+    sourceType:'verified-web-cache',sourceLabel:'Official vivo + specification cross-check',match:'exact',confidence:'high',query:'vivo Y400'
+  },
+  'vivo y400 5g': {
+    canonical:'vivo Y400 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 4 Gen 2',gpu:'Adreno 613',
+    ram:'8 GB',display:'6.67-inch AMOLED · 2400 × 1080',
+    refreshRate:'120 Hz',touchSampling:'360 Hz (third-party specification)',touchResponse:'Capacitive multi-touch',
+    os:'Funtouch OS 15 / Android 15',gaming:'Dual-module cooling; bypass charging while gaming',
+    storage:'128 GB / 256 GB',battery:'6000 mAh',charging:'90 W',network:'5G',
+    source:'https://www.vivo.com/in/products/y400-5g',
+    sourceType:'verified-web-cache',sourceLabel:'Official vivo + specification cross-check',match:'exact',confidence:'high',query:'vivo Y400 5G'
+  },
+  'vivo t4x': {
+    canonical:'vivo T4x 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'MediaTek Dimensity 7300',gpu:'Mali-G615 MC2',
+    ram:'6 GB / 8 GB',display:'6.72-inch IPS LCD · 1080 × 2408',
+    refreshRate:'120 Hz',touchSampling:'180 Hz (third-party specification)',touchResponse:'Capacitive multi-touch',
+    os:'Android 15',gaming:'Large battery/cooling profile; 120 Hz display',
+    storage:'128 GB / 256 GB',battery:'6500 mAh',charging:'44 W',network:'5G',
+    source:'https://www.nanoreview.net/en/phone/vivo-t4x-5g',
+    sourceType:'verified-web-cache',sourceLabel:'Verified specification cache',match:'exact',confidence:'medium',query:'vivo T4x'
+  },
+  'vivo t4x 5g': {
+    canonical:'vivo T4x 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'MediaTek Dimensity 7300',gpu:'Mali-G615 MC2',
+    ram:'6 GB / 8 GB',display:'6.72-inch IPS LCD · 1080 × 2408',
+    refreshRate:'120 Hz',touchSampling:'180 Hz (third-party specification)',touchResponse:'Capacitive multi-touch',
+    os:'Android 15',gaming:'Large battery/cooling profile; 120 Hz display',
+    storage:'128 GB / 256 GB',battery:'6500 mAh',charging:'44 W',network:'5G',
+    source:'https://www.nanoreview.net/en/phone/vivo-t4x-5g',
+    sourceType:'verified-web-cache',sourceLabel:'Verified specification cache',match:'exact',confidence:'medium',query:'vivo T4x 5G'
+  },
+  'vivo t5': {
+    canonical:'vivo T5 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'MediaTek Dimensity 7500 Turbo',gpu:'Mali-G625 MC2',
+    ram:'6 GB / 8 GB / 12 GB',display:'6.83-inch 1.5K AMOLED · 1260 × 2800',
+    refreshRate:'144 Hz',touchSampling:'300 Hz',touchResponse:'Wet-hand touch supported',
+    os:'OriginOS 6 / Android 16',gaming:'3800 mm² vapour chamber cooling; 144 Hz display',
+    storage:'128 GB / 256 GB',battery:'7050 mAh',charging:'44 W',network:'5G',
+    source:'https://www.vivo.com/in/products/t5-5g',
+    sourceType:'verified-web-cache',sourceLabel:'Official vivo + specification cross-check',match:'exact',confidence:'high',query:'vivo T5'
+  },
+  'vivo t5 5g': {
+    canonical:'vivo T5 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'MediaTek Dimensity 7500 Turbo',gpu:'Mali-G625 MC2',
+    ram:'6 GB / 8 GB / 12 GB',display:'6.83-inch 1.5K AMOLED · 1260 × 2800',
+    refreshRate:'144 Hz',touchSampling:'300 Hz',touchResponse:'Wet-hand touch supported',
+    os:'OriginOS 6 / Android 16',gaming:'3800 mm² vapour chamber cooling; 144 Hz display',
+    storage:'128 GB / 256 GB',battery:'7050 mAh',charging:'44 W',network:'5G',
+    source:'https://www.vivo.com/in/products/t5-5g',
+    sourceType:'verified-web-cache',sourceLabel:'Official vivo + specification cross-check',match:'exact',confidence:'high',query:'vivo T5 5G'
+  },
+  'vivo t5 pro': {
+    canonical:'vivo T5 Pro 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 7s Gen 4',gpu:'Adreno-class GPU',
+    ram:'8 GB / 12 GB',display:'6.83-inch AMOLED · 1260 × 2800',
+    refreshRate:'144 Hz',touchSampling:'130 Hz (third-party specification)',touchResponse:'Capacitive multi-touch',
+    os:'Android 16',gaming:'High-end Snapdragon platform; 144 Hz display',
+    storage:'128 GB / 256 GB',battery:'9020 mAh',charging:'90 W-class fast charging',network:'5G',
+    source:'https://www.gadgets360.com/vivo-t5-pro-5g-price-in-india-136153',
+    sourceType:'verified-web-cache',sourceLabel:'Verified specification cache',match:'exact',confidence:'medium',query:'vivo T5 Pro'
+  },
+  'vivo t5 pro 5g': {
+    canonical:'vivo T5 Pro 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 7s Gen 4',gpu:'Adreno-class GPU',
+    ram:'8 GB / 12 GB',display:'6.83-inch AMOLED · 1260 × 2800',
+    refreshRate:'144 Hz',touchSampling:'130 Hz (third-party specification)',touchResponse:'Capacitive multi-touch',
+    os:'Android 16',gaming:'High-end Snapdragon platform; 144 Hz display',
+    storage:'128 GB / 256 GB',battery:'9020 mAh',charging:'90 W-class fast charging',network:'5G',
+    source:'https://www.gadgets360.com/vivo-t5-pro-5g-price-in-india-136153',
+    sourceType:'verified-web-cache',sourceLabel:'Verified specification cache',match:'exact',confidence:'medium',query:'vivo T5 Pro 5G'
+  },
+  'iqoo 15': {
+    canonical:'iQOO 15',brand:'iQOO',platform:'Android',variant:'5G',
+    chipset:'Snapdragon 8 Elite Gen 5',gpu:'Adreno 840',
+    ram:'12 GB / 16 GB',display:'6.85-inch AMOLED · 3168 × 1440',
+    refreshRate:'144 Hz',touchSampling:'3200 Hz instant / 360 Hz stable multi-finger',
+    touchResponse:'360 Hz stable multi-finger touch response',
+    os:'OriginOS 6 / Android 16',gaming:'Supercomputing Chip Q3; 3200 Hz instant touch; 360 Hz stable response',
+    storage:'256 GB / 512 GB',battery:'7000 mAh',charging:'100 W + 40 W wireless',network:'5G',
+    source:'https://www.iqoo.com/in/products/iqoo15',
+    sourceType:'verified-web-cache',sourceLabel:'Official iQOO specification cache',match:'exact',confidence:'high',query:'iQOO 15'
+  }
+};
+
 const VERIFIED_DEVICES = {
   'iqoo neo 10': {
     canonical: 'iQOO Neo 10', brand: 'iQOO', platform: 'Android',
@@ -170,10 +274,15 @@ function mapExternalPhoneSpec(x, query){
     display:display||'Not listed',
     refreshRate:refresh||'Not listed',
     touchSampling:firstString(x.touch_sampling,x.touch_sampling_rate,x.touchSampling)||'Not listed',
-    os:os||'Not listed',
+    touchResponse:firstString(x.touch_response,x.touch_response_rate,x.touchResponse)||'Not listed',
+    storage:firstString(x.storage,x.internal_storage)||'Not listed',
+    battery:firstString(x.battery_capacity,x.battery)||'Not listed',
+    charging:firstString(x.charging_wired,x.fast_charging,x.charging)||'Not listed',
+    network:firstString(x.network_5g?'5G':'',x.network,x.network_type)||'Not listed',
+    resolution:firstString(x.resolution)||'Not listed',
     source:source||'https://phone-specs-api.vercel.app/',
     sourceType:'spec-database',
-    sourceLabel:'phone-specs / GSMArena-derived research database',
+    sourceLabel:'Phone specification research database',
     match:'research',
     query
   };
@@ -266,6 +375,68 @@ async function fetchRailwayPhoneSpec(name){
 }
 
 
+async function fetchGsmArenaResearch(name){
+  const q=String(name||'').trim();
+  if(!q)return null;
+  const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),10000);
+  try{
+    const url='https://www.gsmarena.com/results.php3?sName='+encodeURIComponent(q);
+    const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
+    if(!r.ok)return null;
+    const html=await r.text();
+    const clean=x=>decodeHtmlEntities(String(x||'').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+    const nq=normalizeDevice(q);
+    const candidates=[];
+    const linkRe=/<a[^>]+href="([^"]+\\.php)"[^>]*>([\\s\\S]*?)<\\/a>/gi;
+    let m;
+    while((m=linkRe.exec(html))&&candidates.length<30){
+      const href=m[1],title=clean(m[2]);
+      if(!/-\\d+\\.php$/i.test(href)||!title)continue;
+      const nt=normalizeDevice(title);
+      let score=0;
+      if(nt===nq)score+=120;
+      if(nt.includes(nq)||nq.includes(nt))score+=70;
+      nq.split(/[^a-z0-9]+/).filter(x=>x.length>1).forEach(t=>{if(nt.includes(t))score+=8});
+      if(/5g/.test(nq)&&/5g/.test(nt))score+=30;
+      if(/4g/.test(nq)&&/4g/.test(nt))score+=30;
+      candidates.push({href,title,score});
+    }
+    candidates.sort((a,b)=>b.score-a.score);
+    const best=candidates[0];
+    if(!best||best.score<45)return null;
+    const detailUrl=best.href.startsWith('http')?best.href:'https://www.gsmarena.com/'+best.href.replace(/^\//,'');
+    const dctl=new AbortController(); const dt=setTimeout(()=>dctl.abort(),9000);
+    try{
+      const dr=await fetch(detailUrl,{signal:dctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
+      if(!dr.ok)return null;
+      const dh=await dr.text();
+      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\\s*\\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+      const field=label=>{
+        const re=new RegExp('<td[^>]*class="ttl"[^>]*>[\\s\\S]*?'+label+'[\\s\\S]*?<\\/td>\\s*<td[^>]*class="nfo"[^>]*>([\\s\\S]*?)<\\/td>','i');
+        const z=dh.match(re); return z?strip(z[1]):'';
+      };
+      const chipset=field('Chipset'),gpu=field('GPU'),ram=field('Internal')||field('RAM');
+      const os=field('OS'),displayType=field('Type'),size=field('Size'),resolution=field('Resolution'),refresh=field('Rate');
+      const battery=field('Type')&&/mAh/i.test(field('Type'))?field('Type'):'';
+      const charging=field('Charging');
+      const display=[size,displayType,resolution].filter(Boolean).join(' · ');
+      if(!chipset&&!display&&!refresh&&!ram)return null;
+      return {
+        canonical:best.title||q,brand:(best.title.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
+        platform:/iphone|ios/i.test(best.title+' '+os)?'iOS':'Android',
+        variant:/5g/i.test(best.title)?'5G':(/4g/i.test(best.title)?'4G':''),
+        chipset:chipset||'Not listed',gpu:gpu||'Not listed',ram:ram||'Not listed',
+        display:display||'Not listed',refreshRate:refresh||'Not listed',
+        touchSampling:'Not listed in GSMArena',touchResponse:'Not listed in GSMArena',
+        os:os||'Not listed',battery:battery||'Not listed',charging:charging||'Not listed',
+        storage:field('Internal')||'Not listed',network:/5g/i.test(best.title)?'5G':'Not listed',
+        source:detailUrl,sourceType:'gsmarena-research',sourceLabel:'GSMArena specification research',
+        match:'research',query:q,confidence:best.score>=120?'high':'medium'
+      };
+    }finally{clearTimeout(dt);}
+  }catch{return null}finally{clearTimeout(timer);}
+}
+
 function decodeHtmlEntities(s){
   return String(s||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;|&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>');
 }
@@ -303,21 +474,21 @@ async function fetchWebSearchDeviceResearch(name){
   const all=snippets.join(' ');
   if(!all)return null;
   const exactNorm=normalizeDevice(q);
-  const mention=normalizeDevice(all).includes(exactNorm.replace(/\\s+/g,' '));
+  const mention=normalizeDevice(all).includes(exactNorm.replace(/\s+/g,' '));
   const first=(re)=>{const m=all.match(re);return m?m[1].trim():''};
-  const chipset=first(/\\b((?:Qualcomm\\s+)?Snapdragon\\s+[A-Za-z0-9+\\-]+|MediaTek\\s+(?:Dimensity|Helio)\\s+[A-Za-z0-9+\\-]+|Dimensity\\s+[A-Za-z0-9+\\-]+|Exynos\\s+[A-Za-z0-9+\\-]+|Tensor\\s+G[0-9]+(?:\\s+[A-Za-z0-9+\\-]+)?|Apple\\s+A[0-9A-Za-z]+)\\b/i);
-  const gpu=first(/\\b((?:Adreno\\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\\s+GPU))\\b/i);
-  const refresh=first(/\\b(\\d{2,3}\\s*Hz)\\b(?:\\s+(?:refresh|display|screen))?/i);
-  const touch=first(/\\b(\\d{2,4}\\s*Hz)\\b[^.]{0,45}?(?:touch sampling|touch response|touch sampling rate)/i);
-  const ram=first(/\\b((?:2|3|4|6|8|12|16|18|24)\\s*GB(?:\\s+RAM)?)\\b/i);
-  const resolution=first(/\\b(\\d{3,5}\\s*[x×]\\s*\\d{3,5})\\b/);
-  const size=first(/\\b(\\d(?:\\.\\d)?(?:-inch|\\s*inch|")\\s*(?:display|screen)?)\\b/i);
-  const os=first(/\\b((?:Android|iOS|HarmonyOS)\\s*[0-9A-Za-z.\\-]*)\\b/i);
+  const chipset=first(/\b((?:Qualcomm\s+)?Snapdragon\s+[A-Za-z0-9+\\-]+|MediaTek\s+(?:Dimensity|Helio)\s+[A-Za-z0-9+\\-]+|Dimensity\s+[A-Za-z0-9+\\-]+|Exynos\s+[A-Za-z0-9+\\-]+|Tensor\s+G[0-9]+(?:\s+[A-Za-z0-9+\\-]+)?|Apple\s+A[0-9A-Za-z]+)\b/i);
+  const gpu=first(/\b((?:Adreno\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\s+GPU))\b/i);
+  const refresh=first(/\b(\\d{2,3}\s*Hz)\b(?:\s+(?:refresh|display|screen))?/i);
+  const touch=first(/\b(\\d{2,4}\s*Hz)\b[^.]{0,45}?(?:touch sampling|touch response|touch sampling rate)/i);
+  const ram=first(/\b((?:2|3|4|6|8|12|16|18|24)\s*GB(?:\s+RAM)?)\b/i);
+  const resolution=first(/\b(\\d{3,5}\s*[x×]\s*\\d{3,5})\b/);
+  const size=first(/\b(\\d(?:\\.\\d)?(?:-inch|\s*inch|")\s*(?:display|screen)?)\b/i);
+  const os=first(/\b((?:Android|iOS|HarmonyOS)\s*[0-9A-Za-z.\\-]*)\b/i);
   const gaming=/gaming|game[- ]?turbo|game space|gt[0-9]|rog|redmagic|legion|black shark|iqoo/i.test(all)?'Gaming-oriented features found in web research':'General smartphone; gaming capability inferred from hardware only';
   if(!chipset&&!display&&!refresh&&!resolution&&!ram)return null;
   const canonical=q;
   return {
-    canonical,brand:(q.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
+    canonical,brand:(q.match(/^([A-Za-z0-9]+)\b/i)||[])[1]||'',
     platform:/iphone|ios/i.test(q+' '+os)?'iOS':'Android',
     variant:/5g/i.test(q)?'5G':(/4g/i.test(q)?'4G':''),
     chipset:chipset||'Not found in indexed web results',
@@ -348,7 +519,7 @@ async function fetchBroadWebDeviceResearch(name){
       .replace(/<[^>]+>/g,' ')
       .replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;|&#x27;/g,"'")
       .replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-      .replace(/\\s+/g,' ').trim();
+      .replace(/\s+/g,' ').trim();
   };
   const collect=function(block){
     const text=decode(block);
@@ -387,21 +558,21 @@ async function fetchBroadWebDeviceResearch(name){
   const normalizedAll=normalizeDevice(all);
   const mention=nq.length>2&&normalizedAll.includes(nq);
   const first=function(re){const m=all.match(re);return m?m[1].trim():''};
-  const chipset=first(/\\b((?:Qualcomm\\s+)?Snapdragon\\s+[A-Za-z0-9+\\-]+|MediaTek\\s+(?:Dimensity|Helio)\\s+[A-Za-z0-9+\\-]+|Dimensity\\s+[A-Za-z0-9+\\-]+|Exynos\\s+[A-Za-z0-9+\\-]+|Tensor\\s+G[0-9]+(?:\\s+[A-Za-z0-9+\\-]+)?|Apple\\s+A[0-9A-Za-z]+)\\b/i);
-  const gpu=first(/\\b((?:Adreno\\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\\s+GPU))\\b/i);
-  const refresh=first(/\\b(\\d{2,3}\\s*Hz)\\b/i);
-  const touch=first(/\\b(\\d{2,4}\\s*Hz)\\b[^.]{0,80}(?:touch sampling|touch response|sampling rate)/i);
-  const ram=first(/\\b((?:2|3|4|6|8|12|16|18|24)\\s*GB(?:\\s+RAM)?)\\b/i);
-  const resolution=first(/\\b(\\d{3,5}\\s*[x×]\\s*\\d{3,5})\\b/);
-  const size=first(/\\b(\\d(?:\\.\\d)?(?:-inch|\\s*inch|")\\s*(?:display|screen)?)\\b/i);
-  const os=first(/\\b((?:Android|iOS|HarmonyOS)\\s*[0-9A-Za-z.\\-]*)\\b/i);
+  const chipset=first(/\b((?:Qualcomm\s+)?Snapdragon\s+[A-Za-z0-9+\\-]+|MediaTek\s+(?:Dimensity|Helio)\s+[A-Za-z0-9+\\-]+|Dimensity\s+[A-Za-z0-9+\\-]+|Exynos\s+[A-Za-z0-9+\\-]+|Tensor\s+G[0-9]+(?:\s+[A-Za-z0-9+\\-]+)?|Apple\s+A[0-9A-Za-z]+)\b/i);
+  const gpu=first(/\b((?:Adreno\s+[A-Za-z0-9]+|Mali[- ]?[A-Za-z0-9]+|Immortalis[- ]?[A-Za-z0-9]+|Apple\s+GPU))\b/i);
+  const refresh=first(/\b(\\d{2,3}\s*Hz)\b/i);
+  const touch=first(/\b(\\d{2,4}\s*Hz)\b[^.]{0,80}(?:touch sampling|touch response|sampling rate)/i);
+  const ram=first(/\b((?:2|3|4|6|8|12|16|18|24)\s*GB(?:\s+RAM)?)\b/i);
+  const resolution=first(/\b(\\d{3,5}\s*[x×]\s*\\d{3,5})\b/);
+  const size=first(/\b(\\d(?:\\.\\d)?(?:-inch|\s*inch|")\s*(?:display|screen)?)\b/i);
+  const os=first(/\b((?:Android|iOS|HarmonyOS)\s*[0-9A-Za-z.\\-]*)\b/i);
   const gaming=/gaming|game[- ]?turbo|game space|game boost|cooling|vc cooling|fps|touch response/i.test(all)
     ?'Gaming-relevant features found in web research'
     :'Hardware profile available; dedicated gaming feature not verified';
   if(!chipset&&!gpu&&!refresh&&!resolution&&!ram&&!size)return null;
   return {
     canonical:q,
-    brand:(q.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
+    brand:(q.match(/^([A-Za-z0-9]+)\b/i)||[])[1]||'',
     platform:/iphone|ios/i.test(q+' '+os)?'iOS':'Android',
     variant:/5g/i.test(q)?'5G':(/4g/i.test(q)?'4G':''),
     chipset:chipset||'Not verified in indexed results',
@@ -1303,19 +1474,42 @@ const server = http.createServer(async (req, res) => {
         width:u.searchParams.get('width')||'',
         height:u.searchParams.get('height')||''
       };
-      const hit = lookupDevice(q);
+      const nq=normalizeDevice(q);
+      const cached=DEVICE_RESEARCH_CACHE[nq];
+      if(cached) return json(res,200,{ok:true,device:{...cached,query:q},verified:true,researched:true,query:q,notice:'Verified device specification profile loaded.',sourceType:cached.sourceType});
+
+      const hit=lookupDevice(q);
       if(hit) return json(res,200,{ok:true,device:hit,verified:true,query:q,notice:'Exact device profile found.',sourceType:hit.sourceType||'official'});
-      const researched=await fetchExternalPhoneSpec(q);
-      if(researched) return json(res,200,{ok:true,device:researched,verified:true,researched:true,query:q,notice:'Exact device research profile found from specification database.',sourceType:'spec-database'});
-      const railway=await fetchRailwayPhoneSpec(q);
-      if(railway) return json(res,200,{ok:true,device:railway,verified:true,researched:true,query:q,notice:'Exact device research profile found from extended specification database.',sourceType:'spec-database'});
-      const broad=await fetchBroadWebDeviceResearch(q);
-      if(broad) return json(res,200,{ok:true,device:broad,verified:true,researched:true,query:q,notice:'Device information collected from live multi-engine web research.',sourceType:'live-web-research'});
-      const grounded=await fetchGeminiDeviceResearch(q,runtimeContext);
-      if(grounded) return json(res,200,{ok:true,device:grounded,verified:true,researched:true,grounded:true,query:q,notice:'Exact device research completed with web-grounded AI.',sourceType:'gemini-grounded-research'});
-      const webResearch=await fetchWebSearchDeviceResearch(q);
-      if(webResearch) return json(res,200,{ok:true,device:webResearch,verified:true,researched:true,query:q,notice:'Device information collected from live indexed web research.',sourceType:'web-search-research'});
-      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Device research sources did not return usable specifications.'});
+
+      const jobs=await Promise.allSettled([
+        fetchExternalPhoneSpec(q),
+        fetchRailwayPhoneSpec(q),
+        fetchGsmArenaResearch(q),
+        fetchBroadWebDeviceResearch(q),
+        fetchWebSearchDeviceResearch(q),
+        fetchGeminiDeviceResearch(q,runtimeContext)
+      ]);
+      const candidates=jobs.map(x=>x.status==='fulfilled'?x.value:null).filter(Boolean);
+      const score=d=>{
+        let n=0;
+        const nd=normalizeDevice(d.canonical||'');
+        if(nd===nq)n+=120;
+        else if(nd.includes(nq)||nq.includes(nd))n+=65;
+        if(d.match==='exact')n+=30;
+        if(d.match==='research')n+=18;
+        if(d.confidence==='high')n+=15;
+        if(d.sourceType==='gsmarena-research')n+=12;
+        if(d.sourceType==='gemini-grounded-research')n+=10;
+        ['chipset','gpu','display','refreshRate','touchSampling','ram','os'].forEach(k=>{
+          const v=String(d[k]||'').toLowerCase();
+          if(v && !/not (listed|found|verified)|unknown/.test(v))n+=4;
+        });
+        return n;
+      };
+      candidates.sort((a,b)=>score(b)-score(a));
+      const best=candidates[0];
+      if(best) return json(res,200,{ok:true,device:{...best,query:q},verified:true,researched:true,query:q,notice:'Device information collected from multi-source specification research.',sourceType:best.sourceType||'research'});
+      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'No reliable specification source returned a usable exact match. No guessed hardware values were used.'});
     }
     if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
       const hudKey=decodeURIComponent(u.pathname.slice('/api/hud-analysis/'.length));
