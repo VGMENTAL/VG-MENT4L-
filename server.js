@@ -44,7 +44,7 @@ const DEVICE_RESEARCH_CACHE = {
   'poco m7 5g': {
     canonical:'POCO M7 5G',brand:'POCO',platform:'Android',variant:'5G',
     chipset:'Qualcomm Snapdragon 4 Gen 2',gpu:'Adreno 613',
-    ram:'6 GB / 8 GB',display:'6.88-inch IPS LCD · 720 × 1640',
+    ram:'6 GB / 8 GB',display:'6.88-inch IPS LCD · 720 × 1640',resolution:'720 × 1640',
     refreshRate:'120 Hz',touchSampling:'240 Hz',touchResponse:'Capacitive multi-touch',
     os:'Android 14 / HyperOS',gaming:'120 Hz display; Snapdragon 4 Gen 2; 240 Hz touch sampling',
     storage:'128 GB',battery:'5160 mAh',charging:'33 W',network:'5G',
@@ -485,6 +485,70 @@ async function fetchGsmArenaResearch(name){
     clearTimeout(timer);
   }
 }
+function deviceKnowledgeEnrich(d, query){
+  const out={...(d||{})};
+  const q=String(query||out.query||'').trim();
+  const all=String([out.chipset,out.display,out.resolution,out.gpu,out.os,out.network,out.variant].filter(Boolean).join(' '));
+  const cleanMissing=v=>{
+    const s=String(v||'').trim();
+    return !s || /^(not|unknown|auto research|could not|not officially|not found|n\\/a|-)/i.test(s);
+  };
+  if(cleanMissing(out.resolution)){
+    const m=String(out.display||'').match(/(\\d{3,5}\\s*[x×]\\s*\\d{3,5})/);
+    if(m) out.resolution=m[1].replace(/x/g,' × ');
+  }
+  if(cleanMissing(out.gpu)){
+    const maps=[
+      [/snapdragon\\s+4\\s+gen\\s+2/i,'Adreno 613'],
+      [/snapdragon\\s+6\\s+gen\\s+1/i,'Adreno 710'],
+      [/snapdragon\\s+6\\s+gen\\s+3/i,'Adreno 710'],
+      [/snapdragon\\s+7s\\s+gen\\s+2/i,'Adreno 710'],
+      [/snapdragon\\s+7s\\s+gen\\s+3/i,'Adreno 732'],
+      [/snapdragon\\s+7s\\s+gen\\s+4/i,'Adreno-class GPU'],
+      [/snapdragon\\s+8s\\s+gen\\s+3/i,'Adreno 735'],
+      [/snapdragon\\s+8s\\s+gen\\s+4/i,'Adreno-class GPU'],
+      [/snapdragon\\s+8\\s+gen\\s+2/i,'Adreno 740'],
+      [/snapdragon\\s+8\\s+gen\\s+3/i,'Adreno 750'],
+      [/snapdragon\\s+8\\s+gen\\s+4/i,'Adreno-class GPU'],
+      [/dimensity\\s+6300/i,'Mali-G57 MC2'],
+      [/dimensity\\s+6100/i,'Mali-G57 MC2'],
+      [/dimensity\\s+7300/i,'Mali-G615 MC2'],
+      [/dimensity\\s+7400/i,'Mali-G615 MC2'],
+      [/dimensity\\s+7500/i,'Mali-G625 MC2'],
+      [/dimensity\\s+8200/i,'Mali-G610 MC6'],
+      [/dimensity\\s+8300/i,'Mali-G615 MC6'],
+      [/dimensity\\s+9200/i,'Immortalis-G715 MC11'],
+      [/dimensity\\s+9300/i,'Immortalis-G720 MC12'],
+      [/exynos\\s+1380/i,'Mali-G68 MP5'],
+      [/exynos\\s+1480/i,'Xclipse 530'],
+      [/tensor\\s+g2/i,'Mali-G710 MP7'],
+      [/tensor\\s+g3/i,'Immortalis-G715s MC10'],
+      [/tensor\\s+g4/i,'Mali-G715s MC7'],
+      [/kirin\\s+9000/i,'Maleoon 910'],
+      [/apple\\s+a1[56789]/i,'Apple GPU']
+    ];
+    const hit=maps.find(x=>x[0].test(all));
+    if(hit) out.gpu=hit[1];
+  }
+  if(cleanMissing(out.network)){
+    if(/\\b5g\\b/i.test(q+' '+all)) out.network='5G';
+    else if(/\\b4g\\b|lte/i.test(q+' '+all)) out.network='4G / LTE';
+  }
+  if(cleanMissing(out.platform)) out.platform=/iphone|ios/i.test(q+' '+all)?'iOS':'Android';
+  if(cleanMissing(out.variant)){
+    if(/\\b5g\\b/i.test(q+' '+all)) out.variant='5G';
+    else if(/\\b4g\\b/i.test(q+' '+all)) out.variant='4G';
+  }
+  if(cleanMissing(out.display) && out.resolution) out.display=out.resolution;
+  if(cleanMissing(out.gaming)){
+    out.gaming=out.chipset||out.refreshRate
+      ? 'Gaming profile derived from verified hardware; no unverified game-specific claim added.'
+      : 'Gaming profile unavailable until exact hardware is verified.';
+  }
+  out.query=q;
+  return out;
+}
+
 function decodeHtmlEntities(s){
   return String(s||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;|&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>');
 }
@@ -1540,334 +1604,11 @@ const server = http.createServer(async (req, res) => {
       };
       const nq=normalizeDevice(q);
       const cached=DEVICE_RESEARCH_CACHE[nq];
-      if(cached) return json(res,200,{ok:true,device:{...cached,query:q},verified:true,researched:true,query:q,notice:'Verified device specification profile loaded.',sourceType:cached.sourceType});
+      if(cached) { const device=deviceKnowledgeEnrich({...cached,query:q},q); return json(res,200,{ok:true,device,verified:true,researched:true,query:q,notice:'Verified device specification profile loaded and completed by device intelligence engine.',sourceType:device.sourceType}); }
 
       const hit=lookupDevice(q);
-      if(hit) return json(res,200,{ok:true,device:hit,verified:true,query:q,notice:'Exact device profile found.',sourceType:hit.sourceType||'official'});
+      if(hit) { const device=deviceKnowledgeEnrich(hit,q); return json(res,200,{ok:true,device,verified:true,query:q,notice:'Exact device profile found and completed by device intelligence engine.',sourceType:device.sourceType||'official'}); }
 
       const jobs=await Promise.allSettled([
         fetchExternalPhoneSpec(q),
         fetchRailwayPhoneSpec(q),
-        fetchGsmArenaResearch(q),
-        fetchBroadWebDeviceResearch(q),
-        fetchWebSearchDeviceResearch(q),
-        fetchGeminiDeviceResearch(q,runtimeContext)
-      ]);
-      const candidates=jobs.map(x=>x.status==='fulfilled'?x.value:null).filter(Boolean);
-      const score=d=>{
-        let n=0;
-        const nd=normalizeDevice(d.canonical||'');
-        if(nd===nq)n+=120;
-        else if(nd.includes(nq)||nq.includes(nd))n+=65;
-        if(d.match==='exact')n+=30;
-        if(d.match==='research')n+=18;
-        if(d.confidence==='high')n+=15;
-        if(d.sourceType==='gsmarena-research')n+=12;
-        if(d.sourceType==='gemini-grounded-research')n+=10;
-        ['chipset','gpu','display','refreshRate','touchSampling','ram','os'].forEach(k=>{
-          const v=String(d[k]||'').toLowerCase();
-          if(v && !/not (listed|found|verified)|unknown/.test(v))n+=4;
-        });
-        return n;
-      };
-      candidates.sort((a,b)=>score(b)-score(a));
-      const best=candidates[0];
-      if(best){
-        // Do not trust one weak source when another source has a verified field.
-        // Merge only candidates that clearly refer to the same model/variant.
-        const compatible=candidates.filter(d=>{
-          const dn=normalizeDevice(d.canonical||'');
-          const same=dn===nq || dn.includes(nq) || nq.includes(dn);
-          const dv=normalizeDevice(d.variant||'');
-          const q5=/\b5g\b/.test(nq), d5=/\b5g\b/.test(dn+' '+dv);
-          const q4=/\b4g\b/.test(nq), d4=/\b4g\b/.test(dn+' '+dv);
-          return same && (!q5 || d5) && (!q4 || d4);
-        });
-        const merged={...best};
-        const usable=v=>{const x=String(v||'').trim().toLowerCase();return x && !/^(not|unknown|auto research|could not|not officially|n\/a|-)/i.test(x);};
-        const fields=['brand','platform','variant','chipset','gpu','ram','display','resolution','refreshRate','touchSampling','touchResponse','storage','battery','charging','network','os','gaming'];
-        fields.forEach(k=>{
-          if(usable(merged[k]))return;
-          for(const d of compatible){
-            if(usable(d[k])){merged[k]=d[k];break;}
-          }
-        });
-        const sourceUrls=[];
-        compatible.forEach(d=>{
-          [d.source,...(Array.isArray(d.sources)?d.sources:[])].filter(Boolean).forEach(x=>{if(!sourceUrls.includes(x))sourceUrls.push(x)});
-        });
-        merged.sources=sourceUrls.slice(0,10);
-        merged.source=merged.source||sourceUrls[0]||'';
-        merged.sourceLabel='Multi-source device specification research';
-        merged.sourceType='multi-source-research';
-        merged.match='research';
-        merged.query=q;
-        merged.confidence=compatible.some(d=>d.confidence==='high')?'high':(compatible.length>1?'medium':(merged.confidence||'medium'));
-        merged.notes='Fields are merged only from sources matching the requested model/variant. Unknown fields are not invented.';
-        return json(res,200,{ok:true,device:merged,verified:true,researched:true,query:q,notice:'Device information collected and cross-checked from multiple specification sources.',sourceType:merged.sourceType});
-      }
-      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'No reliable specification source returned a usable exact match. No guessed hardware values were used.'});
-    }
-    if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
-      const hudKey=decodeURIComponent(u.pathname.slice('/api/hud-analysis/'.length));
-      const cached=dbReady ? await dbGetHudAnalysis(hudKey) : localGetHudAnalysis(hudKey);
-      if(cached) return json(res,200,{ok:true,analysis:cached,hudKey,cached:true});
-      return json(res,404,{ok:false,error:'HUD analysis cache not found'});
-    }
-    if (req.method === 'POST' && u.pathname === '/api/hud-analyze') {
-      const b=await readBody(req, MAX_BODY);
-      if(!b.imageData) return json(res,400,{error:'HUD image is required'});
-      const hudKey=String(b.hudKey||'').trim();
-      const fingerprint=normalizeHudFingerprint(b.fingerprint);
-      try {
-        // Exact key first, then a perceptual fingerprint match so Android
-        // screenshot resolution/compression differences do not split a profile.
-        if(hudKey){
-          const cached=dbReady ? await dbGetHudAnalysis(hudKey) : localGetHudAnalysis(hudKey);
-          if(cached) return json(res,200,{ok:true,analysis:cached,hudKey,cached:true});
-        }
-        const similar=dbReady ? await dbFindSimilarHudAnalysis(fingerprint) : localFindSimilarHudAnalysis(fingerprint);
-        if(similar) return json(res,200,{ok:true,analysis:similar.analysis,hudKey:similar.hudKey,cached:true,similar:true});
-        const analysis=await runGeminiHudAnalysis(b);
-        if(!analysis) return json(res,503,{error:'GEMINI_API_KEY is not configured'});
-        if(hudKey){
-          if(dbReady) await dbSaveHudAnalysis(hudKey,analysis,fingerprint);
-          else localSaveHudAnalysis(hudKey,analysis,fingerprint);
-        }
-        return json(res,200,{ok:true,analysis,cached:false,hudKey});
-      } catch(e) {
-        console.error('HUD AI analysis failed:',e.message);
-        return json(res,502,{error:e.message||'HUD AI analysis failed'});
-      }
-    }
-
-    if (req.method === 'GET' && u.pathname === '/api/patch-research') {
-      const ob = safeCode(u.searchParams.get('ob') || '');
-      if (!/^OB\d+$/.test(ob)) return json(res, 400, { error: 'Valid OB required' });
-      if (Number(ob.slice(2)) > LATEST_OB) return json(res, 409, { error: `${ob} is not officially supported yet`, latestOb: `OB${LATEST_OB}` });
-      const result = await fetchOfficial(ob);
-      if (!result) return json(res, 503, { error: 'Official Garena patch could not be fetched right now', ob });
-      return json(res, 200, { ok: true, ...result });
-    }
-
-    if (req.method === 'GET' && u.pathname.startsWith('/api/profiles/')) {
-      const code = safeCode(decodeURIComponent(u.pathname.split('/').pop()));
-      if (!validCode(code)) return json(res, 400, { error: 'Invalid Profile ID' });
-      const profile = await loadProfile(code);
-      if (!profile) return json(res, 404, { error: 'Profile not found' });
-      return json(res, 200, { profile, source: dbReady ? 'backend' : 'local-fallback' });
-    }
-
-    if ((req.method === 'POST' || req.method === 'PUT') && u.pathname === '/api/profiles') {
-      const b = await readBody(req);
-      const code = safeCode(b.code);
-      if (!validCode(code)) return json(res, 400, { error: 'Valid Profile ID required' });
-      const profile = cleanProfile(b, code);
-      if (!profile) return json(res, 400, { error: 'Invalid profile' });
-      if (dbReady) {
-        await dbSaveProfile(profile);
-        return json(res, 200, { ok: true, code, updatedAt: profile.updatedAt, source: 'backend' });
-      }
-      writeJson(fileFor(PROFILES, code), profile);
-      return json(res, 200, { ok: true, code, updatedAt: profile.updatedAt, source: 'local-fallback', warning: 'Persistent database unavailable' });
-    }
-
-    if (req.method === 'POST' && u.pathname === '/api/profile-fix') {
-      const b = await readBody(req);
-      const oldCode = safeCode(b.code);
-      if (!validCode(oldCode)) return json(res, 400, { error: 'Valid existing Profile ID required' });
-      const old = await loadProfile(oldCode);
-      if (!old) return json(res, 404, { error: 'Existing profile not found' });
-      const issues = cleanIssueList(b.issues ?? b.issue);
-      const custom = String(b.customText || b.custom || '').trim();
-      if (!issues.length && !custom) return json(res, 400, { error: 'Select at least one problem or enter a custom problem' });
-      const fixed = applyIssueList(old.sensitivity, issues, custom);
-      const clone = JSON.parse(JSON.stringify(old));
-      clone.sensitivity = fixed.sensitivity;
-      clone.recalibration = { ...(clone.recalibration || {}), sourceProfileId: oldCode, issues, customText: custom, createdAt: new Date().toISOString() };
-      const p = await saveNewProfile(clone);
-      return json(res, 200, { ok: true, oldProfileId: oldCode, newProfileId: p.code, sensitivity: p.sensitivity, issues, customText: custom, oldProfileUnchanged: true, source: dbReady ? 'backend' : 'local-fallback' });
-    }
-
-    if (req.method === 'POST' && u.pathname === '/api/manual-fix') {
-      const b = await readBody(req);
-      const issues = cleanIssueList(b.issues ?? b.issue);
-      const custom = String(b.customText || b.custom || '').trim();
-      if (!issues.length && !custom) return json(res, 400, { error: 'Select at least one problem or enter a custom problem' });
-      try {
-        const ai = await runGeminiTextFix({ sensitivity: b.sensitivity, issues, customText: custom, context: b.context || {} });
-        if (ai) return json(res, 200, { ok: true, sensitivity: ai.sensitivity, issues, customText: custom, diagnosis: ai.diagnosis, changes: ai.changes, model: ai.model });
-      } catch (e) {
-        console.error('Gemini manual fix failed:', e.message);
-      }
-      return json(res, 200, { ok: true, ...applyIssueList(b.sensitivity, issues, custom), warning: 'Gemini AI unavailable; conservative local fallback used.' });
-    }
-
-    // OPENAI VISION: browser samples the entire video timeline into chronological frames.
-    if (req.method === 'POST' && u.pathname === '/api/gameplay-analyze-openai') {
-      let b;
-      try { b = await readBody(req, OPENAI_FRAME_BODY); }
-      catch (e) { return json(res, 413, { error: 'Gameplay frame payload too large', detail: String(e?.message || e) }); }
-      const frames = Array.isArray(b.frames) ? b.frames : [];
-      if (!frames.length) return json(res, 400, { error: 'No gameplay frames were received.' });
-      let context = b.context && typeof b.context === 'object' ? b.context : {};
-      try {
-        const result = await runOpenAIGameplayFrames(frames, context);
-        return json(res, 200, { ok: true, temporary: true, videoStored: false, fullVideo: true, frameTimeline: true, framesReceived: frames.length, result });
-      } catch (e) {
-        console.error('OpenAI gameplay analysis failed:', e);
-        const detail=String(e?.message || e);
-        if(/insufficient_quota|credit_balance_exhausted|no credits remaining|quota/i.test(detail)){
-          return json(res, 429, {
-            ok:false,
-            error:'OpenAI gameplay AI quota/credits unavailable',
-            code:'OPENAI_QUOTA_EXHAUSTED',
-            detail:'OpenAI API credits/quota available nahi hai. Website Gemini par automatically switch nahi karegi, taaki ek provider ki quota problem doosre provider ki quota error mein convert na ho.',
-            provider:'openai'
-          });
-        }
-        return json(res, 502, { ok: false, error: 'OpenAI gameplay analysis failed', detail });
-      }
-    }
-
-    if (req.method === 'POST' && u.pathname === '/api/gameplay-analyze-gemini-frames') {
-      let b;
-      try { b = await readBody(req, 16 * 1024 * 1024); }
-      catch(e) { return json(res,413,{error:'Gameplay evidence payload too large',detail:String(e?.message||e)}); }
-      const frames=Array.isArray(b.frames)?b.frames:[];
-      if(!frames.length) return json(res,400,{error:'No gameplay evidence frames received.'});
-      try {
-        const result=await runGeminiGameplayFrames(frames,b.context||{});
-        return json(res,200,{ok:true,temporary:true,videoStored:false,fullVideo:true,frameTimeline:true,result});
-      } catch(e) {
-        console.error('Gemini gameplay frame analysis failed:',e);
-        const detail=String(e?.message||e);
-        const quota=/quota|resource_exhausted|rate.?limit|too many requests|429/i.test(detail);
-        return json(res,quota?429:502,{ok:false,error:quota?'Gemini Free Tier quota temporarily unavailable':'Gemini gameplay frame analysis failed',code:quota?'GEMINI_FREE_QUOTA':'GEMINI_GAMEPLAY_ERROR',detail});
-      }
-    }
-
-    // FULL VIDEO: the browser request is streamed directly to Gemini.
-    // Render does not write the gameplay video to disk or database.
-    if (req.method === 'POST' && u.pathname === '/api/gameplay-analyze') {
-      const contentType = String(req.headers['content-type'] || '').toLowerCase();
-      if (!contentType.startsWith('video/')) return json(res, 415, { error: 'Send the complete gameplay video as video/* body. Frames are not used.' });
-      const size = Number(req.headers['content-length'] || 0);
-      if (!Number.isFinite(size) || size <= 0) return json(res, 411, { error: 'Content-Length is required for full-video upload.' });
-      if (size > GAMEPLAY_MAX_BODY) return json(res, 413, { error: 'Gameplay video is larger than the 2 GB limit.' });
-      const key = String(process.env.GEMINI_API_KEY || '').trim();
-      if (!key) return json(res, 503, { configured: false, error: 'GEMINI_API_KEY is not configured. Render Environment Variables mein Gemini API key add karo.' });
-
-      let context = {};
-      const rawContext = String(req.headers['x-vg-context'] || '');
-      try { context = JSON.parse(decodeURIComponent(Buffer.from(rawContext, 'base64').toString('utf8'))); }
-      catch { try { context = JSON.parse(Buffer.from(rawContext, 'base64').toString('utf8')); } catch {} }
-
-      try {
-        const result = await runGeminiVideo(req, contentType, size, context);
-        return json(res, 200, { ok: true, temporary: true, videoStored: false, fullVideo: true, streamedDirectlyToGemini: true, bytesReceived: size, result });
-      } catch (e) {
-        console.error('Full-video Gemini analysis failed:', e);
-        return json(res, 502, { ok: false, error: 'Full-video AI analysis failed', detail: String(e?.message || e) });
-      }
-    }
-
-    // Website 3: apply the first full-gameplay AI result to the existing Profile ID.
-    // The Profile ID is intentionally stable. Only sensitivity is changed.
-    if (req.method === 'POST' && u.pathname === '/api/gameplay-apply') {
-      const b = await readBody(req);
-      const code = safeCode(b.code || '');
-      if (!validCode(code)) return json(res, 400, { error: 'Valid existing Profile ID required' });
-      const sensitivity = normSens(b.sensitivity);
-      try {
-        const updated = await updateExistingProfileSensitivity(code, sensitivity);
-        return json(res, 200, {
-          ok: true,
-          profileId: updated.code,
-          sensitivity: updated.sensitivity,
-          updatedAt: updated.updatedAt,
-          source: dbReady ? 'backend' : 'local-fallback',
-          onlySensitivityUpdated: true
-        });
-      } catch (e) {
-        return json(res, 404, { ok: false, error: 'Could not update existing Profile ID', detail: String(e?.message || e) });
-      }
-    }
-
-    if (req.method === 'POST' && u.pathname === '/api/gameplay-fix') {
-      const b = await readBody(req);
-      const issues = cleanIssueList(b.issues ?? b.issue);
-      const custom = String(b.customText || b.custom || '').trim();
-      if (!issues.length && !custom) return json(res, 400, { error: 'Select at least one problem or enter a custom problem' });
-
-      let fixed;
-      try {
-        const ai = await runOpenAITextFix({ sensitivity: b.sensitivity, issues, customText: custom, context: b.context || {} });
-        fixed = ai ? { sensitivity: ai.sensitivity, diagnosis: ai.diagnosis, changes: ai.changes, model: ai.model } : applyIssueList(b.sensitivity, issues, custom);
-      } catch (e) {
-        console.error('OpenAI gameplay refinement failed:', e.message);
-        fixed = { ...applyIssueList(b.sensitivity, issues, custom), warning: 'OpenAI refinement failed; conservative local fallback used.' };
-      }
-
-      const oldCode = safeCode(b.code || '');
-      if (validCode(oldCode)) {
-        try {
-          const updated = await updateExistingProfileSensitivity(oldCode, fixed.sensitivity);
-          return json(res, 200, {
-            ok: true,
-            oldProfileId: oldCode,
-            newProfileId: updated.code,
-            profileId: updated.code,
-            sensitivity: updated.sensitivity,
-            issues,
-            customText: custom,
-            oldProfileUnchanged: false,
-            onlySensitivityUpdated: true,
-            diagnosis: fixed.diagnosis || '',
-            changes: fixed.changes || [],
-            model: fixed.model || null
-          });
-        } catch (e) {
-          return json(res, 404, { ok: false, error: 'Could not update existing Profile ID', detail: String(e?.message || e) });
-        }
-      }
-      return json(res, 200, { ok: true, newProfileId: null, profileId: null, sensitivity: fixed.sensitivity, issues, customText: custom, oldProfileUnchanged: true, onlySensitivityUpdated: true, diagnosis: fixed.diagnosis || '', changes: fixed.changes || [], model: fixed.model || null });
-    }
-
-    if (req.method === 'POST' && u.pathname === '/api/updates') {
-      const b = await readBody(req);
-      const code = safeCode(b.code || '');
-      if (code && !validCode(code)) return json(res, 400, { error: 'Invalid Profile ID' });
-      const item = { ...b, code: code || null, time: b.time || new Date().toISOString() };
-      if (dbReady) { await dbSaveUpdate(item); return json(res, 200, { ok: true, source: 'backend' }); }
-      const f = fileFor(UPDATES, code || 'manual');
-      const arr = readJson(f) || [];
-      arr.unshift(item);
-      writeJson(f, arr.slice(0, 100));
-      return json(res, 200, { ok: true, source: 'local-fallback' });
-    }
-
-    if (req.method === 'GET' && u.pathname.startsWith('/api/updates/')) {
-      const code = safeCode(decodeURIComponent(u.pathname.split('/').pop()));
-      if (!validCode(code)) return json(res, 400, { error: 'Invalid Profile ID' });
-      if (dbReady) return json(res, 200, { updates: await dbGetUpdates(code), source: 'backend' });
-      return json(res, 200, { updates: readJson(fileFor(UPDATES, code)) || [], source: 'local-fallback' });
-    }
-
-    const route = routes[u.pathname];
-    if (req.method === 'GET' && route) return sendFile(res, path.join(ROOT, route[0]), route[1]);
-    return json(res, 404, { error: 'Not found' });
-  } catch (e) {
-    console.error(e);
-    return json(res, 500, { error: 'Server error', detail: String(e?.message || e) });
-  }
-});
-
-server.requestTimeout = GAMEPLAY_TIMEOUT_MS;
-server.headersTimeout = GAMEPLAY_TIMEOUT_MS;
-server.keepAliveTimeout = 65000;
-
-server.listen(PORT, async () => {
-  console.log(`VG MENT4L running on http://localhost:${PORT}`);
-  await initDb();
-});
