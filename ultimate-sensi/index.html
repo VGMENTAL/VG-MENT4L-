@@ -144,7 +144,15 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div><label>Sniper</label><input id="m4" type="number" min="0" max="200" value="85"></div>
 <div><label>Free Look</label><input id="m5" type="number" min="0" max="200" value="120"></div>
 </div>
-<button class="primary" id="importManual" style="margin-top:11px">CREATE MANUAL PROFILE ID</button>
+<div class="card" style="margin-top:12px;border-color:#294067;background:#071020">
+<div class="title">ACTUAL SENSITIVITY PROBLEM</div>
+<div class="sub">Jo problems sach mein aa rahe hain un sabko select karo. Ek se zyada problems ek saath select ho sakti hain. Neeche apni problem khud bhi likh sakte ho.</div>
+<div class="problem-grid" id="manualProblems" style="margin-top:10px"></div>
+<label style="margin-top:12px">APNI PROBLEM / EXTRA ISSUE LIKHO</label>
+<textarea id="manualCustomProblem" rows="3" placeholder="Example: M1887 close range mein drag neck se upar chala jata hai aur MP40 spray chest pe rukta hai..."></textarea>
+<div id="manualDeviceResearch" class="notice" style="margin-top:10px">Device Name dalne ke baad device research automatically hogi.</div>
+</div>
+<button class="primary" id="importManual" style="margin-top:11px">ANALYZE PROBLEM + CREATE NEW SENSITIVITY</button>
 <div id="manualImportStatus" class="resultMsg" style="margin-top:10px"></div>
 </div>
 <div id="updateResult"></div>
@@ -512,24 +520,70 @@ function updateOB(){
  backendSaveProfile(current);
  $('updateStatus').innerHTML='<div class="notice ok"><b>OB Update complete.</b> Device, HUD, exact gun profile and all other information preserved.<br>Old sensitivity: '+esc(before.join(' / '))+'<br>New sensitivity: '+esc(current.v.join(' / '))+'<br><div class="codebox" style="margin-top:9px">'+esc(newCode)+'</div></div>';
 }
+function manualProblemDelta(type){
+ const z=[0,0,0,0,0,0];
+ if(type==='undershoot'||type==='slow'||type==='track'){z[0]+=type==='track'?3:4;z[1]+=type==='track'?3:4;z[2]+=type==='track'?2:3;z[3]+=type==='track'?1:2;z[4]+=type==='track'?0:1;}
+ if(type==='overshoot'||type==='fast'){z[0]-=4;z[1]-=4;z[2]-=3;z[3]-=2;z[4]-=1;}
+ if(type==='shake'){z[1]-=2;z[2]-=3;z[3]-=3;z[4]-=2;}
+ if(type==='recoil'){z[1]-=1;z[2]-=3;z[3]-=4;z[4]-=2;}
+ if(type==='drift'){z[1]-=2;z[2]-=2;z[3]-=2;z[4]-=1;}
+ if(type==='scopeShift'){z[1]-=1;z[2]-=2;z[3]-=2;z[4]-=2;}
+ return z;
+}
+function fillManualProblems(){
+ const box=$('manualProblems');
+ if(!box)return;
+ box.innerHTML=PROBLEMS.map(x=>'<div class="problem" data-type="'+esc(x[1])+'" data-value="'+esc(x[0])+'">'+esc(x[0])+'</div>').join('');
+ box.onclick=e=>{const x=e.target.closest('.problem');if(x)x.classList.toggle('on')};
+}
 async function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
  const sensMode=$('manualSensMode').value;
- const device=String($('manualDevice').value||'').trim()||'Unknown device';
- const p=makeStarting();
- p.v=v;
- p.device=device;
- p.deviceName=device;
- p.sensMode=sensMode;
- p.source='manual-import';
- p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),values:[...v],device,sensMode};
- p.deviceResearch=null;
- setCurrent(p,'MANUAL SENSITIVITY IMPORTED · NEW PROFILE ID CREATED');
- const code=codeFor(current);
- await backendSaveProfile(current);
- $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW PROFILE ID CREATED</b><br>Device: '+esc(device)+' · Sensitivity Mode: '+esc(sensMode)+'<br>Imported: '+esc(v.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Device name + sensitivity mode + imported values saved in this Profile ID. Calibration Lab is ready immediately.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%">OPEN CALIBRATION FOR THIS IMPORTED PROFILE</button></div>';
- const omc=$('openManualCalibration');
- if(omc)omc.onclick=()=>{ $('calCode').value=code; tab('calibrate'); $('calCodeStatus').textContent='Manual imported profile ready for adjustment: '+code; };
+ const device=String($('manualDevice').value||'').trim();
+ const selectedProblems=[...$('manualProblems').querySelectorAll('.problem.on')];
+ const custom=String($('manualCustomProblem').value||'').trim();
+ if(!device)return alert('Device Name dalo. Device research isi naam ke basis par hogi.');
+ if(!selectedProblems.length&&!custom)return alert('Kam se kam 1 sensitivity problem select karo ya apni problem likho.');
+ const btn=$('importManual');btn.disabled=true;btn.textContent='ANALYSING DEVICE + SENSITIVITY PROBLEM…';
+ $('manualDeviceResearch').className='notice';
+ $('manualDeviceResearch').textContent='Device research chal rahi hai — chipset, GPU, display, OS aur available hardware details verify ki ja rahi hain…';
+ try{
+   let researched=null;
+   try{
+     const dr=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent(device));
+     const dj=await dr.json();
+     researched=dj?.device||null;
+   }catch(e){}
+   deviceResearch=researched;
+   if(researched){
+     $('manualDeviceResearch').innerHTML='<b>DEVICE RESEARCH COMPLETE</b><br>Chipset: '+esc(researched.chipset||'Not verified')+' · GPU: '+esc(researched.gpu||'Not verified')+' · Display: '+esc(researched.display||'Not verified')+' · OS: '+esc(researched.os||'Not verified');
+   }else{
+     $('manualDeviceResearch').innerHTML='<b>DEVICE RESEARCH</b><br>Exact device research verify nahi ho saki. Unknown details invent nahi ki jayengi; entered device name profile mein save rahega.';
+   }
+   const delta=[0,0,0,0,0,0];
+   selectedProblems.forEach(el=>manualProblemDelta(el.dataset.type).forEach((n,i)=>delta[i]+=n));
+   if(custom){
+     const t=custom.toLowerCase();
+     if(/head.*upar|over|overshoot|fast|aage/.test(t))manualProblemDelta('overshoot').forEach((n,i)=>delta[i]+=n);
+     if(/chest|neck|short|pahunch|slow|under/.test(t))manualProblemDelta('undershoot').forEach((n,i)=>delta[i]+=n);
+     if(/recoil|spray|shake|hil/.test(t))manualProblemDelta('recoil').forEach((n,i)=>delta[i]+=n);
+   }
+   for(let i=0;i<6;i++)delta[i]=Math.max(-8,Math.min(8,Math.round(delta[i])));
+   const before=[...v],after=v.map((x,i)=>clamp(x+delta[i]));
+   const p=makeStarting();
+   p.v=after;p.device=device;p.deviceName=device;p.deviceResearch=researched;p.sensMode=sensMode;
+   p.source='manual-import';p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),originalValues:before,values:after,device,sensMode,problems:selectedProblems.map(x=>x.dataset.value),customProblem:custom,delta};
+   p.ob=$('ob')?.value||'OB55';
+   setCurrent(p,'MANUAL SENSITIVITY ANALYSED · NEW PROFILE ID CREATED');
+   const code=codeFor(current);
+   await backendSaveProfile(current);
+   $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW SENSITIVITY + NEW PROFILE ID CREATED</b><br>Device: '+esc(device)+' · Mode: '+esc(sensMode)+'<br>Problems: '+esc(selectedProblems.map(x=>x.dataset.value).join(' + ')||'Custom issue')+'<br>Before: '+esc(before.join(' / '))+'<br>New Sensitivity: '+esc(after.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Problem-based adjustment save ho gaya. Ye NEW Profile ID isi device + problem + updated sensitivity profile ko identify karta hai.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%">OPEN CALIBRATION FOR THIS NEW PROFILE</button></div>';
+   const omc=$('openManualCalibration');if(omc)omc.onclick=()=>{ $('calCode').value=code;tab('calibrate');$('calCodeStatus').textContent='Manual problem-fixed profile ready: '+code; };
+ }catch(e){
+   $('manualImportStatus').innerHTML='<div class="notice warn">Analysis failed: '+esc(e.message||e)+'</div>';
+ }finally{
+   btn.disabled=false;btn.textContent='ANALYZE PROBLEM + CREATE NEW SENSITIVITY';
+ }
 }
 $('hud').onchange=async()=>{
  const f=$('hud').files?.[0];if(!f)return;
@@ -599,6 +653,7 @@ async function loadForUpdate(code){
 function wireAIMCRAFT(){
   renderGuns();
   fillProblems();
+  fillManualProblems();
   fillRanges();
   initGameplay();
 
