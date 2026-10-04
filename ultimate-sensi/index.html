@@ -104,6 +104,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="card" id="calForm" style="display:none">
 <div class="title">Test context</div>
 <label style="margin-top:10px">Gun Profile</label><div class="sub" style="margin-bottom:8px">BUILD SENSI mein jo gun profile save hui hai, adjustment usi profile par hoga. Yahan guns ko dobara choose/add nahi kiya ja sakta.</div><div class="chips" id="calGuns"></div><div class="notice" style="margin-top:10px">All Guns profile → adjustment All Guns ka. Exact selected guns profile → adjustment sirf unhi selected guns ka.</div><div class="card" style="margin:12px 0 0;padding:12px"><label>Profile Code — adjustment ke liye load karo</label><div class="sub" style="margin-bottom:8px">Code paste karke profile aur exact gun selection load karo.</div><input id="calCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code" style="width:100%"><div class="actions" style="margin-top:9px"><button class="secondary" id="calLoadCode">LOAD PROFILE CODE</button><button class="secondary" id="calCopyCode">COPY CURRENT CODE</button></div><div id="calCodeStatus" class="resultMsg" style="margin-top:8px"></div></div>
+<div id="calLoadedProfile" style="display:none;margin-top:12px"></div>
 <label style="margin-top:12px">Problem range(s) — multiple allowed</label><div class="chips" id="ranges"></div>
 <label style="margin-top:12px">Problem(s) — multiple allowed</label>
 <div class="problem-grid" id="problems"></div>
@@ -425,7 +426,7 @@ function setCurrent(p,msg){
  $('profileCodeBox').innerHTML='<div class="codebox">'+esc(code)+'</div>';
  $('profileCode').value=code;
  $('calForm').style.display='block';$('calStatus').className='notice ok';$('calStatus').innerHTML='<b>COMPLETE PROFILE RESTORED.</b> Device age, RAM, DPI, refresh, touch, fingers, fire button, game/player settings, sensitivity mode, aim precision, OB, HUD evidence, device research, exact gun profile and current sensitivity are loaded from this Profile ID.';
- renderCalibrationGuns();renderHistory();save();
+ renderCalibrationGuns();renderCalibrationLoadedProfile();renderHistory();save();
  backendSaveProfile(current);
 }
 function renderBuild(p){
@@ -437,6 +438,13 @@ function renderBuild(p){
 function tab(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.tab===id));$(id).classList.add('on');window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 
+function renderCalibrationLoadedProfile(){
+ const box=$('calLoadedProfile');
+ if(!box||!current)return;
+ const code=codeFor(current);
+ box.style.display='block';
+ box.innerHTML='<div class="card" style="margin:0;border-color:#315079"><div class="title">LOADED PROFILE INFORMATION ✓</div><div class="sub">Is Profile Code se server par saved complete information load hui hai. Calibration isi loaded profile ki current sensitivity aur device/gun context par chalega.</div><div class="codebox" style="margin-top:10px"><b>Profile ID:</b> '+esc(code)+'</div><div style="margin-top:12px"><div class="title" style="font-size:15px">DEVICE + PROFILE DETAILS</div>'+profileHTML(current)+'</div><div style="margin-top:12px"><div class="title" style="font-size:15px">CURRENT SENSITIVITY — BEFORE CALIBRATION</div>'+renderSensi(current.v)+'</div></div>';
+}
 function renderCalibrationGuns(){
  const box=$('calGuns');
  const guns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
@@ -444,6 +452,7 @@ function renderCalibrationGuns(){
  box.innerHTML='<div class="notice ok" style="margin:0"><b>Active Gun Profile:</b> '+esc(guns.join(' + '))+'<br><span class="small">Read-only — BUILD SENSI profile se locked.</span></div>';
  box.onclick=null;
  const s=$('calCodeStatus'); if(s)s.textContent='Active gun profile: '+guns.join(' + ');
+ renderCalibrationLoadedProfile();
 }
 function renderHistory(){
  renderLearning();
