@@ -103,7 +103,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 
 <div class="card" id="calForm" style="display:none">
 <div class="title">Test context</div>
-<label style="margin-top:10px">Calibration Test Gun(s) — maximum 3</label><div class="sub" style="margin-bottom:8px">All Guns profile mein yahan sirf is test round ke 1–3 guns choose karo. Base profile All Guns hi rahega.</div><div class="chips" id="calGuns"></div>
+<label style="margin-top:10px">Gun Profile</label><div class="sub" style="margin-bottom:8px">Yahi guns adjustment mein use hongi jo BUILD SENSI mein choose ki gayi thi. Calibration kisi doosri gun ko add nahi karega.</div><div class="chips" id="calGuns"></div><div class="notice" style="margin-top:10px">All Guns choose kiya tha → adjustment <b>All Guns</b> ka hoga. 3 guns choose kiye the → adjustment <b>sirf unhi 3 guns</b> ka hoga.</div><div class="card" style="margin:12px 0 0;padding:12px"><label>Profile Code — adjustment ke liye load karo</label><div class="sub" style="margin-bottom:8px">Code paste karke profile aur exact gun selection load karo.</div><input id="calCode" placeholder="AUX3-..." style="width:100%"><div class="actions" style="margin-top:9px"><button class="secondary" id="calLoadCode">LOAD PROFILE CODE</button><button class="secondary" id="calCopyCode">COPY CURRENT CODE</button></div><div id="calCodeStatus" class="resultMsg" style="margin-top:8px"></div></div>
 <label style="margin-top:12px">Problem range(s) — multiple allowed</label><div class="chips" id="ranges"></div>
 <label style="margin-top:12px">Problem(s) — multiple allowed</label>
 <div class="problem-grid" id="problems"></div>
@@ -264,7 +264,7 @@ if(/recoil|spray|shake/.test(aiText)) aiIssues.push('Recoil / spray shaky');
 const aiRanges=String(gpResult.rangePreference||'').split(/[,|/]/).map(x=>x.trim()).filter(Boolean).map(x=>/close/i.test(x)?'Close Range':/mid/i.test(x)?'Mid Range':/long/i.test(x)?'Long Range':x);
 const after=headControlAdjust(after0,aiIssues,aiRanges);
 current.v=after;current.gameplayCalibration={time:new Date().toISOString(),before,after,confidence:gpResult.confidence||'',mainIssue:gpResult.mainIssue||'',goal:'head-level control without aggressive overshoot'};setCurrent(current,'GAMEPLAY CHECK COMPLETE · TEST THE NEW SENSITIVITY');$('gpBar').style.width='100%';$('gpStage').textContent='Complete';$('gpRefine').disabled=false;$('gpResult').innerHTML='<div class="notice ok"><b>Gameplay analysis complete.</b><br>AI: '+esc(gpResult.model||'Gemini')+' · Confidence: '+esc(gpResult.confidence||'—')+'<br>Main issue: '+esc(gpResult.mainIssue||'—')+'</div><div style="margin-top:9px">'+renderSensi(after)+'</div><div class="small" style="margin-top:8px">Before → After: '+esc(before.join(' / '))+' → '+esc(after.join(' / '))+'</div>'}catch(e){$('gpResult').textContent='Gameplay analysis failed: '+e.message}finally{gpBusy=false;$('gpAnalyze').disabled=false}}
-async function refineGameplay(){if(gpBusy||!current||!gpResult)return;const issues=[...$('gpProblems').querySelectorAll('.on')].map(x=>x.dataset.value),custom=$('gpCustom').value.trim();if(!issues.length&&!custom)return $('gpResult').textContent='At least one actual problem select karo ya custom problem likho.';gpBusy=true;$('gpRefine').disabled=true;$('gpAnalyze').disabled=true;$('gpResult').textContent='REFINE THIS TEST ROUND: targeted adjustment apply ho raha hai…';try{const r=await fetch('/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:Object.fromEntries(AXIS.map((a,i)=>[a,current.v[i]])),issues,customText:custom,context:gpContext()})});const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||'Refinement failed');const s=j.sensitivity||{},keys=['General','RedDot','2x','4x','Sniper','FreeLook'],before=[...current.v],raw=AXIS.map((a,i)=>clamp(s[a]??s[keys[i]]??before[i])),after=headControlAdjust(raw,issues,[]);current.v=after;current.gameplayCalibration={...(current.gameplayCalibration||{}),refinedAt:new Date().toISOString(),issues,customText:custom,before,after};setCurrent(current,'TEST ROUND REFINED · RETEST NOW');$('gpResult').innerHTML='<div class="notice ok"><b>Targeted refinement complete.</b></div>'+renderSensi(after)+'<div class="small" style="margin-top:8px">Before → After: '+esc(before.join(' / '))+' → '+esc(after.join(' / '))+'</div>'}catch(e){$('gpResult').textContent='Refinement failed: '+e.message}finally{gpBusy=false;$('gpRefine').disabled=false;$('gpAnalyze').disabled=false}}
+async function refineGameplay(){if(gpBusy||!current||!gpResult)return;const issues=[...$('gpProblems').querySelectorAll('.on')].map(x=>x.dataset.value),custom=$('gpCustom').value.trim();if(!issues.length&&!custom)return $('gpResult').textContent='At least one actual problem select karo ya custom problem likho.';gpBusy=true;$('gpRefine').disabled=true;$('gpAnalyze').disabled=true;$('gpResult').textContent='REFINE THIS TEST ROUND: targeted adjustment apply ho raha hai…';try{const r=await fetch('/api/manual-fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sensitivity:Object.fromEntries(AXIS.map((a,i)=>[a,current.v[i]])),issues,customText:custom,context:gpContext()})});const j=await r.json();if(!r.ok)throw new Error(j.detail||j.error||'Refinement failed');const s=j.sensitivity||{},keys=['General','RedDot','2x','4x','Sniper','FreeLook'],before=[...current.v],raw=AXIS.map((a,i)=>clamp(s[a]??s[keys[i]]??before[i])),after=headControlAdjust(raw,issues,[]);current.v=after;current.gameplayCalibration={...(current.gameplayCalibration||{}),refinedAt:new Date().toISOString(),issues,customText:custom,before,after};setCurrent(current,'TEST ROUND REFINED · RETEST NOW');$('gpResult').innerHTML='<div class="notice ok"><b>Targeted refinement complete.</b></div>'+renderSensi(after)+'<div class="small" style="margin-top:8px">Before → After: '+esc(before.join(' / '))+' → '+esc(after.join(' / '))+'</div><div class="codebox" style="margin-top:10px">'+esc(codeFor(current))+'</div><button class="secondary" id="gpCopyUpdatedCode" style="margin-top:9px;width:100%">COPY UPDATED CODE</button>';const cb=$('gpCopyUpdatedCode');if(cb)cb.onclick=async()=>{try{await navigator.clipboard.writeText(codeFor(current));cb.textContent='UPDATED CODE COPIED'}catch(e){alert(codeFor(current))}}}catch(e){$('gpResult').textContent='Refinement failed: '+e.message}finally{gpBusy=false;$('gpRefine').disabled=false;$('gpAnalyze').disabled=false}}
 function renderGuns(){const box=$('guns');box.innerHTML=WEAPONS.map(([n])=>'<span class="chip '+(n==='All Guns'?'on':'')+'" data-value="'+esc(n)+'">'+esc(n)+'</span>').join('');syncGuns(box.querySelector('[data-value="All Guns"]'));toggleGroup('guns')}
 function fillProblems(){const box=$('problems');box.innerHTML=PROBLEMS.map(x=>'<div class="problem" data-value="'+esc(x[0])+'">'+esc(x[0])+'</div>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.problem');if(x)x.classList.toggle('on')})}
 function fillRanges(){const box=$('ranges');box.innerHTML=RANGES.map(x=>'<span class="chip" data-value="'+x+'">'+x+'</span>').join('');box.addEventListener('click',e=>{const x=e.target.closest('.chip');if(!x)return;x.classList.toggle('on')})}
@@ -333,43 +333,11 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.
 
 function renderCalibrationGuns(){
  const box=$('calGuns');
- const baseGuns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
- const allProfile=baseGuns.includes('All Guns');
- const savedTestGuns=Array.isArray(current?.calibrationGuns)?current.calibrationGuns:[];
- const testGuns=allProfile?savedTestGuns:(savedTestGuns.length?savedTestGuns:baseGuns.slice(0,3));
- // All Guns is the base profile, not a calibration test weapon.
- // For an All Guns profile, allow up to 3 independent test guns.
- // For an exact-gun profile, keep calibration limited to that profile's guns.
- const list=allProfile?WEAPONS.filter(x=>x[0]!=='All Guns').map(x=>x[0]):baseGuns;
- box.innerHTML=list.map(x=>{
-   const on=testGuns.includes(x)?' on':'';
-   return '<span class="chip'+on+'" data-value="'+esc(x)+'">'+esc(x)+'</span>';
- }).join('');
- const count=testGuns.length;
- const hint=allProfile
-   ? (count+'/3 test guns selected — base profile remains All Guns')
-   : ('Profile guns: '+baseGuns.join(' + '));
- const existing=$('calGunHint'); if(existing)existing.textContent=hint;
- box.onclick=e=>{
-   const chip=e.target.closest('.chip');if(!chip)return;
-   const val=chip.dataset.value;
-   const selectedNow=[...box.querySelectorAll('.chip.on')].map(x=>x.dataset.value);
-   if(!chip.classList.contains('on') && allProfile && selectedNow.length>=3){
-     $('calMsg').textContent='Maximum 3 calibration test guns allowed.';
-     return;
-   }
-   chip.classList.toggle('on');
-   const now=[...box.querySelectorAll('.chip.on')].map(x=>x.dataset.value);
-   current.calibrationGuns=now;
-   if(existing)existing.textContent=allProfile
-     ? (now.length+'/3 test guns selected — base profile remains All Guns')
-     : ('Profile guns: '+baseGuns.join(' + '));
-   save();
- };
- if(!existing){
-   const d=document.createElement('div');d.id='calGunHint';d.className='small';d.style.marginTop='8px';
-   d.textContent=hint;box.parentNode.insertBefore(d,box.nextSibling);
- }
+ const guns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
+ current.calibrationGuns=[...guns];
+ box.innerHTML=guns.map(x=>'<span class="chip on" data-value="'+esc(x)+'">'+esc(x)+'</span>').join('');
+ box.onclick=null;
+ const s=$('calCodeStatus'); if(s)s.textContent='Active gun profile: '+guns.join(' + ');
 }
 function renderHistory(){
  renderLearning();
@@ -389,12 +357,11 @@ function problemDelta(type,axis){
 }
 function calibrate(){
  if(!current)return alert('Pehle profile build/load karo.');
- const guns=selected('calGuns'),ranges=selected('ranges'),problems=selected('problems');
- if(!guns.length||!ranges.length||!problems.length)return alert('1–3 test guns, range aur actual problem select karo.');
- if(guns.length>3)return alert('Maximum 3 calibration test guns allowed.');
+ const guns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
+ const ranges=selected('ranges'),problems=selected('problems');
+ if(!ranges.length||!problems.length)return alert('Range aur actual problem select karo.');
  if(pendingCalibration)return alert('Pehle current calibration ka feedback do.');
- // Keep the original weapon scope untouched. The selected guns here are
- // calibration evidence only, especially when the base profile is All Guns.
+ // Adjustment scope is locked to the original BUILD SENSI gun choice.
  current.calibrationGuns=[...guns];
  const delta=[0,0,0,0,0,0];
  problems.forEach(label=>{
@@ -416,7 +383,7 @@ function calibrate(){
 function finishFeedback(result){
  if(!pendingCalibration)return;
  const p=pendingCalibration;
- current.calibrationGuns=[...p.guns].slice(0,3);
+ current.calibrationGuns=[...current.guns];
  if(result==='worse'){
   current.v=[...p.before];
   setCurrent(current,'CALIBRATION REVERTED · WORSE TEST RESULT');
@@ -464,6 +431,8 @@ $('buildBtn').onclick=()=>{
 };
 $('calBtn').onclick=calibrate;
 renderLearning();
+$('calLoadCode').onclick=()=>{const code=$('calCode').value.trim();if(!code)return alert('Profile code paste karo.');try{const p=decode(code);setCurrent(p,'PROFILE LOADED FOR CALIBRATION');$('calCode').value=codeFor(current);$('calCodeStatus').textContent='Loaded. Gun Profile: '+current.guns.join(' + ');}catch(e){$('calCodeStatus').textContent='Invalid profile code.';alert('Profile code invalid or incomplete.')}};
+$('calCopyCode').onclick=async()=>{if(!current)return alert('Pehle profile build/load karo.');const code=codeFor(current);try{await navigator.clipboard.writeText(code);$('calCopyCode').textContent='UPDATED CODE COPIED';setTimeout(()=>$('calCopyCode').textContent='COPY CURRENT CODE',1400)}catch(e){alert(code)}};
 $('loadProfile').onclick=()=>loadCodeIntoProfile($('profileCode').value);
 $('copyProfile').onclick=async()=>{if(!current)return alert('No profile');const c=codeFor(current);try{await navigator.clipboard.writeText(c);$('copyProfile').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyProfile').textContent='COPY CURRENT CODE',1200)}catch(e){alert(c)}};
 $('saveProfile').onclick=()=>{if(current){save();alert('Profile saved on this phone.')}};
