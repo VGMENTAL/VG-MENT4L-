@@ -247,19 +247,39 @@ async function backendLoadProfile(code){
 }
 async function hydrateLoadedProfile(p){
  const out={...p};
+ // Older profiles can use deviceName/model/phoneModel instead of device.
+ const deviceName=String(out.device||out.deviceName||out.model||out.phoneModel||'').trim();
+ if(deviceName && !out.device) out.device=deviceName;
  const dr0=out.deviceResearch||{};
- const bad=v=>!v || /could not verify|not verified|unknown|not listed|not found|auto research/i.test(String(v));
- const researchIncomplete=!!out.device && (
+ const bad=v=>!v || /could not verify|not verified|unknown|not listed|not found|auto research|not available/i.test(String(v));
+ const researchIncomplete=!!deviceName && (
    !out.deviceResearch || bad(dr0.canonical) || bad(dr0.chipset) || bad(dr0.gpu) ||
    bad(dr0.display) || bad(dr0.resolution) || bad(dr0.refreshRate) ||
-   bad(dr0.storage) || bad(dr0.battery) || bad(dr0.charging) || bad(dr0.network) || bad(dr0.os)
+   bad(dr0.touchSampling) || bad(dr0.storage) || bad(dr0.battery) ||
+   bad(dr0.charging) || bad(dr0.network) || bad(dr0.os) || bad(dr0.gaming)
  );
- if(researchIncomplete && out.device){
+ if(researchIncomplete && deviceName){
    try{
-     const r=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent(out.device)+'&refresh=1');
+     const params=new URLSearchParams({
+       device:deviceName,
+       ua:navigator.userAgent||'',
+       screen:(screen?.width||0)+'x'+(screen?.height||0),
+       dpr:String(window.devicePixelRatio||1),
+       touch:String(navigator.maxTouchPoints||0),
+       width:String(screen?.width||0),
+       height:String(screen?.height||0)
+     });
+     const r=await fetch(HUD_API+'/api/device-research?'+params.toString(),{cache:'no-store'});
      const j=await r.json();
-     if(j?.device) out.deviceResearch=j.device;
-   }catch{}
+     if(j?.device){
+       out.deviceResearch=j.device;
+       out.deviceResearchStatus={ok:true,notice:j.notice||'Device information collected and cross-checked.',at:new Date().toISOString()};
+     }else{
+       out.deviceResearchStatus={ok:false,notice:j?.notice||'Device research did not return a verified exact match.',at:new Date().toISOString()};
+     }
+   }catch(e){
+     out.deviceResearchStatus={ok:false,notice:'Device research request failed. Please use RESEARCH DEVICE AGAIN.',at:new Date().toISOString()};
+   }
  }
  if(!out.hud?.analysis && out.hud?.hudKey){
    try{
@@ -424,8 +444,37 @@ function renderSensi(v){return '<div class="sensi">'+v.map((x,i)=>'<div class="a
 function profileHTML(p){
  const d=p.deviceResearch||{},gun=p.guns?.includes('All Guns')?'All Guns · Full Weapon Pool':(p.guns||[]).join(' + ');
  const hudState=p.hud?.analysis?'Deep HUD analysis stored':'HUD evidence not stored';
- const rows=[['Device',p.device],['Phone Age',p.age],['RAM',p.ram],['DPI / Smallest Width',p.dpi],['Refresh Rate',p.hz+' Hz'],['Touch Sampling',p.touch+' Hz'],['Fingers',p.fingers],['Fire Button',p.fire],['Game Mode',p.gameMode],['Player Mode',p.playerMode],['Player Style',p.style],['Sensitivity Mode',p.sensMode],['Aim Precision',p.aimMode],['OB',p.ob],['Gun Profile',gun],['Processor / Chipset',d.chipset||'Auto research could not verify'],['GPU',d.gpu||'Auto research could not verify'],['Display',d.display||'Auto research could not verify'],['Resolution',d.resolution||'Auto research could not verify'],['Refresh Rate (Research)',d.refreshRate||'Auto research could not verify'],['Touch Sampling (Research)',d.touchSampling||'Auto research could not verify'],['Touch Response',d.touchResponse||'Not officially documented'],['Storage',d.storage||'Auto research could not verify'],['Battery',d.battery||'Auto research could not verify'],['Charging',d.charging||'Auto research could not verify'],['Network',d.network||'Auto research could not verify'],['Device OS',d.os||'Auto research could not verify'],['Gaming Profile',d.gaming||'Auto research could not verify'],['Research Source',d.sourceLabel||d.sourceType||'Not available'],['HUD Evidence',hudState]];
- return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>';
+ const status=p.deviceResearchStatus?.ok?'✓ Research loaded':(p.deviceResearch?'✓ Research available':'⚠ Research pending');
+ const val=(x,fallback)=>{const s=String(x??'').trim();return s&& !/^(undefined|null)$/i.test(s)?s:fallback};
+ const rows=[
+  ['Device',val(p.device,'Unknown device')],
+  ['Phone Age',val(p.age,'Not specified')],['RAM',val(p.ram,'Not set')],
+  ['DPI / Smallest Width',val(p.dpi,'Not set')],['Refresh Rate (Runtime)',val(p.hz,'Not detected')+' Hz'],
+  ['Touch Sampling (Runtime)',val(p.touch,'Not detected')+' Hz'],['Fingers',val(p.fingers,'Not set')],
+  ['Fire Button',val(p.fire,'Not set')],['Game Mode',val(p.gameMode,'Not set')],
+  ['Player Mode',val(p.playerMode,'Not set')],['Player Style',val(p.style,'Not set')],
+  ['Sensitivity Mode',val(p.sensMode,'Default')],['Aim Precision',val(p.aimMode,'Default')],
+  ['OB',val(p.ob,'OB55')],['Gun Profile',gun],
+  ['Processor / Chipset',val(d.chipset,'Auto research could not verify')],
+  ['GPU',val(d.gpu,'Auto research could not verify')],
+  ['Display',val(d.display,'Auto research could not verify')],
+  ['Resolution',val(d.resolution,'Auto research could not verify')],
+  ['Refresh Rate (Research)',val(d.refreshRate,'Auto research could not verify')],
+  ['Touch Sampling (Research)',val(d.touchSampling,'Auto research could not verify')],
+  ['Touch Response',val(d.touchResponse,'Not officially documented')],
+  ['Storage',val(d.storage,'Auto research could not verify')],
+  ['Battery',val(d.battery,'Auto research could not verify')],
+  ['Charging',val(d.charging,'Auto research could not verify')],
+  ['Network',val(d.network,'Auto research could not verify')],
+  ['Device OS',val(d.os,'Auto research could not verify')],
+  ['Gaming Profile',val(d.gaming,'Auto research could not verify')],
+  ['Research Status',status],
+  ['Research Source',val(d.sourceLabel||d.sourceType,'Not available')],
+  ['HUD Evidence',hudState]
+ ];
+ return '<div class="profile">'+rows.map(x=>'<div class="kv"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></div>').join('')+'</div>'+
+   (d.source?'<div class="small" style="margin-top:8px">Research source: '+esc(d.source)+'</div>':'')+
+   (!p.deviceResearch?'<div class="notice warn" style="margin-top:9px"><b>DEVICE RESEARCH PENDING</b><br>Profile load ke waqt exact phone name se same VG MENT4L research engine chalaya jayega.</div>':'');
 }
 function setCurrent(p,msg){
  current={...p,guns:Array.isArray(p.guns)&&p.guns.length?p.guns:['All Guns'],calibrationGuns:Array.isArray(p.calibrationGuns)?p.calibrationGuns.slice(0,MAX_FOCUS_GUNS):[],v:p.v.map(clamp)};
@@ -723,7 +772,17 @@ $('buildBtn').onclick=async()=>{
  try{
    if($('hud').files?.[0]&&!hud){$('buildBar').style.width='35%';$('buildStage').textContent='Deep-scanning complete HUD layout…';try{hud=await readHUDForAnalysis($('hud').files[0]);}catch(e){$('hudMeta').textContent='HUD analysis unavailable: '+e.message+' · continuing without HUD evidence';}}
    $('buildBar').style.width='55%';$('buildStage').textContent='Researching device profile + mapping game/gun inputs…';
-   try{const dr=await fetch(HUD_API+'/api/device-research?device='+encodeURIComponent($('device').value.trim()));const dj=await dr.json();deviceResearch=dj?.device||null;}catch(e){deviceResearch=null;}
+   try{
+     const dn=$('device').value.trim();
+     const params=new URLSearchParams({device:dn,ua:navigator.userAgent||'',screen:(screen?.width||0)+'x'+(screen?.height||0),dpr:String(devicePixelRatio||1),touch:String(navigator.maxTouchPoints||0)});
+     const dr=await fetch(HUD_API+'/api/device-research?'+params.toString(),{cache:'no-store'});
+     const dj=await dr.json();
+     deviceResearch=dj?.device||null;
+     if(!deviceResearch) throw new Error(dj?.notice||'No verified device research returned');
+   }catch(e){
+     deviceResearch=null;
+     $('buildStage').textContent='Device research unavailable — sensitivity build can continue without invented specs.';
+   }
    $('buildBar').style.width='68%';$('buildStage').textContent='Mapping exact gun profile + all saved inputs…';
    await new Promise(r=>setTimeout(r,120));
    $('buildBar').style.width='82%';$('buildStage').textContent='Applying device + HUD evidence…';
