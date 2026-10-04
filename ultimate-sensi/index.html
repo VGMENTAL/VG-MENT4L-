@@ -118,19 +118,20 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 
 <section class="section" id="update">
 <div class="card">
-<div class="title">OB UPDATE — KEEP THE PROFILE, UPDATE THE SENSITIVITY</div>
-<div class="sub">Load a profile code or paste six manual values. The updater preserves device, fingers, style and exact gun selection. Only sensitivity values are changed.</div>
+<div class="card">
+<div class="title">01 · AIMCRAFT PROFILE CODE → ADJUST THIS PROFILE</div>
+<div class="sub">Is website se bana hua Profile ID paste karo. Complete saved profile restore hoga, phir usi profile par OB update/Calibration adjustment hoga.</div>
 <div class="grid" style="margin-top:12px">
-<div class="full"><label>Profile code</label><input id="updateCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit Profile Code"></div>
+<div class="full"><label>AIMCRAFT Profile ID</label><input id="updateCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit AIMCRAFT Profile ID"></div>
 <div><label>Old OB</label><select id="oldOb"><option>OB55</option><option>UNKNOWN</option></select></div>
 <div><label>Target OB</label><select id="targetOb"><option>OB55</option></select></div>
 </div>
-<div class="actions" style="margin-top:10px"><button class="secondary" id="loadUpdate">LOAD PROFILE</button><button class="secondary" id="applyOb">UPDATE TO TARGET OB</button></div>
+<div class="actions" style="margin-top:10px"><button class="secondary" id="loadUpdate">LOAD AIMCRAFT PROFILE</button><button class="secondary" id="applyOb">UPDATE TO TARGET OB</button></div>
 <div id="updateStatus" class="resultMsg" style="margin-top:10px"></div>
 </div>
-
 <div class="card">
-<div class="title">Manual Sensitivity Import</div>
+<div class="title">02 · MANUAL SENSITIVITY IMPORT → CREATE NEW PROFILE ID</div>
+<div class="sub">Agar sensitivity kisi aur website, friend, old phone, screenshot ya manual setting se mili hai aur AIMCRAFT Profile ID nahi hai, yahan six current values daalo. Import ke baad NEW Profile ID automatically banega aur server par save hoga. Is code ko Calibration Lab mein load karke adjustment kar sakte ho.</div>
 <div class="grid3" style="margin-top:10px">
 <div><label>General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
 <div><label>Red Dot</label><input id="m1" type="number" min="0" max="200" value="180"></div>
@@ -139,7 +140,8 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div><label>Sniper</label><input id="m4" type="number" min="0" max="200" value="85"></div>
 <div><label>Free Look</label><input id="m5" type="number" min="0" max="200" value="120"></div>
 </div>
-<button class="primary" id="importManual" style="margin-top:11px">IMPORT AS PROFILE</button>
+<button class="primary" id="importManual" style="margin-top:11px">CREATE MANUAL PROFILE ID</button>
+<div id="manualImportStatus" class="resultMsg" style="margin-top:10px"></div>
 </div>
 <div id="updateResult"></div>
 </section>
@@ -506,9 +508,16 @@ function updateOB(){
  backendSaveProfile(current);
  $('updateStatus').innerHTML='<div class="notice ok"><b>OB Update complete.</b> Device, HUD, exact gun profile and all other information preserved.<br>Old sensitivity: '+esc(before.join(' / '))+'<br>New sensitivity: '+esc(current.v.join(' / '))+'<br><div class="codebox" style="margin-top:9px">'+esc(newCode)+'</div></div>';
 }
-function importManual(){
+async function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
- const p=makeStarting();p.v=v;setCurrent(p,'MANUAL SENSITIVITY IMPORTED · NEW PROFILE ID CREATED');tab('profile');
+ const p=makeStarting();
+ p.v=v;
+ p.source='manual-import';
+ p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),values:[...v]};
+ setCurrent(p,'MANUAL SENSITIVITY IMPORTED · NEW PROFILE ID CREATED');
+ const code=codeFor(current);
+ $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW PROFILE ID CREATED</b><br>Imported: '+esc(v.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Is code ko Calibration Lab mein load karke problem + range ke basis par adjustment karo.</div></div>';
+ try{await backendSaveProfile(current)}catch{}
 }
 $('hud').onchange=async()=>{
  const f=$('hud').files?.[0];if(!f)return;
@@ -538,20 +547,3 @@ $('buildBtn').onclick=async()=>{
    renderBuild(current);
  }catch(e){alert('Build failed: '+e.message)}
  finally{buildBusy=false;$('buildBtn').disabled=false;setTimeout(()=>$('buildProgress').classList.remove('on'),250);}
-};
-$('calBtn').onclick=calibrate;
-renderLearning();
-$('calLoadCode').onclick=async()=>{const code=$('calCode').value.trim();if(!code)return alert('12–15 digit Profile Code paste karo.');try{const p=isNumericProfileCode(code)?await backendLoadProfile(code):await hydrateLoadedProfile(decode(code));setCurrent(p,'PROFILE LOADED FOR CALIBRATION');await backendSaveProfile(current);$('calCode').value=codeFor(current);$('calCodeStatus').innerHTML='<b>Complete profile loaded.</b> Device: '+esc(current.device)+' · Age: '+esc(current.age)+' · RAM: '+esc(current.ram)+' · Game: '+esc(current.gameMode)+' · Player: '+esc(current.playerMode)+' · Style: '+esc(current.style)+' · Guns: '+esc(current.guns.join(' + '))+' · HUD + device context restored.';}catch(e){$('calCodeStatus').textContent='Invalid / unavailable profile code.';alert('Profile code invalid, incomplete, ya server par nahi mila.')}};
-$('calCopyCode').onclick=async()=>{if(!current)return alert('Pehle profile build/load karo.');const code=codeFor(current);try{await navigator.clipboard.writeText(code);$('calCopyCode').textContent='UPDATED CODE COPIED';setTimeout(()=>$('calCopyCode').textContent='COPY CURRENT CODE',1400)}catch(e){alert(code)}};
-$('loadProfile').onclick=async()=>loadCodeIntoProfile($('profileCode').value);
-$('copyProfile').onclick=async()=>{if(!current)return alert('No profile');const c=codeFor(current);try{await navigator.clipboard.writeText(c);$('copyProfile').textContent='COPIED UPDATED CODE';setTimeout(()=>$('copyProfile').textContent='COPY CURRENT CODE',1200)}catch(e){alert(c)}};
-$('saveProfile').onclick=()=>{if(current){save();alert('Profile saved on this phone.')}};
-$('loadUpdate').onclick=async()=>{const code=$('updateCode').value.trim();if(!code)return alert('12–15 digit Profile code डालो.');try{const p=isNumericProfileCode(code)?await backendLoadProfile(code):decode(code);setCurrent(p,'PROFILE LOADED FOR OB UPDATE');tab('update')}catch(e){alert('Invalid / unavailable profile code.')}};
-$('applyOb').onclick=updateOB;$('importManual').onclick=importManual;
-$('profileCode').addEventListener('keydown',e=>{if(e.key==='Enter')loadCodeIntoProfile(e.target.value)});
-$('updateCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('loadUpdate').click()});
-renderGuns();fillProblems();fillRanges();initGameplay();loadSaved();
-})();
-</script>
-</body>
-</html>
