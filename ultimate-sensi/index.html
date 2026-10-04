@@ -132,6 +132,10 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="card">
 <div class="title">02 · MANUAL SENSITIVITY IMPORT → CREATE NEW PROFILE ID</div>
 <div class="sub">Agar sensitivity kisi aur website, friend, old phone, screenshot ya manual setting se mili hai aur AIMCRAFT Profile ID nahi hai, yahan six current values daalo. Import ke baad NEW Profile ID automatically banega aur server par save hoga. Is code ko Calibration Lab mein load karke adjustment kar sakte ho.</div>
+<div class="grid" style="margin-top:10px">
+<div><label>Sensitivity Mode</label><select id="manualSensMode"><option value="Default">Default</option><option value="High">High</option></select></div>
+<div><label>Device Name</label><input id="manualDevice" type="text" autocomplete="off" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15"></div>
+</div>
 <div class="grid3" style="margin-top:10px">
 <div><label>General</label><input id="m0" type="number" min="0" max="200" value="185"></div>
 <div><label>Red Dot</label><input id="m1" type="number" min="0" max="200" value="180"></div>
@@ -510,16 +514,22 @@ function updateOB(){
 }
 async function importManual(){
  const v=[0,1,2,3,4,5].map(i=>clamp($('m'+i).value));
+ const sensMode=$('manualSensMode').value;
+ const device=String($('manualDevice').value||'').trim()||'Unknown device';
  const p=makeStarting();
  p.v=v;
+ p.device=device;
+ p.deviceName=device;
+ p.sensMode=sensMode;
  p.source='manual-import';
- p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),values:[...v]};
+ p.manualImport={source:'external/manual',importedAt:new Date().toISOString(),values:[...v],device,sensMode};
+ p.deviceResearch=null;
  setCurrent(p,'MANUAL SENSITIVITY IMPORTED · NEW PROFILE ID CREATED');
  const code=codeFor(current);
  await backendSaveProfile(current);
- $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW PROFILE ID CREATED</b><br>Imported: '+esc(v.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Website 2 ki tarah import ke turant baad profile adjustment ke liye ready hai. Is code ko dobara type/paste karne ki zarurat nahi.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%">OPEN CALIBRATION FOR THIS IMPORTED PROFILE</button></div>';
+ $('manualImportStatus').innerHTML='<div class="notice ok"><b>NEW PROFILE ID CREATED</b><br>Device: '+esc(device)+' · Sensitivity Mode: '+esc(sensMode)+'<br>Imported: '+esc(v.join(' / '))+'<br><div class="codebox" style="margin-top:8px">'+esc(code)+'</div><div class="small" style="margin-top:7px">Device name + sensitivity mode + imported values saved in this Profile ID. Calibration Lab is ready immediately.</div><button class="secondary" id="openManualCalibration" style="margin-top:10px;width:100%">OPEN CALIBRATION FOR THIS IMPORTED PROFILE</button></div>';
  const omc=$('openManualCalibration');
- if(omc) omc.onclick=()=>{ $('calCode').value=code; tab('calibrate'); $('calCodeStatus').textContent='Manual imported profile ready for adjustment: '+code; };
+ if(omc)omc.onclick=()=>{ $('calCode').value=code; tab('calibrate'); $('calCodeStatus').textContent='Manual imported profile ready for adjustment: '+code; };
 }
 $('hud').onchange=async()=>{
  const f=$('hud').files?.[0];if(!f)return;
