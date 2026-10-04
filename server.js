@@ -352,7 +352,7 @@ async function fetchBroadWebDeviceResearch(name){
   };
   const collect=function(block){
     const text=decode(block);
-    const m=block.match(/href="(https?:\\/\\/[^"]+)"/i);
+    const m=block.match(/href="([^"]+)"/i);
     if(text)snippets.push(text);
     if(m)sources.push(m[1]);
   };
