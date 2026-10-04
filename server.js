@@ -378,65 +378,101 @@ async function fetchRailwayPhoneSpec(name){
 async function fetchGsmArenaResearch(name){
   const q=String(name||'').trim();
   if(!q)return null;
-  const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),10000);
+  const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),12000);
   try{
     const url='https://www.gsmarena.com/results.php3?sName='+encodeURIComponent(q);
-    const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
+    const r=await fetch(url,{signal:ctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/6.0)','Accept':'text/html,application/xhtml+xml'}});
     if(!r.ok)return null;
     const html=await r.text();
-    const clean=x=>decodeHtmlEntities(String(x||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
+    const clean=x=>decodeHtmlEntities(String(x||'').replace(/<br\\s*\\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
     const nq=normalizeDevice(q);
     const candidates=[];
-    const linkRe=/<a[^>]+href="([^"]+\.php)"[^>]*>([\s\S]*?)<\/a>/gi;
+    const linkRe=/<a[^>]+href=["']([^"']+\\.php)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
     let m;
-    while((m=linkRe.exec(html))&&candidates.length<30){
+    while((m=linkRe.exec(html))&&candidates.length<40){
       const href=m[1],title=clean(m[2]);
-      if(!/-\d+\.php$/i.test(href)||!title)continue;
+      if(!/-\\d+\\.php$/i.test(href)||!title)continue;
       const nt=normalizeDevice(title);
       let score=0;
-      if(nt===nq)score+=120;
-      if(nt.includes(nq)||nq.includes(nt))score+=70;
+      if(nt===nq)score+=160;
+      if(nt.includes(nq)||nq.includes(nt))score+=80;
       nq.split(/[^a-z0-9]+/).filter(x=>x.length>1).forEach(t=>{if(nt.includes(t))score+=8});
-      if(/5g/.test(nq)&&/5g/.test(nt))score+=30;
-      if(/4g/.test(nq)&&/4g/.test(nt))score+=30;
+      if(/\\b5g\\b/.test(nq)&&/\\b5g\\b/.test(nt))score+=35;
+      if(/\\b4g\\b/.test(nq)&&/\\b4g\\b/.test(nt))score+=35;
       candidates.push({href,title,score});
     }
     candidates.sort((a,b)=>b.score-a.score);
     const best=candidates[0];
-    if(!best||best.score<45)return null;
-    const detailUrl=best.href.startsWith('http')?best.href:'https://www.gsmarena.com/'+best.href.replace(/^\//,'');
-    const dctl=new AbortController(); const dt=setTimeout(()=>dctl.abort(),9000);
+    if(!best||best.score<55)return null;
+    const detailUrl=best.href.startsWith('http')?best.href:'https://www.gsmarena.com/'+best.href.replace(/^\\//,'');
+    const dctl=new AbortController(); const dt=setTimeout(()=>dctl.abort(),10000);
     try{
-      const dr=await fetch(detailUrl,{signal:dctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/5.0)','Accept':'text/html'}});
+      const dr=await fetch(detailUrl,{signal:dctl.signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; VG-MENT4L-DeviceResearch/6.0)','Accept':'text/html'}});
       if(!dr.ok)return null;
       const dh=await dr.text();
-      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\s*\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
-      const field=label=>{
-        const re=new RegExp('<td[^>]*class="ttl"[^>]*>[\s\S]*?'+label+'[\s\S]*?<\\/td>\s*<td[^>]*class="nfo"[^>]*>([\s\S]*?)<\\/td>','i');
-        const z=dh.match(re); return z?strip(z[1]):'';
+      const strip=x=>decodeHtmlEntities(String(x||'').replace(/<br\\s*\\/?>/gi,' · ').replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').trim());
+      const rows=[];
+      const rowRe=/<tr[^>]*>([\\s\\S]*?)<\\/tr>/gi;
+      let rm;
+      while((rm=rowRe.exec(dh))){
+        const cells=[...rm[1].matchAll(/<td[^>]*>([\\s\\S]*?)<\\/td>/gi)].map(x=>strip(x[1]));
+        if(cells.length>=2)rows.push({label:cells[0].toLowerCase(),value:cells.slice(1).join(' · ')});
+      }
+      const findLabel=(label,contains=true)=>{
+        const l=String(label).toLowerCase();
+        const row=rows.find(x=>contains?x.label.includes(l):x.label===l);
+        return row?.value||'';
       };
-      const chipset=field('Chipset'),gpu=field('GPU'),ram=field('Internal')||field('RAM');
-      const os=field('OS'),displayType=field('Type'),size=field('Size'),resolution=field('Resolution'),refresh=field('Rate');
-      const battery=field('Type')&&/mAh/i.test(field('Type'))?field('Type'):'';
-      const charging=field('Charging');
+      const sectionText=(heading)=>{
+        const idx=dh.toLowerCase().indexOf('> '+heading.toLowerCase()+' <');
+        return idx>=0?dh.slice(idx,Math.min(dh.length,idx+18000)):'';
+      };
+      const chipset=findLabel('chipset');
+      const gpu=findLabel('gpu');
+      const internal=findLabel('internal');
+      const os=findLabel('os');
+      const displayType=findLabel('type');
+      const size=findLabel('size');
+      const resolution=findLabel('resolution');
+      const refresh=findLabel('rate');
+      const charging=findLabel('charging');
+      const network=findLabel('technology');
+      const batteryMatch=dh.match(/(?:Battery|battery)[\\s\\S]{0,6000}?([0-9,]{3,6}\\s*mAh)/i);
+      const battery=batteryMatch?batteryMatch[1]:'';
+      const touchMatch=dh.match(/([0-9]{2,4}\\s*Hz)[^<]{0,120}(?:touch sampling|sampling rate|multi-touch)/i);
+      const touch=touchMatch?touchMatch[1]:'';
       const display=[size,displayType,resolution].filter(Boolean).join(' · ');
-      if(!chipset&&!display&&!refresh&&!ram)return null;
+      if(!chipset&&!display&&!refresh&&!internal&&!battery&&!charging)return null;
       return {
-        canonical:best.title||q,brand:(best.title.match(/^([A-Za-z0-9]+)\b/i)||[])[1]||'',
+        canonical:best.title||q,
+        brand:(best.title.match(/^([A-Za-z0-9]+)\\b/i)||[])[1]||'',
         platform:/iphone|ios/i.test(best.title+' '+os)?'iOS':'Android',
-        variant:/5g/i.test(best.title)?'5G':(/4g/i.test(best.title)?'4G':''),
-        chipset:chipset||'Not listed',gpu:gpu||'Not listed',ram:ram||'Not listed',
-        display:display||'Not listed',refreshRate:refresh||'Not listed',
-        touchSampling:'Not listed in GSMArena',touchResponse:'Not listed in GSMArena',
-        os:os||'Not listed',battery:battery||'Not listed',charging:charging||'Not listed',
-        storage:field('Internal')||'Not listed',network:/5g/i.test(best.title)?'5G':'Not listed',
-        source:detailUrl,sourceType:'gsmarena-research',sourceLabel:'GSMArena specification research',
-        match:'research',query:q,confidence:best.score>=120?'high':'medium'
+        variant:/\\b5g\\b/i.test(best.title)?'5G':(/\\b4g\\b/i.test(best.title)?'4G':''),
+        chipset:chipset||'Not listed',
+        gpu:gpu||'Not listed',
+        ram:internal||'Not listed',
+        display:display||'Not listed',
+        resolution:resolution||'Not listed',
+        refreshRate:refresh||'Not listed',
+        touchSampling:touch||'Not listed in GSMArena',
+        touchResponse:touch||'Not listed in GSMArena',
+        os:os||'Not listed',
+        storage:internal||'Not listed',
+        battery:battery||'Not listed',
+        charging:charging||'Not listed',
+        network:network||(/\\b5g\\b/i.test(best.title)?'5G':'Not listed'),
+        gaming:/gaming|game|cooling|touch/i.test(dh)?'Gaming-relevant hardware/features found in GSMArena research':'Hardware profile available; dedicated gaming feature not verified',
+        source:detailUrl,
+        sources:[detailUrl],
+        sourceType:'gsmarena-research',
+        sourceLabel:'GSMArena specification research',
+        match:'research',
+        query:q,
+        confidence:best.score>=160?'high':'medium'
       };
     }finally{clearTimeout(dt);}
   }catch{return null}finally{clearTimeout(timer);}
 }
-
 function decodeHtmlEntities(s){
   return String(s||'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;|&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>');
 }
