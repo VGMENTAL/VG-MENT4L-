@@ -1549,4 +1549,67 @@ hudEl.addEventListener('change',()=>{
     autoRecalculate('HUD Screenshot changed');
   }
 });
-</script></body></html>
+</script>
+<!-- VG MENT4L profile backup tools: portable settings backup, not a gameplay optimizer -->
+<section id="vgProfileBackup" aria-label="Profile backup tools" style="max-width:760px;margin:28px auto;padding:18px;border:1px solid #35508e;border-radius:16px;background:#0b1022;color:#eef6ff;font:15px/1.5 system-ui,sans-serif">
+  <h2 style="margin:0 0 8px;font-size:1.2rem">Profile Backup &amp; Restore</h2>
+  <p style="margin:0 0 12px;color:#b8c7e8">Export your current form settings to a JSON file, or restore a backup on another device. This backup does not guarantee gameplay or recoil results.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button type="button" id="vgExportProfile" style="padding:10px 14px;border:0;border-radius:10px;background:#2454c6;color:white;font-weight:700">Export Settings</button>
+    <label for="vgImportProfileFile" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#5030a5;color:white;font-weight:700;cursor:pointer">Import Settings JSON</label>
+    <input id="vgImportProfileFile" type="file" accept=".json,application/json" style="display:none">
+  </div>
+  <p id="vgBackupStatus" role="status" aria-live="polite" style="margin:12px 0 0;color:#b8c7e8"></p>
+</section>
+<script>
+(function(){
+  const panel=document.getElementById('vgProfileBackup');
+  if(!panel || panel.dataset.ready==='1') return;
+  panel.dataset.ready='1';
+  const status=document.getElementById('vgBackupStatus');
+  const fileInput=document.getElementById('vgImportProfileFile');
+  const ignored=new Set(['file','submit','button','reset','image','password']);
+  function fields(){
+    return Array.from(document.querySelectorAll('input[name],select[name],textarea[name]'))
+      .filter(el=>!ignored.has((el.type||'').toLowerCase()) && !el.disabled && !el.closest('#vgProfileBackup'));
+  }
+  function snapshot(){
+    return {format:'vg-mental-settings-backup',version:1,createdAt:new Date().toISOString(),
+      fields:fields().map((el,index)=>({name:el.name,type:(el.type||el.tagName).toLowerCase(),
+        value:el.type==='checkbox'||el.type==='radio'?Boolean(el.checked):el.value,
+        occurrence:fields().filter(x=>x.name===el.name).indexOf(el)}))};
+  }
+  document.getElementById('vgExportProfile').addEventListener('click',function(){
+    try{
+      const blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.href=url; a.download='vg-mental-settings-backup.json'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      status.textContent='Backup exported. Keep the JSON file somewhere safe.';
+    }catch(e){status.textContent='Export failed. Please try again.';}
+  });
+  fileInput.addEventListener('change',async function(){
+    const file=fileInput.files&&fileInput.files[0]; if(!file)return;
+    try{
+      if(file.size>1024*1024) throw new Error('large');
+      const data=JSON.parse(await file.text());
+      if(!data || data.format!=='vg-mental-settings-backup' || data.version!==1 || !Array.isArray(data.fields)) throw new Error('format');
+      const controls=fields(); let restored=0;
+      data.fields.forEach(item=>{
+        if(!item || typeof item.name!=='string' || !Number.isInteger(item.occurrence) || item.occurrence<0)return;
+        const matches=controls.filter(el=>el.name===item.name);
+        const el=matches[item.occurrence]; if(!el)return;
+        if(el.type==='checkbox'||el.type==='radio'){
+          if(typeof item.value==='boolean') {el.checked=item.value;el.dispatchEvent(new Event('change',{bubbles:true}));restored++;}
+        }else if(typeof item.value==='string'||typeof item.value==='number'){
+          el.value=String(item.value);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));restored++;
+        }
+      });
+      status.textContent=restored+' field(s) restored. Review them before generating or saving a profile.';
+    }catch(e){status.textContent='Could not import this file. Choose a valid VG MENT4L settings backup JSON.';}
+    finally{fileInput.value='';}
+  });
+})();
+</script>
+
+</body></html>
