@@ -23,6 +23,30 @@ label{font-size:13px;font-weight:700;display:block;margin:5px 0}input,select,tex
 button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:650px){.grid,.issueGrid,.infoGrid{grid-template-columns:1fr}.sens{grid-template-columns:1fr 1fr}}
 </style>
+<style id="vg-mobile-polish-2026">
+/* Shared mobile-first polish inspired by the reference layouts; no calculation logic changed. */
+:root{color-scheme:dark}
+button, input, select, textarea{font:inherit}
+button, [role="button"]{min-height:44px;touch-action:manipulation}
+input,select,textarea{max-width:100%;min-width:0}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #72eaff;outline-offset:3px}
+img,video,canvas,iframe{max-width:100%}
+.panel,.card,.section,.result,.result-card,.settings-card,.profile-card,.output-card{overflow-wrap:anywhere}
+@media(max-width:600px){
+  body{overflow-x:hidden}
+  .wrap,.container,.main,.app,.content,.page{max-width:100%;padding-left:12px;padding-right:12px}
+  .panel,.section,.result-card,.settings-card,.profile-card,.output-card{border-radius:16px;padding:14px}
+  .grid,.form-grid,.input-grid,.extra-grid,.blueprint-grid,.guide-grid{grid-template-columns:minmax(0,1fr)!important}
+  .cards,.result-grid,.sensitivity-grid,.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  label{line-height:1.45}
+  input,select,textarea{font-size:16px;min-height:46px}
+  button{max-width:100%;white-space:normal;line-height:1.35}
+  pre,code{overflow-wrap:anywhere;white-space:pre-wrap}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
 </head>
 <body>
 <main class="wrap">
