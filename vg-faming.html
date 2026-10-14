@@ -52,14 +52,15 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
 (function(){
  const $=id=>document.getElementById(id); let runToken=0;
  $('generate').addEventListener('click',()=>{
-  const token=++runToken; const scan=$('scanner'); scan.classList.add('active');
+  const token=++runToken; const scan=$('scanner'); scan.classList.add('active'); $('generate').disabled=true; $('generate').textContent='COMPILING REPORT…';
   ['s1','s2','s3','s4'].forEach(id=>$(id).classList.remove('on'));
   ['s1','s2','s3','s4'].forEach((id,i)=>setTimeout(()=>{if(token===runToken)$(id).classList.add('on')},i*350));
   const age=$('age').value.trim();
   const rows=[
    'VG F4M!NG — DEVICE DIAGNOSTIC SUMMARY',
    'RAM variant: '+$('ram').value,
-   'Display class / resolution: '+$('display').value,\n   'Gameplay role (context only): '+$('role').value,
+   'Display class / resolution: '+$('display').value,
+   'Gameplay role (context only): '+$('role').value,
    'Refresh rate: '+$('refresh').value,
    'Touch sampling: '+$('touch').value,
    'Reported issue: '+$('issue').value,
@@ -73,6 +74,7 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
    'This report is informational; it is not an aim or sensitivity calculator.'
   ];
   $('result').textContent=rows.join('\n');
+  setTimeout(()=>{if(token===runToken){$('generate').disabled=false;$('generate').textContent='COMPILE DIAGNOSTIC REPORT';}},1250);
  });
  $('copy').addEventListener('click',async()=>{
   const text=$('result').textContent;
