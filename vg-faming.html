@@ -27,5 +27,81 @@
 <article class="card"><h3>Phase 3 — HUD / Fire Button Geometry</h3><span class="pill">PERSONAL LAYOUT</span><p>On-screen control placement reach, visibility aur comfort ko affect kar sakta hai. Kisi particular button size ya bottom-edge position se “0.001% recoil” hone ka verified evidence nahi hai.</p></article>
 <article class="card"><h3>Phase 4 — Mechanical Execution Claims</h3><span class="pill">GAME-SPECIFIC CLAIM</span><p>J-shaped gesture aur exact five-bullet reset jaise claims ko universal game mechanics nahi maana ja sakta. Actual mechanics game ke implementation aur update ke hisaab se vary karte hain.</p></article>
 </div>
+\n
+<section class="hero" style="margin-top:20px">
+  <p class="logo" style="font-size:clamp(1.5rem,4vw,2.2rem)">THE CALIBRATION MATRIX</p>
+  <div class="tag">VG CORE · DEVICE & CONNECTION DIAGNOSTICS</div>
+  <p class="muted">Cyber-console interface concept — not an anti-recoil or aim-generation engine.</p>
+</section>
+<section class="notice">
+  <h2>🌐 Connection status</h2>
+  <p><strong>Server:</strong> Page available · <strong>Ping:</strong> Not measured by this page</p>
+  <p class="muted">A real ping value requires an actual network test. This page will not invent latency, encryption, or ban-risk guarantees.</p>
+</section>
+<section class="grid">
+  <article class="card">
+    <h3>📱 Device class</h3>
+    <label for="vg-device">Choose device category</label>
+    <select id="vg-device" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
+      <option value="Not specified">Select device category</option>
+      <option>Low-core / entry-level</option><option>Mid-range</option><option>Flagship</option><option>Not sure</option>
+    </select>
+  </article>
+  <article class="card">
+    <h3>🎯 Reported experience</h3>
+    <label for="vg-issue">Choose what you notice</label>
+    <select id="vg-issue" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
+      <option value="Not specified">Select an issue</option>
+      <option>Touch feels delayed</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Connection lag / spikes</option><option>Other / not sure</option>
+    </select>
+  </article>
+  <article class="card">
+    <h3>⚡ Touch / display info</h3>
+    <label for="vg-touch">Known touch sampling rate</label>
+    <select id="vg-touch" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
+      <option>Unknown</option><option>180 Hz (manufacturer-reported)</option><option>360 Hz (manufacturer-reported)</option><option>Other / varies by mode</option>
+    </select>
+    <p class="muted">Only choose a value if your device manufacturer confirms it.</p>
+  </article>
+  <article class="card">
+    <h3>📶 Network condition</h3>
+    <label for="vg-network">Describe your connection</label>
+    <select id="vg-network" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
+      <option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option>
+    </select>
+  </article>
+</section>
+<div style="text-align:center;margin:16px 0">
+  <button type="button" id="vg-diagnose" class="btn" style="cursor:pointer;font-size:1rem">⚡ GENERATE DIAGNOSTIC SUMMARY</button>
+</div>
+<section class="card" aria-live="polite">
+  <h2>🖥️ VG CORE — Diagnostic Console</h2>
+  <pre id="vg-result" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#080d14;border:1px solid #263449;border-radius:10px;padding:16px;color:#a5f3fc;font:14px/1.8 ui-monospace,monospace">> Awaiting your selections…\n> No network test has been run.\n> No sensitivity values or gameplay-performance claims are generated.</pre>
+  <button type="button" id="vg-copy" class="btn">📋 COPY SUMMARY</button>
+  <p class="muted">This is a self-reported device/connection checklist only. It does not measure recoil, generate aim settings, guarantee headshots, or establish account-ban risk.</p>
+</section>
+<script>
+(function(){
+  const byId=id=>document.getElementById(id);
+  byId('vg-diagnose').addEventListener('click',function(){
+    const lines=[
+      'VG F4M!NG — DEVICE DIAGNOSTIC SUMMARY',
+      'Device category: '+byId('vg-device').value,
+      'Reported experience: '+byId('vg-issue').value,
+      'Touch sampling info: '+byId('vg-touch').value,
+      'Connection condition: '+byId('vg-network').value,
+      '',
+      'Next check: compare device specifications with the manufacturer, close background downloads, and test your connection at different times.',
+      'Limit: self-reported checklist; no live ping, sensitivity recipe, recoil measurement, or ban-risk guarantee.'
+    ];
+    byId('vg-result').textContent=lines.join('\n');
+  });
+  byId('vg-copy').addEventListener('click',async function(){
+    const text=byId('vg-result').textContent;
+    try { await navigator.clipboard.writeText(text); this.textContent='✓ COPIED'; }
+    catch(e) { const area=document.createElement('textarea'); area.value=text; document.body.appendChild(area); area.select(); const ok=document.execCommand('copy'); area.remove(); this.textContent=ok?'✓ COPIED':'Select and copy the console text'; }
+  });
+})();
+</script>
 \n<footer class="foot">VG F4M!NG · International Calibration Lab · Independent informational page</footer>
 </main></body></html>
