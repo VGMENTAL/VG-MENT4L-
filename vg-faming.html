@@ -1,112 +1,82 @@
 <!doctype html>
-<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080a0f"><title>VG F4M!NG | Hardware Matrix & Diagnostic Console</title>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06080c">
+<title>VG F4M!NG | Hardware Matrix Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#080a0f;--panel:#10141e;--cyan:#00f3ff;--red:#ff2a5f;--green:#39ff14;--txt:#e2e8f0;--muted:#94a3b8}*{box-sizing:border-box}body{margin:0;padding:18px;background:radial-gradient(ellipse at top,#152233,#080a0f 60%);font:16px/1.55 "Segoe UI",Arial,sans-serif;color:var(--txt)}main{max-width:1050px;margin:auto}.hero,.card,.notice{background:#10141ef2;border:1px solid #263449;border-radius:16px;padding:22px;box-shadow:0 10px 30px #0002}.hero{text-align:center;margin-bottom:20px;border-top:2px solid var(--cyan)}.logo{color:var(--cyan);font-size:clamp(2rem,6vw,3rem);font-weight:900;letter-spacing:1px;margin:0;text-shadow:0 0 16px #00f3ff44}.tag{color:var(--red);font-weight:800;letter-spacing:1px}.muted{color:var(--muted)}h2{font-size:1.2rem;margin:0 0 10px}h3{font-size:1.05rem;margin:0 0 8px;color:var(--cyan)}.notice{border-left:4px solid var(--red);margin:18px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card p{margin:8px 0}.pill{display:inline-block;border:1px solid #465267;color:#fbbf24;border-radius:99px;padding:3px 9px;font-size:.75rem;font-weight:800}.num{color:var(--red);font-weight:900;margin-right:8px}.btn{display:inline-block;border:1px solid #3b5268;color:var(--cyan);background:#121c2b;border-radius:8px;padding:10px 14px;text-decoration:none;font-weight:700;margin-top:8px}.foot{text-align:center;color:var(--muted);font-size:.82rem;margin:22px 0}@media(max-width:650px){body{padding:10px}.grid{grid-template-columns:1fr}.hero,.card,.notice{padding:17px}}
-</style></head><body><main>
-<header class="hero"><p class="logo">VG F4M!NG</p><div class="tag">INTERNATIONAL CALIBRATION LAB · V5</div><p class="muted">Standalone gaming-device research page · Hindi / English</p><p>Touch, display, frame pacing aur network jaise factors ko samajhne ke liye ek organized reference.</p></header>
-<section class="notice"><h2>⚠️ Research note — pehle padhein</h2><p>Yeh 10 concepts user-provided list se inspired hain, lekin country/pro-player attribution independently verify nahi ki gayi. Fixed sensitivity numbers, guaranteed headshots, “0% recoil”, “0.001%” accuracy, automatic hit registration ya universal performance claims ko proven fact na samjhein. Game, device, patches aur individual control habits ke hisaab se results alag hote hain.</p></section>
+:root{--bg:#06080c;--panel:rgba(16,20,30,.94);--cyan:#00f3ff;--red:#ff2a5f;--green:#39ff14;--txt:#e2e8f0;--muted:#94a3b8;--glow:0 0 15px #00f3ff44}
+*{box-sizing:border-box}body{margin:0;padding:20px;background:radial-gradient(circle at 50% 20%,#111726 0%,var(--bg) 70%);color:var(--txt);font-family:Rajdhani,Arial,sans-serif;min-height:100vh;display:flex;justify-content:center;align-items:center}
+.container{width:100%;max-width:750px;background:var(--panel);backdrop-filter:blur(10px);border:1px solid #00f3ff40;border-radius:16px;padding:clamp(18px,4vw,30px);box-shadow:0 0 40px #000c}
+header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;margin-bottom:25px}h1{font:900 clamp(1.8rem,6vw,2.4rem) Orbitron,sans-serif;letter-spacing:1px;margin:0;color:#fff;text-shadow:var(--glow);overflow-wrap:anywhere}.status{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--green);letter-spacing:1px;margin-top:8px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}.section-title{font:700 1.05rem Orbitron,sans-serif;color:var(--cyan);letter-spacing:.5px;margin:22px 0 14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.field{display:flex;flex-direction:column;min-width:0}label{color:var(--muted);font-size:.95rem;font-weight:700;letter-spacing:.4px;margin-bottom:7px}select,input{width:100%;min-width:0;background:#0d111a;border:1px solid #00f3ff4d;color:#fff;padding:12px;border-radius:8px;font:600 1rem Rajdhani,sans-serif;outline:none}select:focus,input:focus{border-color:var(--cyan);box-shadow:var(--glow)}.hint{color:var(--muted);font-size:.92rem;margin:7px 0 0}.btn{width:100%;border:0;border-radius:8px;padding:15px;background:linear-gradient(90deg,var(--red),#b5123b);color:#fff;font:700 1rem Orbitron,sans-serif;letter-spacing:.5px;cursor:pointer;margin-top:22px}.btn:hover{box-shadow:0 0 20px #ff2a5f99}.console{margin-top:26px;background:#05070c;border:2px solid var(--red);border-radius:12px;padding:20px;box-shadow:inset 0 0 20px #000c}.console-head{font:700 1rem Orbitron,sans-serif;color:var(--red);border-bottom:1px solid #ff2a5f55;padding-bottom:12px;margin-bottom:14px}.console pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#a5f3fc;background:#090d14;padding:14px;border-radius:8px;font:14px/1.7 ui-monospace,monospace}.copy{background:#111c2b;border:1px solid #00f3ff66;color:var(--cyan);padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer}.note{border-left:3px solid var(--red);padding:12px 14px;background:#ff2a5f0d;color:#cbd5e1;border-radius:5px;margin-top:18px}.foot{text-align:center;color:var(--muted);font-size:.85rem;margin-top:22px}
+@media(max-width:600px){body{padding:10px;align-items:flex-start}.grid{grid-template-columns:1fr}.container{padding:18px}.console{padding:14px}}
+</style>
+</head>
+<body><main class="container">
+<header>
+<h1>://vg-f4m1ng.com</h1>
+<div class="status"><span class="dot"></span> DEVICE DIAGNOSTIC CONSOLE</div>
+<p class="hint">OB55-style visual theme · Hardware, display aur connection checklist</p>
+</header>
+<div class="section-title">⚡ GLOBAL HARDWARE DATA</div>
 <div class="grid">
-<article class="card"><h3><span class="num">01</span>Brazil — Pixel / Aim Consistency</h3><span class="pill">UNVERIFIED CLAIM</span><p>Reference idea: aim movement aur screen par dikhne wale target ke beech consistency. Kisi player se judi fixed value ya universal “breaking point” yahan verify nahi hai.</p></article>
-<article class="card"><h3><span class="num">02</span>Thailand — X/Y Movement Theory</h3><span class="pill">THEORY</span><p>Horizontal aur vertical movement ko alag dimensions ke roop mein samajhne ka concept. Screen shape se ek universal ratio sab devices par lagu hota hai, iska proof nahi diya gaya.</p></article>
-<article class="card"><h3><span class="num">03</span>Indonesia — Touch Responsiveness</h3><span class="pill">DEVICE DEPENDENT</span><p>Touch-and-hold accessibility aur pointer options operating system aur input type ke liye hote hain; inka effect game ke touch controls par har phone mein ek jaisa nahi hota.</p></article>
-<article class="card"><h3><span class="num">04</span>MENA — Control Layout Geometry</h3><span class="pill">PERSONAL PREFERENCE</span><p>On-screen controls ka layout comfort, reach aur visibility ko affect kar sakta hai. Kisi specific gesture se aim assist bypass ya guaranteed headshots milne ka claim verified nahi hai.</p></article>
-<article class="card"><h3><span class="num">05</span>Europe — Crosshair Awareness</h3><span class="pill">GENERAL CONCEPT</span><p>Crosshair placement ek general game-awareness concept hai. Isse game engine automatic headshot ya recoil-free shots mein badal deta hai, aisa claim supported nahi hai.</p></article>
-<article class="card"><h3><span class="num">06</span>LATAM — Display Density / DPI</h3><span class="pill">DEVICE DEPENDENT</span><p>DPI/display scaling UI size aur coordinate behavior ko affect kar sakti hai. Isse pixels “compress” hokar shots ko laser-straight banate hain, iska evidence nahi hai.</p></article>
-<article class="card"><h3><span class="num">07</span>Thailand — Burst / Reset Claim</h3><span class="pill">GAME-SPECIFIC</span><p>Firing behavior aur recoil mechanics game aur weapon ke implementation par depend karte hain. “Exactly five bullets” ke baad universal reset rule verify nahi hai.</p></article>
-<article class="card"><h3><span class="num">08</span>Global — Frame Pacing</h3><span class="pill">TECHNICAL FACTOR</span><p>Frame rate stability aur device heat/performance responsiveness ko influence kar sakte hain. Maximum FPS har phone par stable ya best choice ho, yeh guaranteed nahi.</p></article>
-<article class="card"><h3><span class="num">09</span>Global — Scope / Sensitivity Relationship</h3><span class="pill">UNVERIFIED NUMBERS</span><p>Different control scales alag feel ho sakte hain, lekin fixed scope values se recoil “completely disappear” hota hai, aisa universal proof nahi hai.</p></article>
-<article class="card"><h3><span class="num">10</span>Vietnam — Gyroscope / Motion Input</h3><span class="pill">DEVICE & GAME DEPENDENT</span><p>Gyroscope behavior sensor quality, supported game settings aur personal comfort par depend karta hai. Motion input se recoil zero ya shots ek pixel par lock hone ki guarantee nahi.</p></article>
+<div class="field"><label for="ram">DEVICE PERFORMANCE TIER</label><select id="ram"><option>Not specified</option><option>2–3 GB RAM</option><option>4–6 GB RAM</option><option>8–16 GB RAM</option><option>iOS device</option><option>Not sure</option></select></div>
+<div class="field"><label for="display">DISPLAY CLASS</label><select id="display"><option>Not specified</option><option>HD / HD+</option><option>FHD / FHD+</option><option>1.5K / 2K</option><option>Not sure</option></select></div>
+<div class="field"><label for="refresh">MANUFACTURER-LISTED REFRESH RATE</label><select id="refresh"><option>Unknown / not checked</option><option>60 Hz</option><option>90 Hz</option><option>120 Hz</option><option>144 Hz or above (verify model)</option></select></div>
+<div class="field"><label for="touch">TOUCH SAMPLING INFORMATION</label><select id="touch"><option>Unknown / not checked</option><option>Manufacturer confirms 180–240 Hz</option><option>Manufacturer confirms 360 Hz</option><option>Other / mode-dependent</option></select></div>
 </div>
-<section class="notice"><h2>Device profile checklist</h2><p>Apne phone ka model, refresh rate, graphics mode, game version aur network stability note karein. Hardware details ko “known” ya “not sure” ke roop mein record karein; unsupported measurements ko automatically verified label na dein.</p><p class="muted">Is page par koi sensitivity formula ya combat-performance guarantee generate nahi hoti. Yeh research / educational reference hai.</p></section>
-
-<section class="notice"><h2>📘 Brazilian Breaking Point & Pixel-Lock Format — Research Notes</h2>
-<p>Yeh section tumhare naye bheje hue 4-phase format ko record karta hai. Neeche claims ko educational summary mein rakha gaya hai; yeh verified sensitivity recipe nahi hai.</p></section>
+<div class="section-title">🛰️ DEVICE & CONNECTION CHECK</div>
 <div class="grid">
-<article class="card"><h3>Phase 1 — System Hardware Presets</h3><span class="pill">CLAIM NOT VERIFIED</span><p>Pointer speed aur display-density/DPI settings device aur operating system ke hisaab se behave karti hain. 90% pointer speed ya default DPI mein fixed addition se aim stabilize hone ka universal proof nahi hai.</p></article>
-<article class="card"><h3>Phase 2 — “Breaking Point Algorithm”</h3><span class="pill">CLAIM NOT VERIFIED</span><p>Ek swipe se 360° rotation ya fixed Red Dot value ko universal calibration standard nahi maana ja sakta. Game version, control layout, screen size aur user input se response badal sakta hai; koi fixed value zero recoil ya head-lock guarantee nahi karti.</p></article>
-<article class="card"><h3>Phase 3 — HUD / Fire Button Geometry</h3><span class="pill">PERSONAL LAYOUT</span><p>On-screen control placement reach, visibility aur comfort ko affect kar sakta hai. Kisi particular button size ya bottom-edge position se “0.001% recoil” hone ka verified evidence nahi hai.</p></article>
-<article class="card"><h3>Phase 4 — Mechanical Execution Claims</h3><span class="pill">GAME-SPECIFIC CLAIM</span><p>J-shaped gesture aur exact five-bullet reset jaise claims ko universal game mechanics nahi maana ja sakta. Actual mechanics game ke implementation aur update ke hisaab se vary karte hain.</p></article>
+<div class="field"><label for="issue">REPORTED ISSUE</label><select id="issue"><option>Not specified</option><option>Touch feels delayed</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Phone heats up / performance drops</option><option>Connection lag / ping spikes</option><option>Other / not sure</option></select></div>
+<div class="field"><label for="network">OBSERVED NETWORK CONDITION</label><select id="network"><option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option></select></div>
+<div class="field"><label for="age">DEVICE AGE (YEARS, OPTIONAL)</label><input id="age" type="number" min="0" max="20" step=".5" placeholder="e.g. 1.5"></div>
+<div class="field"><label for="gamever">GAME VERSION STATUS</label><select id="gamever"><option>Not checked</option><option>Updated from official store</option><option>Update available</option><option>Not sure</option></select></div>
 </div>
-\n
-
-<section class="hero" style="margin-top:20px">
-  <p class="logo" style="font-size:clamp(1.5rem,4vw,2.2rem)">://vg-f4m1ng.com</p>
-  <div class="tag">OB55-STYLE THEME · DEVICE & CONNECTION DIAGNOSTICS</div>
-  <p class="muted">OB55-style visual theme · Device and connection diagnostic console</p>
+<button class="btn" id="generate" type="button">GENERATE DIAGNOSTIC SUMMARY</button>
+<section class="console" aria-live="polite">
+<div class="console-head">🚀 VG CORE — DIAGNOSTIC OUTPUT</div>
+<pre id="result">> Awaiting your selections…
+> Live ping: not measured
+> Game patch sync: not verified
+> No gameplay calibration will be generated.</pre>
+<button class="copy" id="copy" type="button">📋 COPY SUMMARY</button>
 </section>
-<section class="notice">
-  <h2>🌐 Service status</h2>
-  <p><strong>Page:</strong> Loaded successfully</p>
-  <p><strong>Live ping:</strong> Not measured · <strong>Game patch sync:</strong> Not verified</p>
-  <p class="muted">This is a diagnostic interface, not a verified sensitivity calculator. It does not promise zero recoil, guaranteed headshots, or “0% ban risk.”</p>
-</section>
-<div class="section-title">📱 HARDWARE IDENTIFICATION MATRIX</div>
-<section class="grid">
-  <article class="card">
-    <h3>Device category</h3>
-    <label for="vg-device">RAM / performance tier</label>
-    <select id="vg-device"><option value="Not specified">Choose category</option><option>Entry-level · 2–4 GB RAM</option><option>Mid-range · 6–8 GB RAM</option><option>Flagship · 12 GB+ RAM</option><option>iOS device</option><option>Not sure</option></select>
-  </article>
-  <article class="card">
-    <h3>Display class</h3>
-    <label for="vg-res">Screen resolution class</label>
-    <select id="vg-res"><option>Not specified</option><option>HD / HD+</option><option>FHD / FHD+</option><option>1.5K / 2K</option><option>Not sure</option></select>
-  </article>
-  <article class="card">
-    <h3>Reported aim / device issue</h3>
-    <label for="vg-issue">Choose the issue you notice</label>
-    <select id="vg-issue"><option>Not specified</option><option>Touch feels delayed</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Connection lag / spikes</option><option>Other / not sure</option></select>
-  </article>
-  <article class="card">
-    <h3>Touch information</h3>
-    <label for="vg-touch">Manufacturer-listed sampling rate</label>
-    <select id="vg-touch"><option>Unknown</option><option>180–240 Hz (if manufacturer confirms)</option><option>360 Hz (if manufacturer confirms)</option><option>Other / mode-dependent</option></select>
-  </article>
-  <article class="card">
-    <h3>📶 Network condition</h3>
-    <label for="vg-network">Connection status you observe</label>
-    <select id="vg-network"><option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option></select>
-  </article>
-  <article class="card">
-    <h3>ℹ️ Information accuracy</h3>
-    <p>Choose “Not sure” whenever a specification is unknown. RAM, resolution and touch sampling alone cannot verify real-time performance.</p>
-  </article>
-</section>
-<div style="text-align:center;margin:16px 0">
-  <button type="button" id="vg-diagnose" class="btn" style="cursor:pointer;font-size:1rem">⚡ GENERATE DIAGNOSTIC SUMMARY</button>
-</div>
-<section class="card" aria-live="polite">
-  <h2>🖥️ VG CORE — Diagnostic Console</h2>
-  <pre id="vg-result" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#080d14;border:1px solid #263449;border-radius:10px;padding:16px;color:#a5f3fc;font:14px/1.8 ui-monospace,monospace">> Awaiting your selections…\n> No live ping or patch check has been run.\n> This console does not generate gameplay aim settings.</pre>
-  <button type="button" id="vg-copy" class="btn">📋 COPY SUMMARY</button>
-  <p class="muted">This is a self-reported device and connection checklist. It does not measure recoil, generate sensitivity/DPI recipes, or guarantee gameplay outcomes or account safety.</p>
-</section>
+<div class="note"><strong>Accuracy note:</strong> Ye console device details aur tumhare bataye symptoms ko organize karta hai. Ye real-time recoil/aim measure nahi karta aur sensitivity values, anti-recoil recipes, guaranteed headshots ya account-safety guarantees generate nahi karta. Unknown specifications ko verified nahi maana jayega.</div>
+<footer class="foot">VG F4M!NG · Hardware Matrix & Diagnostic Console</footer>
+</main>
 <script>
 (function(){
-  const byId=id=>document.getElementById(id);
-  byId('vg-diagnose').addEventListener('click',function(){
-    const lines=[
-      'VG F4M!NG — DIAGNOSTIC SUMMARY',
-      'Device category: '+byId('vg-device').value,
-      'Display class: '+byId('vg-res').value,
-      'Reported issue: '+byId('vg-issue').value,
-      'Touch sampling information: '+byId('vg-touch').value,
-      'Observed connection: '+byId('vg-network').value,
-      'Live ping: not measured',
-      'Game patch sync: not verified',
-      '',
-      'Suggested next check: verify device specifications with the manufacturer and test the connection at different times.',
-      'Note: this checklist is not a gameplay calibration or account-ban guarantee.'
-    ];
-    byId('vg-result').textContent=lines.join('\n');
-  });
-  byId('vg-copy').addEventListener('click',async function(){
-    const value=byId('vg-result').textContent;
-    try{await navigator.clipboard.writeText(value);this.textContent='✓ COPIED';}
-    catch(e){const a=document.createElement('textarea');a.value=value;document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();this.textContent=ok?'✓ COPIED':'Select and copy the console text';}
-  });
+ const $=id=>document.getElementById(id);
+ $('generate').addEventListener('click',()=>{
+  const age=$('age').value.trim();
+  const rows=[
+   'VG F4M!NG — DEVICE DIAGNOSTIC SUMMARY',
+   'Performance tier: '+$('ram').value,
+   'Display class: '+$('display').value,
+   'Refresh rate: '+$('refresh').value,
+   'Touch sampling: '+$('touch').value,
+   'Reported issue: '+$('issue').value,
+   'Observed network: '+$('network').value,
+   'Device age: '+(age===''?'Not provided':age+' year(s)'),
+   'Game version status: '+$('gamever').value,
+   '',
+   'Live ping: not measured by this page',
+   'Patch sync: not independently verified',
+   'Next step: check specifications with the phone maker and use official game/device support for troubleshooting.',
+   'This report is informational; it is not an aim or sensitivity calculator.'
+  ];
+  $('result').textContent=rows.join('\n');
+ });
+ $('copy').addEventListener('click',async()=>{
+  const text=$('result').textContent;
+  try{await navigator.clipboard.writeText(text);$('copy').textContent='✓ COPIED';}
+  catch(e){
+   const area=document.createElement('textarea');area.value=text;document.body.appendChild(area);area.select();
+   const ok=document.execCommand('copy');area.remove();$('copy').textContent=ok?'✓ COPIED':'Select and copy the summary';
+  }
+ });
 })();
 </script>
-
-<footer class="foot">VG F4M!NG · International Calibration Lab · Independent informational page</footer>
-</main></body></html>
+</body></html>
