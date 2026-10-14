@@ -509,7 +509,10 @@ function showManualCode(code,label){
   if(!box)return;
   const device=String($('#manualDeviceName')?.value||'').trim()||'Unknown Device';
   box.style.display='block';
-  box.innerHTML='<b>🔐 '+esc(label||'MANUAL SENSITIVITY CODE')+'</b><div style="margin-top:6px"><span class="pill">Device: '+esc(device)+'</span></div><div style="margin-top:6px;font-size:22px;letter-spacing:1px"><code>'+esc(code)+'</code></div><div style="margin-top:6px">Ye code isi manual sensitivity profile ko identify karta hai. Device name + sensitivity + preset + OB details code ke andar fingerprint hote hain. Same information se same code milega; inmein se koi detail badalne par naya code banega.</div><button type="button" class="secondary" id="copyManualCode" style="margin-top:8px">COPY CODE</button>';
+  const saveNotice=manualProfilePersistence?.backendSaved
+    ? '<div class="status ok" role="status" style="margin-top:9px">✓ Profile persistent database mein save hua. Ab doosre device se load karna possible hona chahiye.</div>'
+    : '<div class="status warn" role="status" style="margin-top:9px">⚠ Code is browser mein backup hai, lekin database save confirm nahi hua. Doosre device par load hone ki guarantee nahi hai.</div>';
+  box.innerHTML='<b>🔐 '+esc(label||'MANUAL SENSITIVITY CODE')+'</b><div style="margin-top:6px"><span class="pill">Device: '+esc(device)+'</span></div><div style="margin-top:6px;font-size:22px;letter-spacing:1px"><code>'+esc(code)+'</code></div><div style="margin-top:6px">Ye code profile ko identify karta hai; code khud database mein save hone ka proof nahi hai.</div>'+saveNotice+'<button type="button" class="secondary" id="copyManualCode" style="margin-top:8px">COPY CODE</button>';
   $('#copyManualCode').onclick=async()=>{try{await navigator.clipboard.writeText(code)}catch(e){}};
 }
 function renderResult(oldOb,targetOb,oldVals,newVals,meta,analysisText){
@@ -582,14 +585,26 @@ function makeManualProfileCode(sensitivity,preset,sourceOb,targetOb,deviceName='
   const key=JSON.stringify({v:2,device:String(deviceName||'').trim(),sensitivity,preset:String(preset||'Default'),sourceOb:String(sourceOb||'UNKNOWN'),targetOb:String(targetOb||LATEST_OB)});
   return '#'+stableManualHash(key);
 }
+let manualProfilePersistence={backendSaved:false,source:'browser-local'};
 async function saveManualImportedProfile(code,sensitivity,preset,sourceOb,targetOb,deviceName=''){
   const device=String(deviceName||'').trim()||'Unknown Device';
   const profile={code,manualImport:true,profileType:'manual-sensitivity',preset:String(preset||'Default'),obVersion:normalizeOb(targetOb)||LATEST_OB,sourceOb:normalizeOb(sourceOb)||'UNKNOWN',sensitivity:{...sensitivity},device,deviceName:device,playerMode:'Manual Import',playerStyle:'Manual',gameMode:'Manual',guns:[],allGuns:false,updatedAt:new Date().toISOString()};
   localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
   try{
     const r=await fetch('/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
-    return r.ok;
-  }catch(e){return false;}
+    let reply={};try{reply=await r.json();}catch(e){}
+    const backendSaved=!!r.ok&&reply.source==='backend';
+    manualProfilePersistence={backendSaved,source:backendSaved?'backend':(reply.source||'browser-local')};
+    profile.backendSaved=backendSaved;
+    profile.storageSource=manualProfilePersistence.source;
+    localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
+    return backendSaved;
+  }catch(e){
+    manualProfilePersistence={backendSaved:false,source:'browser-local'};
+    profile.backendSaved=false;profile.storageSource='browser-local';
+    localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
+    return false;
+  }
 }
 function getSelectedProfileIssues(){
   return [...document.querySelectorAll('.profileIssueCheck:checked')].map(x=>x.value);
@@ -734,8 +749,19 @@ async function persistUpdatedProfile(profile,newVals,oldOb,target){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(next)
     });
-    if(r.ok) BACKEND_AVAILABLE=true;
-  }catch(e){BACKEND_AVAILABLE=false;}
+    let reply={};try{reply=await r.json();}catch(e){}
+    const backendSaved=!!r.ok&&reply.source==='backend';
+    BACKEND_AVAILABLE=backendSaved;
+    manualProfilePersistence={backendSaved,source:backendSaved?'backend':(reply.source||'browser-local')};
+    next.backendSaved=backendSaved;
+    next.storageSource=manualProfilePersistence.source;
+    localStorage.setItem('vg_ment4l_profile_'+(next.code||''),JSON.stringify(next));
+  }catch(e){
+    BACKEND_AVAILABLE=false;
+    manualProfilePersistence={backendSaved:false,source:'browser-local'};
+    next.backendSaved=false;next.storageSource='browser-local';
+    localStorage.setItem('vg_ment4l_profile_'+(next.code||''),JSON.stringify(next));
+  }
   // Keep the loaded source profile baseline intact in memory too.
   currentProfile={...next,sensitivity:baseSensitivity(profile)};
   return next;
