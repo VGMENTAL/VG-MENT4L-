@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#06080c">
-<title>VG F4M!NG | Cyber Diagnostic Console v13</title>
+<title>VG F4M!NG | Cyber Diagnostic Console v14</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@ header{text-align:center;border-bottom:2px dashed #00f3ff26;padding-bottom:20px;
 <body><main class="container">
 <header>
 <h1>://vg-f4m1ng.com</h1>
-<div class="status"><span class="dot"></span> CYBER MATRIX CONSOLE v13.0</div>
+<div class="status"><span class="dot"></span> CYBER MATRIX CONSOLE v14.0</div>
 <p class="hint">Neon sci-fi interface · Device, display aur connection diagnostics</p>
 </header>
 <div class="section-title">⚡ GLOBAL HARDWARE DATA</div>
@@ -54,52 +54,88 @@ header{text-align:center;border-bottom:2px dashed #00f3ff26;padding-bottom:20px;
 </main>
 <script>
 (function(){
- const $=id=>document.getElementById(id); let runToken=0;
- const initial='> Awaiting your selections…\n> Live ping: not measured\n> Game patch sync: not verified\n> No gameplay calibration will be generated.';
+ const $=id=>document.getElementById(id);
+ let runToken=0;
+ const initial='> Awaiting your selections…\\n> Live ping: not measured\\n> Game patch sync: not verified\\n> No gameplay calibration will be generated.';
+ const fields=['ram','display','role','refresh','touch','issue','network','age','gamever','notes'];
+ function setButtonBusy(busy){$('generate').disabled=busy;$('generate').textContent=busy?'COMPILING REPORT…':'COMPILE DIAGNOSTIC REPORT';}
  $('generate').addEventListener('click',()=>{
-  const token=++runToken; const scan=$('scanner'); scan.classList.add('active'); $('generate').disabled=true; $('generate').textContent='COMPILING REPORT…';
+  const ageText=$('age').value.trim();
+  if(ageText!=='' && (!Number.isFinite(Number(ageText)) || Number(ageText)<0 || Number(ageText)>20)){
+   $('result').textContent='INPUT CHECK\\nDevice age must be a number from 0 to 20 years. Please correct it and try again.';
+   $('result').focus?.();
+   $('age').setAttribute('aria-invalid','true');
+   $('age').focus();
+   return;
+  }
+  $('age').removeAttribute('aria-invalid');
+  const token=++runToken;
+  const scan=$('scanner'); scan.classList.add('active'); setButtonBusy(true);
   ['s1','s2','s3','s4'].forEach(id=>$(id).classList.remove('on'));
-  ['s1','s2','s3','s4'].forEach((id,i)=>setTimeout(()=>{if(token===runToken)$(id).classList.add('on')},i*350));
+  ['s1','s2','s3','s4'].forEach((id,i)=>setTimeout(()=>{if(token===runToken)$(id).classList.add('on')},i*300));
   const age=$('age').value.trim();
+  const issue=$('issue').value;
+  const network=$('network').value;
+  const tips=[];
+  if(issue==='Touch feels delayed') tips.push('Close unused background apps, clean/dry the screen, and check the phone maker’s touch settings.');
+  if(issue==='Phone heats up / performance drops') tips.push('Let the phone cool, close background apps, and check official battery/performance guidance.');
+  if(issue==='Connection lag / ping spikes'||network==='Frequent ping spikes'||network==='Packet loss / disconnects') tips.push('Compare Wi-Fi/mobile data, move closer to the router or a stronger signal, and check whether other apps also disconnect.');
+  if(issue==='Game closes unexpectedly') tips.push('Update the game from its official store, restart the phone, and check available storage.');
+  if(issue==='Screen movement feels shaky'||issue==='In-game movement feels inconsistent') tips.push('Restart the game, check touch/display settings, and test with default in-game settings.');
+  if(!tips.length) tips.push('If the issue continues, note when it happens and use official device or game support.');
   const rows=[
    'VG F4M!NG — DEVICE DIAGNOSTIC SUMMARY',
+   'Generated: '+new Date().toLocaleString(),
+   '',
+   'DEVICE INFORMATION',
    'RAM variant: '+$('ram').value,
    'Display class / resolution: '+$('display').value,
    'Gameplay role (context only): '+$('role').value,
    'Refresh rate: '+$('refresh').value,
    'Touch sampling: '+$('touch').value,
-   'Reported issue: '+$('issue').value,
-   'Observed network: '+$('network').value,
    'Device age: '+(age===''?'Not provided':age+' year(s)'),
+   '',
+   'REPORTED PERFORMANCE',
+   'Primary issue: '+issue,
+   'Observed network: '+network,
    'Game version status: '+$('gamever').value,
    'Additional notes: '+($('notes').value.trim()||'None provided'),
    '',
-   'Live ping: not measured by this page',
-   'Patch sync: not independently verified',
-   'Next step: check specifications with the phone maker and use official game/device support for troubleshooting.',
-   'This report is informational; it is not an aim or sensitivity calculator.'
+   'SUGGESTED CHECKS',
+   ...tips.map((tip,i)=>(i+1)+'. '+tip),
+   '',
+   'LIMITATIONS',
+   'Live ping: not measured by this page.',
+   'Device specifications and game version are user-reported, not independently verified.',
+   'This is a troubleshooting summary, not an aim/sensitivity calculator or a guarantee of results.'
   ];
-  $('result').textContent=rows.join('\n');
-  setTimeout(()=>{if(token===runToken){$('generate').disabled=false;$('generate').textContent='COMPILE DIAGNOSTIC REPORT';}},1400);
+  $('result').textContent=rows.join('\\n');
+  $('copy').textContent='📋 COPY SUMMARY';
+  const oldReport=$('result');
+  oldReport.setAttribute('tabindex','-1');
+  setTimeout(()=>{if(token===runToken){setButtonBusy(false);oldReport.focus({preventScroll:true});}},1250);
  });
  $('reset').addEventListener('click',()=>{
   ++runToken;
-  ['ram','display','role','refresh','touch','issue','network','gamever'].forEach(id=>$(id).selectedIndex=0);
-  $('age').value=''; $('notes').value='';
+  fields.forEach(id=>{const el=$(id);if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';el.removeAttribute('aria-invalid');});
   $('scanner').classList.remove('active');
   ['s1','s2','s3','s4'].forEach(id=>$(id).classList.remove('on'));
   $('result').textContent=initial;
-  $('generate').disabled=false; $('generate').textContent='COMPILE DIAGNOSTIC REPORT';
+  setButtonBusy(false);
   $('copy').textContent='📋 COPY SUMMARY';
  });
  $('copy').addEventListener('click',async()=>{
   const text=$('result').textContent;
-  try{await navigator.clipboard.writeText(text);$('copy').textContent='✓ COPIED';}
-  catch(e){
-   const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
-   let ok=false;try{ok=document.execCommand('copy')}catch(_){}area.remove();$('copy').textContent=ok?'✓ COPIED':'Copy unavailable — select the summary manually';
+  try{
+   if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(text);
+   else throw new Error('Clipboard API unavailable');
+   $('copy').textContent='✓ COPIED';
+  }catch(e){
+   const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.position='fixed';area.style.left='-9999px';document.body.appendChild(area);area.select();
+   let ok=false;try{ok=document.execCommand('copy')}catch(_){}area.remove();
+   $('copy').textContent=ok?'✓ COPIED':'Copy blocked — long-press the report text to copy';
   }
  });
-})();
+})(); 
 </script>
 </body></html>
