@@ -34,8 +34,10 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
 <div class="field"><label for="network">OBSERVED NETWORK CONDITION</label><select id="network"><option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option></select></div>
 <div class="field"><label for="age">DEVICE AGE (YEARS, OPTIONAL)</label><input id="age" type="number" min="0" max="20" step=".5" placeholder="e.g. 1.5"></div>
 <div class="field"><label for="gamever">GAME VERSION STATUS</label><select id="gamever"><option>Not checked</option><option>Updated from official store</option><option>Update available</option><option>Not sure</option></select></div>
+<div class="field"><label for="notes">ADDITIONAL NOTES (OPTIONAL)</label><input id="notes" type="text" maxlength="240" placeholder="Describe when the issue happens"></div>
 </div>
 <button class="btn" id="generate" type="button">COMPILE DIAGNOSTIC REPORT</button>
+<button class="copy" id="reset" type="button" style="margin-top:12px;width:100%">↻ RESET FORM</button>
 <div class="scanner" id="scanner" aria-live="polite"><div class="scanline" id="s1">&gt; INITIALIZING VG-F4M!NG CORE...</div><div class="scanline" id="s2">&gt; ORGANIZING DEVICE INFORMATION...</div><div class="scanline" id="s3">&gt; CHECKING USER-REPORTED SYMPTOMS...</div><div class="scanline" id="s4">&gt; REPORT READY — NO LIVE HARDWARE TEST PERFORMED.</div></div>
 <section class="console" aria-live="polite">
 <div class="console-head">🚀 VG CORE — DIAGNOSTIC OUTPUT</div>
@@ -67,6 +69,7 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
    'Observed network: '+$('network').value,
    'Device age: '+(age===''?'Not provided':age+' year(s)'),
    'Game version status: '+$('gamever').value,
+   'Additional notes: '+($('notes').value.trim()||'None provided'),
    '',
    'Live ping: not measured by this page',
    'Patch sync: not independently verified',
@@ -75,6 +78,15 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
   ];
   $('result').textContent=rows.join('\n');
   setTimeout(()=>{if(token===runToken){$('generate').disabled=false;$('generate').textContent='COMPILE DIAGNOSTIC REPORT';}},1250);
+ });
+ $('reset').addEventListener('click',()=>{
+  ['ram','display','role','refresh','touch','issue','network','gamever'].forEach(id=>$(id).selectedIndex=0);
+  $('age').value=''; $('notes').value='';
+  $('scanner').classList.remove('active');
+  ['s1','s2','s3','s4'].forEach(id=>$(id).classList.remove('on'));
+  $('result').textContent='> Awaiting your selections…\\n> Live ping: not measured\\n> Game patch sync: not verified\\n> No gameplay calibration will be generated.';
+  $('generate').disabled=false; $('generate').textContent='COMPILE DIAGNOSTIC REPORT';
+  $('copy').textContent='📋 COPY SUMMARY';
  });
  $('copy').addEventListener('click',async()=>{
   const text=$('result').textContent;
