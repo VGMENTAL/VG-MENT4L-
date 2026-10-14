@@ -968,22 +968,26 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   };
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
-  const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
-  const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
-  const note='Yeh score predefined rules aur input patterns par based ek internal estimate hai. Isse actual game performance, headshots ya recoil reduction measure nahi hota. Is score ko real gameplay testing ke bina accuracy proof na samjhein.';
-  const gameplayStatus=gameplayAIAnalysis?'Gameplay evidence included in the calibration.':'Gameplay evidence not analysed; profile/HUD/weapon inputs are being used.';
+  const vals=[s?.general,s?.red_dot,s?.scope_2x,s?.scope_4x,s?.sniper,s?.free_look].map(Number);
+  const validCount=vals.filter(v=>Number.isFinite(v)&&v>=0&&v<=200).length;
+  const valuesValid=validCount===6;
+  const hudStatus=hud?.uploaded?'HUD screenshot uploaded':'No HUD screenshot';
+  const gameplayStatus=gameplayAIAnalysis?'Gameplay analysis data is present':'No gameplay analysis data';
+  const focusStatus=Array.isArray(guns)&&guns.length?guns.length+' selected focus gun(s)':'All guns / no individual focus selection';
+  const checks=[
+    {name:'Sensitivity fields',value:validCount+'/6 values in the allowed 0–200 range',ok:valuesValid},
+    {name:'HUD input',value:hudStatus,ok:!!hud?.uploaded},
+    {name:'Gameplay input',value:gameplayStatus,ok:!!gameplayAIAnalysis},
+    {name:'Focus selection',value:focusStatus,ok:true}
+  ];
   return `<div class="section recoil-analysis">
-    <h3>🎛️ Sensitivity Curve Checks (Estimated)</h3>
-    <div class="small"><b>Score ka matlab:</b> Predefined internal rules ke saath curve ka fit. Yeh real-game test result, accuracy percentage, ya recoil-reduction measurement nahi hai; 90% ka score 90% effective hone ka proof nahi hai.</div>
+    <h3>🧾 RECOIL CONTROL ANALYSIS — Input Checks</h3>
+    <div class="small"><b>Important:</b> This panel checks input completeness and formatting only. It does not measure actual in-game recoil, aim, headshots, or performance.</div>
     <div class="recoil-grid">
-      <div><b>${a.score}%</b><span>Internal Curve Score</span></div>
-      <div><b>${a.close}%</b><span>Close-Range Curve Fit (estimate)</span></div>
-      <div><b>${a.mid}%</b><span>Mid-Range Curve Fit (estimate)</span></div>
-      <div><b>${a.long}%</b><span>Long-Range Curve Fit (estimate)</span></div>
-      <div><b>${a.overshoot}%</b><span>Overshoot Rule Check (estimate)</span></div>
+      ${checks.map(c=>`<div><b>${c.ok?'✓':'—'}</b><span>${esc(c.name)}<br>${esc(c.value)}</span></div>`).join('')}
     </div>
-    <div class="notice ${a.score>=90?'ok':'warn'}"><b>Internal check: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4×, Sniper aur Free Look ko ek joint six-axis curve ke roop mein check kiya gaya hai. <b>Inputs:</b> ${esc(gameplayStatus)} HUD analysis label: ${esc(a.confidence)} (input-status indicator, measured confidence nahi). <b>Real-game measurement:</b> available nahi hai.</div>
+    <div class="notice ${valuesValid?'ok':'warn'}"><b>${valuesValid?'Input range check passed':'Input range check needs attention'}</b><br>${valuesValid?'All six sensitivity fields contain numeric values from 0 to 200.':'One or more sensitivity fields are missing, non-numeric, or outside 0–200.'} These checks are not a real-game effectiveness score.</div>
+    <div class="small"><b>Why no percentage is shown:</b> The previous internal score used the generated sensitivity values as their own targets, so the resulting percentages were not independent proof of quality. Real-game performance measurement is not available here.</div>
   </div>`;
 }
 
