@@ -28,47 +28,48 @@
 <article class="card"><h3>Phase 4 — Mechanical Execution Claims</h3><span class="pill">GAME-SPECIFIC CLAIM</span><p>J-shaped gesture aur exact five-bullet reset jaise claims ko universal game mechanics nahi maana ja sakta. Actual mechanics game ke implementation aur update ke hisaab se vary karte hain.</p></article>
 </div>
 \n
+
 <section class="hero" style="margin-top:20px">
-  <p class="logo" style="font-size:clamp(1.5rem,4vw,2.2rem)">THE CALIBRATION MATRIX</p>
-  <div class="tag">VG CORE · DEVICE & CONNECTION DIAGNOSTICS</div>
-  <p class="muted">Cyber-console interface concept — not an anti-recoil or aim-generation engine.</p>
+  <p class="logo" style="font-size:clamp(1.5rem,4vw,2.2rem)">VG F4M!NG · CALIBRATION MATRIX</p>
+  <div class="tag">DEVICE & CONNECTION DIAGNOSTICS</div>
+  <p class="muted">Cyber-gaming interface · Responsive on mobile and desktop</p>
 </section>
 <section class="notice">
-  <h2>🌐 Connection status</h2>
-  <p><strong>Server:</strong> Page available · <strong>Ping:</strong> Not measured by this page</p>
-  <p class="muted">A real ping value requires an actual network test. This page will not invent latency, encryption, or ban-risk guarantees.</p>
+  <h2>🌐 Service status</h2>
+  <p><strong>Page:</strong> Loaded successfully</p>
+  <p><strong>Live ping:</strong> Not measured · <strong>Game patch sync:</strong> Not verified</p>
+  <p class="muted">This page does not claim zero recoil, guaranteed headshots, a live global server, or “0% ban risk.”</p>
 </section>
+<div class="section-title">📱 HARDWARE IDENTIFICATION MATRIX</div>
 <section class="grid">
   <article class="card">
-    <h3>📱 Device class</h3>
-    <label for="vg-device">Choose device category</label>
-    <select id="vg-device" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
-      <option value="Not specified">Select device category</option>
-      <option>Low-core / entry-level</option><option>Mid-range</option><option>Flagship</option><option>Not sure</option>
-    </select>
+    <h3>Device category</h3>
+    <label for="vg-device">RAM / performance tier</label>
+    <select id="vg-device"><option value="Not specified">Choose category</option><option>Entry-level · 2–4 GB RAM</option><option>Mid-range · 6–8 GB RAM</option><option>Flagship · 12 GB+ RAM</option><option>iOS device</option><option>Not sure</option></select>
   </article>
   <article class="card">
-    <h3>🎯 Reported experience</h3>
-    <label for="vg-issue">Choose what you notice</label>
-    <select id="vg-issue" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
-      <option value="Not specified">Select an issue</option>
-      <option>Touch feels delayed</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Connection lag / spikes</option><option>Other / not sure</option>
-    </select>
+    <h3>Display class</h3>
+    <label for="vg-res">Screen resolution class</label>
+    <select id="vg-res"><option>Not specified</option><option>HD / HD+</option><option>FHD / FHD+</option><option>1.5K / 2K</option><option>Not sure</option></select>
   </article>
   <article class="card">
-    <h3>⚡ Touch / display info</h3>
-    <label for="vg-touch">Known touch sampling rate</label>
-    <select id="vg-touch" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
-      <option>Unknown</option><option>180 Hz (manufacturer-reported)</option><option>360 Hz (manufacturer-reported)</option><option>Other / varies by mode</option>
-    </select>
-    <p class="muted">Only choose a value if your device manufacturer confirms it.</p>
+    <h3>Reported device issue</h3>
+    <label for="vg-issue">What are you noticing?</label>
+    <select id="vg-issue"><option>Not specified</option><option>Touch feels delayed</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Connection lag / spikes</option><option>Other / not sure</option></select>
+  </article>
+  <article class="card">
+    <h3>Touch information</h3>
+    <label for="vg-touch">Manufacturer-listed sampling rate</label>
+    <select id="vg-touch"><option>Unknown</option><option>180–240 Hz (if manufacturer confirms)</option><option>360 Hz (if manufacturer confirms)</option><option>Other / mode-dependent</option></select>
   </article>
   <article class="card">
     <h3>📶 Network condition</h3>
-    <label for="vg-network">Describe your connection</label>
-    <select id="vg-network" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:8px;background:#0b1019;color:#e2e8f0;border:1px solid #465267">
-      <option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option>
-    </select>
+    <label for="vg-network">Connection status you observe</label>
+    <select id="vg-network"><option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option></select>
+  </article>
+  <article class="card">
+    <h3>ℹ️ Information accuracy</h3>
+    <p>Choose “Not sure” whenever a specification is unknown. RAM, resolution and touch sampling alone cannot verify real-time performance.</p>
   </article>
 </section>
 <div style="text-align:center;margin:16px 0">
@@ -76,32 +77,36 @@
 </div>
 <section class="card" aria-live="polite">
   <h2>🖥️ VG CORE — Diagnostic Console</h2>
-  <pre id="vg-result" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#080d14;border:1px solid #263449;border-radius:10px;padding:16px;color:#a5f3fc;font:14px/1.8 ui-monospace,monospace">> Awaiting your selections…\n> No network test has been run.\n> No sensitivity values or gameplay-performance claims are generated.</pre>
+  <pre id="vg-result" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#080d14;border:1px solid #263449;border-radius:10px;padding:16px;color:#a5f3fc;font:14px/1.8 ui-monospace,monospace">> Awaiting your selections…\n> No live ping or patch check has been run.\n> This console does not generate gameplay aim settings.</pre>
   <button type="button" id="vg-copy" class="btn">📋 COPY SUMMARY</button>
-  <p class="muted">This is a self-reported device/connection checklist only. It does not measure recoil, generate aim settings, guarantee headshots, or establish account-ban risk.</p>
+  <p class="muted">This is a self-reported device and connection checklist. It does not measure recoil, generate sensitivity/DPI recipes, or guarantee gameplay outcomes or account safety.</p>
 </section>
 <script>
 (function(){
   const byId=id=>document.getElementById(id);
   byId('vg-diagnose').addEventListener('click',function(){
     const lines=[
-      'VG F4M!NG — DEVICE DIAGNOSTIC SUMMARY',
+      'VG F4M!NG — DIAGNOSTIC SUMMARY',
       'Device category: '+byId('vg-device').value,
-      'Reported experience: '+byId('vg-issue').value,
-      'Touch sampling info: '+byId('vg-touch').value,
-      'Connection condition: '+byId('vg-network').value,
+      'Display class: '+byId('vg-res').value,
+      'Reported issue: '+byId('vg-issue').value,
+      'Touch sampling information: '+byId('vg-touch').value,
+      'Observed connection: '+byId('vg-network').value,
+      'Live ping: not measured',
+      'Game patch sync: not verified',
       '',
-      'Next check: compare device specifications with the manufacturer, close background downloads, and test your connection at different times.',
-      'Limit: self-reported checklist; no live ping, sensitivity recipe, recoil measurement, or ban-risk guarantee.'
+      'Suggested next check: verify device specifications with the manufacturer and test the connection at different times.',
+      'Note: this checklist is not a gameplay calibration or account-ban guarantee.'
     ];
     byId('vg-result').textContent=lines.join('\n');
   });
   byId('vg-copy').addEventListener('click',async function(){
-    const text=byId('vg-result').textContent;
-    try { await navigator.clipboard.writeText(text); this.textContent='✓ COPIED'; }
-    catch(e) { const area=document.createElement('textarea'); area.value=text; document.body.appendChild(area); area.select(); const ok=document.execCommand('copy'); area.remove(); this.textContent=ok?'✓ COPIED':'Select and copy the console text'; }
+    const value=byId('vg-result').textContent;
+    try{await navigator.clipboard.writeText(value);this.textContent='✓ COPIED';}
+    catch(e){const a=document.createElement('textarea');a.value=value;document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();this.textContent=ok?'✓ COPIED':'Select and copy the console text';}
   });
 })();
 </script>
-\n<footer class="foot">VG F4M!NG · International Calibration Lab · Independent informational page</footer>
+
+<footer class="foot">VG F4M!NG · International Calibration Lab · Independent informational page</footer>
 </main></body></html>
