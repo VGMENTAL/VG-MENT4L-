@@ -72,6 +72,30 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
 .update-progress{display:none;margin:16px 0 6px;padding:16px 18px;border:1px solid rgba(108,236,255,.35);border-radius:18px;background:rgba(4,8,20,.78);box-shadow:0 0 28px rgba(185,60,255,.12)}
 .update-progress.show{display:block}.update-progress .up-top{display:flex;justify-content:space-between;gap:12px;align-items:center;font-weight:800}.update-progress .up-pct{font-size:22px;color:#6cecff}.update-progress .up-track{height:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0}.update-progress .up-bar{height:100%;width:0;background:linear-gradient(90deg,#6cecff,#b93cff,#ff36e7);transition:width .35s ease}.update-progress .up-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:11px;color:#c9b8d9;text-align:center}.update-progress .up-done{color:#72ffbd;font-weight:800}.update-progress .up-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.25);border-top-color:#6cecff;border-radius:50%;animation:vgspin .8s linear infinite;margin-right:7px;vertical-align:-1px}@keyframes vgspin{to{transform:rotate(360deg)}}
 </style>
+<style id="vg-mobile-polish-2026">
+/* Shared mobile-first polish inspired by the reference layouts; no calculation logic changed. */
+:root{color-scheme:dark}
+button, input, select, textarea{font:inherit}
+button, [role="button"]{min-height:44px;touch-action:manipulation}
+input,select,textarea{max-width:100%;min-width:0}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid #72eaff;outline-offset:3px}
+img,video,canvas,iframe{max-width:100%}
+.panel,.card,.section,.result,.result-card,.settings-card,.profile-card,.output-card{overflow-wrap:anywhere}
+@media(max-width:600px){
+  body{overflow-x:hidden}
+  .wrap,.container,.main,.app,.content,.page{max-width:100%;padding-left:12px;padding-right:12px}
+  .panel,.section,.result-card,.settings-card,.profile-card,.output-card{border-radius:16px;padding:14px}
+  .grid,.form-grid,.input-grid,.extra-grid,.blueprint-grid,.guide-grid{grid-template-columns:minmax(0,1fr)!important}
+  .cards,.result-grid,.sensitivity-grid,.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  label{line-height:1.45}
+  input,select,textarea{font-size:16px;min-height:46px}
+  button{max-width:100%;white-space:normal;line-height:1.35}
+  pre,code{overflow-wrap:anywhere;white-space:pre-wrap}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
 </head>
 <body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script>
 <div class="wrap">
