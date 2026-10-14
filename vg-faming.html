@@ -22,19 +22,20 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
 </header>
 <div class="section-title">⚡ GLOBAL HARDWARE DATA</div>
 <div class="grid">
-<div class="field"><label for="ram">DEVICE PERFORMANCE TIER</label><select id="ram"><option>Not specified</option><option>2–3 GB RAM</option><option>4–6 GB RAM</option><option>8–16 GB RAM</option><option>iOS device</option><option>Not sure</option></select></div>
-<div class="field"><label for="display">DISPLAY CLASS</label><select id="display"><option>Not specified</option><option>HD / HD+</option><option>FHD / FHD+</option><option>1.5K / 2K</option><option>Not sure</option></select></div>
+<div class="field"><label for="ram">DEVICE RAM VARIANT</label><select id="ram"><option>Not specified</option><option>2–4 GB RAM (Low-End)</option><option>6–8 GB RAM (Mid-Range)</option><option>12–16 GB RAM / iOS (Gaming Tier)</option><option>Not sure</option></select></div>
+<div class="field"><label for="display">DISPLAY CLASS / RESOLUTION</label><select id="display"><option>Not specified</option><option>FHD+ / Standard Screen</option><option>1.5K / 2K / Premium AMOLED</option><option>Other / not sure</option></select></div>
+<div class="field"><label for="role">GAMEPLAY ROLE (CONTEXT ONLY)</label><select id="role"><option>Not specified</option><option>Rusher / close-range play</option><option>Sniper / long-range play</option><option>Mixed / other</option></select></div>
 <div class="field"><label for="refresh">MANUFACTURER-LISTED REFRESH RATE</label><select id="refresh"><option>Unknown / not checked</option><option>60 Hz</option><option>90 Hz</option><option>120 Hz</option><option>144 Hz or above (verify model)</option></select></div>
 <div class="field"><label for="touch">TOUCH SAMPLING INFORMATION</label><select id="touch"><option>Unknown / not checked</option><option>Manufacturer confirms 180–240 Hz</option><option>Manufacturer confirms 360 Hz</option><option>Other / mode-dependent</option></select></div>
 </div>
 <div class="section-title">🎮 USER-REPORTED PERFORMANCE CHECK</div>
 <div class="grid">
-<div class="field"><label for="issue">REPORTED ISSUE</label><select id="issue"><option>Not specified</option><option>Touch feels delayed</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Phone heats up / performance drops</option><option>Connection lag / ping spikes</option><option>Game closes unexpectedly</option><option>Other / not sure</option></select></div>
+<div class="field"><label for="issue">PRIMARY REPORTED ISSUE</label><select id="issue"><option>Not specified</option><option>Touch feels delayed</option><option>In-game movement feels inconsistent</option><option>Screen movement feels shaky</option><option>Display feels inconsistent</option><option>Phone heats up / performance drops</option><option>Connection lag / ping spikes</option><option>Game closes unexpectedly</option><option>No major issue reported</option><option>Other / not sure</option></select></div>
 <div class="field"><label for="network">OBSERVED NETWORK CONDITION</label><select id="network"><option>Not tested</option><option>Seems stable</option><option>Frequent ping spikes</option><option>Packet loss / disconnects</option></select></div>
 <div class="field"><label for="age">DEVICE AGE (YEARS, OPTIONAL)</label><input id="age" type="number" min="0" max="20" step=".5" placeholder="e.g. 1.5"></div>
 <div class="field"><label for="gamever">GAME VERSION STATUS</label><select id="gamever"><option>Not checked</option><option>Updated from official store</option><option>Update available</option><option>Not sure</option></select></div>
 </div>
-<button class="btn" id="generate" type="button">▶ RUN MATRIX DIAGNOSTIC</button>
+<button class="btn" id="generate" type="button">COMPILE DIAGNOSTIC REPORT</button>
 <div class="scanner" id="scanner" aria-live="polite"><div class="scanline" id="s1">&gt; INITIALIZING VG-F4M!NG CORE...</div><div class="scanline" id="s2">&gt; ORGANIZING DEVICE INFORMATION...</div><div class="scanline" id="s3">&gt; CHECKING USER-REPORTED SYMPTOMS...</div><div class="scanline" id="s4">&gt; REPORT READY — NO LIVE HARDWARE TEST PERFORMED.</div></div>
 <section class="console" aria-live="polite">
 <div class="console-head">🚀 VG CORE — DIAGNOSTIC OUTPUT</div>
@@ -57,8 +58,8 @@ header{text-align:center;border-bottom:1px dashed #00f3ff33;padding-bottom:20px;
   const age=$('age').value.trim();
   const rows=[
    'VG F4M!NG — DEVICE DIAGNOSTIC SUMMARY',
-   'Performance tier: '+$('ram').value,
-   'Display class: '+$('display').value,
+   'RAM variant: '+$('ram').value,
+   'Display class / resolution: '+$('display').value,\n   'Gameplay role (context only): '+$('role').value,
    'Refresh rate: '+$('refresh').value,
    'Touch sampling: '+$('touch').value,
    'Reported issue: '+$('issue').value,
