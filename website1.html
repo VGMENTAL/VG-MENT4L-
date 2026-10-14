@@ -970,22 +970,20 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
   const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
-  const note=a.score>=90
-    ? '90%+ ka matlab sensitivity curve ke internal control checks pass hue hain. Isse actual game recoil 90%+ reduce hoga aisa claim nahi kiya ja sakta; real result weapon, movement, FPS/touch aur player input par depend karta hai.'
-    : 'Engine 90%+ internal calibration target ko reach karne ke liye curve ko device, HUD, guns aur selected problems ke according tune karta hai.';
+  const note='Yeh score predefined rules aur input patterns par based ek internal estimate hai. Isse actual game performance, headshots ya recoil reduction measure nahi hota. Is score ko real gameplay testing ke bina accuracy proof na samjhein.';
   const gameplayStatus=gameplayAIAnalysis?'Gameplay evidence included in the calibration.':'Gameplay evidence not analysed; profile/HUD/weapon inputs are being used.';
   return `<div class="section recoil-analysis">
-    <h3>🎯 Recoil Control & Sensitivity Calibration</h3>
-    <div class="small"><b>Target:</b> 90%+ internal calibration. <b>Important:</b> Ye actual game mein sensitivity kitne % kaam karegi ya recoil kitne % kam hoga, uska measured percentage nahi hai.</div>
+    <h3>🎛️ Sensitivity Curve Checks (Estimated)</h3>
+    <div class="small"><b>Score ka matlab:</b> Predefined internal rules ke saath curve ka fit. Yeh real-game test result, accuracy percentage, ya recoil-reduction measurement nahi hai; 90% ka score 90% effective hone ka proof nahi hai.</div>
     <div class="recoil-grid">
-      <div><b>${a.score}%</b><span>Calibration Compatibility</span></div>
-      <div><b>${a.close}%</b><span>Close-Range Control</span></div>
-      <div><b>${a.mid}%</b><span>Mid-Range Recoil Control</span></div>
-      <div><b>${a.long}%</b><span>Long-Range Control</span></div>
-      <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
+      <div><b>${a.score}%</b><span>Internal Curve Score</span></div>
+      <div><b>${a.close}%</b><span>Close-Range Curve Fit (estimate)</span></div>
+      <div><b>${a.mid}%</b><span>Mid-Range Curve Fit (estimate)</span></div>
+      <div><b>${a.long}%</b><span>Long-Range Curve Fit (estimate)</span></div>
+      <div><b>${a.overshoot}%</b><span>Overshoot Rule Check (estimate)</span></div>
     </div>
-    <div class="notice ${a.score>=90?'ok':'warn'}"><b>Calibration: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4×, Sniper aur Free Look ko ek joint six-axis curve ke roop mein check kiya gaya hai. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}. <b>Real-game measurement:</b> abhi available nahi hai.</div>
+    <div class="notice ${a.score>=90?'ok':'warn'}"><b>Internal check: ${esc(a.level)}</b><br>${esc(note)}</div>
+    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4×, Sniper aur Free Look ko ek joint six-axis curve ke roop mein check kiya gaya hai. <b>Inputs:</b> ${esc(gameplayStatus)} HUD analysis label: ${esc(a.confidence)} (input-status indicator, measured confidence nahi). <b>Real-game measurement:</b> available nahi hai.</div>
   </div>`;
 }
 
