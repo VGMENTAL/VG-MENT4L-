@@ -23,6 +23,7 @@ let hudIdentityKey=null;
 let gameplayAIAnalysis=null,gameplayAnalysisPromise=null,gameplayIdentityKey=null;
 let deviceResearchData=null,deviceResearchPromise=null;
 let profileCode=localStorage.getItem('vg_ment4l_profile_code')||'';
+let profilePersistenceState={backendSaved:false,storageSource:'unknown'};
 let sensitivityOverride=null;
 let deepRuntime=null;
 async function collectDeepRuntime(){
@@ -185,13 +186,18 @@ async function saveProfile(){
     let reply={}; try{reply=await r.json();}catch(e){}
     payload.backendSaved=!!r.ok && reply.source==='backend';
     payload.storageSource=reply.source||'unknown';
+    profilePersistenceState={backendSaved:payload.backendSaved,storageSource:payload.storageSource};
     localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(payload));
     if(!payload.backendSaved){
       console.warn('VG MENT4L profile is not in persistent database:',reply.warning||reply.source||r.status);
-      statusEl.innerHTML='<span class="warning">⚠ Profile ID local browser mein save hua hai, lekin persistent database connected nahi hai. Cross-device loading ke liye Render mein DATABASE_URL connect karna zaroori hai.</span>';
     }
     return profileCode;
-  }catch(e){payload.backendSaved=false;payload.storageSource='offline';localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(payload));return profileCode;}
+  }catch(e){
+    payload.backendSaved=false;payload.storageSource='offline';
+    profilePersistenceState={backendSaved:false,storageSource:'offline'};
+    localStorage.setItem('vg_ment4l_profile_'+profileCode,JSON.stringify(payload));
+    return profileCode;
+  }
 }
 function renderCodeBox(){return `<div class="code-box"><div><div class="small">YOUR VG MENT4L PROFILE ID</div><div class="code">${esc(profileCode||'—')}</div><div class="profile-note">Ye Profile ID aapke poore submitted information/profile se automatic banti hai. Alag information submit karoge to naya ID automatically aayega; same information dobara doge to wahi purana ID automatically verify hokar aa jayega. NEW PROFILE tap karne ki zarurat nahi hai.</div></div><div class="code-actions"><button class="copy" id="copyCode">COPY CODE</button></div></div>`;}
 async function copyTextReliable(text){
@@ -1479,7 +1485,9 @@ async function runGenerateProgress(device){
   render(device,styleEl.value,modeEl.value,ramEl.value,fingersEl.value,hudProfile(),selectedGuns(),$('#preset').value);
   progressBar.style.width='100%'; progressPct.textContent='100%';
   progressStage.innerHTML='<span class="generate-done">✓ Generation complete — Profile saved</span>';
-  statusEl.innerHTML='<span class="ok">✓ 100% generated. Full 0–200 device curve, HUD, device research, DPI, device age, Player Mode, Player Style, Game Mode, preset, fingers, guns and Profile ID were processed.</span>';
+  statusEl.innerHTML=profilePersistenceState.backendSaved
+    ? '<span class="ok">✓ Estimate generated. Profile saved to the persistent database. Results are not a verified measure of in-game performance.</span>'
+    : '<span class="warning">⚠ Estimate generated and saved in this browser only. The persistent database save was not confirmed, so this Profile ID may not load on another device. Results are not a verified measure of in-game performance.</span>';
   setTimeout(()=>{progressBox.classList.remove('show');},900);
   btn.disabled=false;
   generating=false;
