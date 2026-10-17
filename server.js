@@ -1405,29 +1405,46 @@ JSON:
 async function runGeminiTextFix(payload) {
   const key = String(process.env.GEMINI_API_KEY || '').trim();
   if (!key) return null;
-  const models=[String(process.env.GEMINI_MODEL||'gemini-3.8-flash'),'gemini-3.8-flash','gemini-2.5-flash','gemini-2.5-flash-lite']
+  const models=[String(process.env.GEMINI_MODEL||'gemini-2.5-flash'),'gemini-2.5-flash','gemini-2.5-flash-lite']
     .filter((m,i,a)=>m&&a.indexOf(m)===i);
-  const prompt = `You are the final sensitivity refinement analyst for VG MENT4L Free Fire MAX.
-Analyze ALL selected problems and the player's custom sentence together. Do not ignore the custom sentence.
-BASE SENSITIVITY: ${JSON.stringify(payload.sensitivity)}
-SELECTED PROBLEMS: ${JSON.stringify(payload.issues || [])}
-PLAYER CUSTOM PROBLEM: ${JSON.stringify(payload.customText || '')}
-PROFILE/GAME CONTEXT: ${JSON.stringify(payload.context || {})}
-Return ONLY JSON:
-{"sensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"diagnosis":"","changes":[""],"confidence":"low|medium|high"}
-Keep values 0-200. Make the smallest useful changes supported by the evidence. RAM is context only.`;
+  const base=normSens(payload.sensitivity);
+  const prompt = `You are a careful Free Fire MAX sensitivity troubleshooting analyst for VG MENT4L.
+Goal: refine the CURRENT post-video recommended sensitivity using the user's real feedback. Diagnose first; then make the smallest defensible changes.
+
+BASE SENSITIVITY (must be the baseline, not replaced with generic settings):
+${JSON.stringify(base)}
+VIDEO ANALYSIS CONTEXT AND PROFILE:
+${JSON.stringify(payload.context || {})}
+SELECTED PROBLEMS (consider every one, resolve conflicts):
+${JSON.stringify(payload.issues || [])}
+USER'S OWN DESCRIPTION (highest priority; interpret the whole sentence):
+${JSON.stringify(payload.customText || '')}
+
+Rules:
+- Treat selected problems and custom description together. If they conflict, explain the conflict and make a conservative compromise.
+- Adjust only sliders plausibly related to the described issue. Free Look should normally remain unchanged unless the issue directly concerns camera look-around.
+- Sensitivity is not a universal recoil fix. Do not claim sensitivity can fix ping, FPS drops, weapon spread, or poor firing technique.
+- Do not change every slider just to show activity. Preserve any slider not supported by the described problem.
+- Each slider must remain between 0 and 200, and each adjustment must be within 8 points of its BASE value.
+- If evidence is ambiguous, make tiny changes (0 to 3 points) and say confidence is low. If the feedback is contradictory or insufficient, keep the base values and ask for a clearer test observation in diagnosis.
+- Explain every changed slider by name and direction. Do not invent video evidence; this step uses the user's feedback, not a new video.
+Return ONLY valid JSON with this schema:
+{"sensitivity":{"general":0,"red_dot":0,"scope_2x":0,"scope_4x":0,"sniper":0,"free_look":0},"diagnosis":"clear Hinglish explanation","changes":["slider: old → new; reason"],"confidence":"low|medium|high"} `;
   let lastError='';
   for(const model of models){
     try{
-      const r=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions',{
-        method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
-        body:JSON.stringify({model,input:[{type:'text',text:prompt}]})
-      },30000);
-      const text=await r.text();
-      if(!r.ok){lastError=`Gemini refinement HTTP ${r.status}: ${text.slice(0,500)}`;continue;}
-      const out=parseJsonOutput(extractText(JSON.parse(text)));
-      if(!out?.sensitivity)continue;
-      out.sensitivity=normSens(out.sensitivity);
+      const r=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
+        method:'POST',
+        headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0,seed:42,maxOutputTokens:1400,responseMimeType:'application/json'}})
+      },60000);
+      const raw=await r.text();
+      if(!r.ok){lastError=`Gemini refinement HTTP ${r.status}: ${raw.slice(0,500)}`;continue;}
+      const out=parseJsonOutput(extractText(JSON.parse(raw)));
+      if(!out?.sensitivity) {lastError='Gemini returned no sensitivity object';continue;}
+      const proposed=normSens(out.sensitivity),safe={};
+      for(const k of Object.keys(base)) safe[k]=clamp(Math.max(base[k]-8,Math.min(base[k]+8,proposed[k])));
+      out.sensitivity=safe;
       out.changes=Array.isArray(out.changes)?out.changes.slice(0,20):[];
       out.model=model;
       return out;
@@ -1850,39 +1867,44 @@ const server = http.createServer(async (req, res) => {
       const issues = cleanIssueList(b.issues ?? b.issue);
       const custom = String(b.customText || b.custom || '').trim();
       if (!issues.length && !custom) return json(res, 400, { error: 'Select at least one problem or enter a custom problem' });
-
-      let fixed;
+      const base = normSens(b.sensitivity);
+      let fixed, aiUsed = false, warning = '';
       try {
-        const ai = await runOpenAITextFix({ sensitivity: b.sensitivity, issues, customText: custom, context: b.context || {} });
-        fixed = ai ? { sensitivity: ai.sensitivity, diagnosis: ai.diagnosis, changes: ai.changes, model: ai.model } : applyIssueList(b.sensitivity, issues, custom);
+        const ai = await runGeminiTextFix({ sensitivity: base, issues, customText: custom, context: b.context || {} });
+        if (ai) {
+          fixed = { sensitivity: ai.sensitivity, diagnosis: ai.diagnosis, changes: ai.changes, model: ai.model, confidence: ai.confidence };
+          aiUsed = true;
+        }
       } catch (e) {
-        console.error('OpenAI gameplay refinement failed:', e.message);
-        fixed = { ...applyIssueList(b.sensitivity, issues, custom), warning: 'OpenAI refinement failed; conservative local fallback used.' };
+        console.error('Gemini gameplay refinement failed:', e.message);
+        warning = 'AI refinement unavailable; conservative rule-based adjustment used. Please treat this as a provisional result.';
       }
-
+      if (!fixed) {
+        fixed = applyIssueList(base, issues, custom);
+        warning = warning || 'Gemini API is not configured or unavailable; conservative rule-based adjustment used, not full AI analysis.';
+      }
       const oldCode = safeCode(b.code || '');
       if (validCode(oldCode)) {
         try {
           const updated = await updateExistingProfileSensitivity(oldCode, fixed.sensitivity);
           return json(res, 200, {
-            ok: true,
-            oldProfileId: oldCode,
-            newProfileId: updated.code,
-            profileId: updated.code,
-            sensitivity: updated.sensitivity,
-            issues,
-            customText: custom,
-            oldProfileUnchanged: false,
-            onlySensitivityUpdated: true,
-            diagnosis: fixed.diagnosis || '',
-            changes: fixed.changes || [],
-            model: fixed.model || null
+            ok: true, oldProfileId: oldCode, newProfileId: updated.code, profileId: updated.code,
+            sensitivity: updated.sensitivity, issues, customText: custom, oldProfileUnchanged: false,
+            onlySensitivityUpdated: true, diagnosis: fixed.diagnosis || (aiUsed ? '' : 'AI analysis available nahi thi; selected problems ke basis par conservative fallback laga.'), 
+            changes: fixed.changes || [], model: fixed.model || null, confidence: fixed.confidence || 'low',
+            aiUsed, warning
           });
         } catch (e) {
           return json(res, 404, { ok: false, error: 'Could not update existing Profile ID', detail: String(e?.message || e) });
         }
       }
-      return json(res, 200, { ok: true, newProfileId: null, profileId: null, sensitivity: fixed.sensitivity, issues, customText: custom, oldProfileUnchanged: true, onlySensitivityUpdated: true, diagnosis: fixed.diagnosis || '', changes: fixed.changes || [], model: fixed.model || null });
+      return json(res, 200, {
+        ok: true, newProfileId: null, profileId: null, sensitivity: fixed.sensitivity, issues, customText: custom,
+        oldProfileUnchanged: true, onlySensitivityUpdated: true,
+        diagnosis: fixed.diagnosis || (aiUsed ? '' : 'AI analysis available nahi thi; selected problems ke basis par conservative fallback laga.'),
+        changes: fixed.changes || [], model: fixed.model || null, confidence: fixed.confidence || 'low',
+        aiUsed, warning
+      });
     }
 
     if (req.method === 'POST' && u.pathname === '/api/updates') {
