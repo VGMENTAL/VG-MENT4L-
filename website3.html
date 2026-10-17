@@ -419,7 +419,7 @@ $('fix').onclick=async()=>{
   if(j.profileId||j.newProfileId){try{localStorage.setItem('vg_ment4l_profile_'+(j.profileId||j.newProfileId),JSON.stringify({...profile,code:(j.profileId||j.newProfileId),sensitivity:s}))}catch(e){}}
   $('fixOut').className='status ok';
   $('fixOut').innerHTML=`<b>✓ Better sensitivity ready</b>${boxes(s)}
-  ${j.diagnosis?`<p><b>AI diagnosis:</b> ${esc(j.diagnosis)}</p>`:''}
+  ${j.diagnosis?`<p><b>${j.aiUsed?'AI diagnosis':'Problem analysis (rule-based)'}:</b> ${esc(j.diagnosis)}</p>`:''}
   ${j.changes?.length?`<h4>Changes made</h4><ul>${list(j.changes)}</ul>`:''}
   <p><b>Updated Profile ID:</b> <span class="codeNew">${esc(j.profileId||j.newProfileId||'—')}</span></p>
   ${(j.profileId||j.newProfileId)?'<button class="btn" id="copyNew">COPY UPDATED CODE</button>':''}

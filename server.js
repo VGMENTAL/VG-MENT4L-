@@ -908,13 +908,38 @@ function inferCustomDeltas(text) {
   const t = String(text || '').toLowerCase();
   const d = { general: 0, red_dot: 0, scope_2x: 0, scope_4x: 0, sniper: 0, free_look: 0 };
   const add = x => Object.keys(d).forEach(k => d[k] += x[k] || 0);
-  if (/upar|above|overshoot|zyada|fast|tez|high/.test(t)) add({ general: -4, red_dot: -4, scope_2x: -3, scope_4x: -2, sniper: -2 });
-  if (/chest|body|neeche|low|under|kam|slow|dheere/.test(t)) add({ general: 4, red_dot: 4, scope_2x: 3, scope_4x: 2, sniper: 2 });
-  if (/neck/.test(t)) add({ general: 2, red_dot: 2, scope_2x: 2, scope_4x: 1, sniper: 1 });
-  if (/recoil|spray|shake|shaky|hil/.test(t)) add({ general: -2, red_dot: -3, scope_2x: -4, scope_4x: -5, sniper: -3 });
-  if (/close|near|tracking/.test(t)) add({ general: 3, red_dot: 3, scope_2x: 1, free_look: 1 });
-  if (/long|range|distance/.test(t)) add({ general: -1, red_dot: -1, scope_2x: -2, scope_4x: -3, sniper: -4 });
+  const overshoot = /upar|above|overshoot|target ke aage|aage nikal|zyada fast|too fast|drag fast|head ke upar/.test(t);
+  const undershoot = /chest|body|neeche|low|under|kam drag|short drag|head tak nahi|head pe nahi|target tak nahi/.test(t);
+  const movementAccuracy = /movement|moving|strafe|strafing|run karte|bhagte|move karte|move ke saath|movement ke saath/.test(t) && /accuracy|aim|hit|target|fire|shoot|goli|miss/.test(t);
+  if (overshoot) add({ general: -3, red_dot: -3, scope_2x: -2, scope_4x: -1, sniper: -1 });
+  if (undershoot) add({ general: 3, red_dot: 3, scope_2x: 2, scope_4x: 1, sniper: 1 });
+  if (/neck/.test(t)) add({ general: 1, red_dot: 1, scope_2x: 1 });
+  if (/recoil|spray|shake|shaky|hil/.test(t)) add({ general: -1, red_dot: -2, scope_2x: -2, scope_4x: -3, sniper: -1 });
+  if (/close|near|tracking/.test(t)) add({ general: 2, red_dot: 2, scope_2x: 1 });
+  if (/long|range|distance/.test(t)) add({ scope_2x: -1, scope_4x: -2, sniper: -2 });
+  if (movementAccuracy && !overshoot && !undershoot) add({ general: 2, red_dot: 2, scope_2x: 1 });
   return d;
+}
+function fallbackProblemDiagnosis(customText, issues) {
+  const custom = String(customText || '').trim();
+  const t = custom.toLowerCase();
+  const parts = [];
+  if (custom) parts.push('Tumhari likhi problem: “' + custom.slice(0, 500) + '”.');
+  if (/movement|moving|strafe|strafing|move ke saath|movement ke saath|run karte|bhagte/.test(t) && /accuracy|aim|hit|target|fire|shoot|miss/.test(t)) {
+    parts.push('Analysis: movement ke saath aim tracking stable nahi lag rahi. Text se akela confirm nahi hota ki sensitivity zyada hai ya kam; isliye sirf General, Red Dot aur 2x par chhota provisional adjustment kiya. Training Ground mein same distance par strafing + firing test karo.');
+  } else if (/upar|overshoot|target ke aage|aage nikal|head ke upar/.test(t)) {
+    parts.push('Analysis: aim target se aage nikalne/overshoot hone ka signal hai; General aur relevant low-zoom sensitivity ko halka kam karna ek test hai.');
+  } else if (/chest|body|neeche|under|head tak nahi|target tak nahi/.test(t)) {
+    parts.push('Analysis: drag target/head tak nahi pahunchne ka signal hai; General aur low-zoom sensitivity ko halka badhana ek test hai.');
+  } else if (/recoil|spray|shake|shaky|hil/.test(t)) {
+    parts.push('Analysis: spray/recoil unstable hone ka signal hai; scoped sensitivity ko halka kam karne ka provisional test kiya.');
+  } else if (custom) {
+    parts.push('Analysis: written description receive hui, lekin exact direction confirm karne ke liye overshoot, undershoot, recoil ya movement-tracking ka clearer observation chahiye. Adjustment provisional hai.');
+  }
+  if (issues.length) parts.push('Selected problems bhi include ki gayi: ' + issues.join(', ') + '.');
+  if (!parts.length) parts.push('Selected problems ke basis par conservative rule-based adjustment hua.');
+  parts.push('Ye rule-based analysis hai, AI diagnosis nahi. Sensitivity akeli FPS, ping, touch delay ya firing technique ko fix nahi karti.');
+  return parts.join(' ');
 }
 function applyIssueList(base, issues = [], customText = '') {
   const s = normSens(base);
@@ -928,7 +953,11 @@ function applyIssueList(base, issues = [], customText = '') {
   for (const k of Object.keys(delta)) delta[k] += custom[k] || 0;
   const out = {};
   for (const k of Object.keys(s)) out[k] = clamp(s[k] + Math.max(-15, Math.min(15, delta[k])));
-  return { sensitivity: out, issues: list, customText: String(customText || '').trim() };
+  const labels = { general: 'General', red_dot: 'Red Dot', scope_2x: '2x', scope_4x: '4x', sniper: 'Sniper', free_look: 'Free Look' };
+  const changes = Object.keys(s).filter(k => out[k] !== s[k]).map(k => labels[k] + ': ' + s[k] + ' → ' + out[k] + '; written problem aur selected options ke keyword-based provisional rule ke mutabik.');
+  return { sensitivity: out, issues: list, customText: String(customText || '').trim(),
+    diagnosis: fallbackProblemDiagnosis(customText, list),
+    changes: changes.length ? changes : ['Sensitivity numbers nahi badle: description se safe direction confirm nahi hui. Pehle clear test observation dein.'] };
 }
 function cleanIssueList(x) {
   if (Array.isArray(x)) return x.map(v => String(v || '').trim()).filter(Boolean).slice(0, 20);
