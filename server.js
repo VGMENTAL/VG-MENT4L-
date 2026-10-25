@@ -1232,7 +1232,7 @@ Values 0-200. No guaranteed zero recoil/headshots. Prefer smallest evidence-supp
       const rr=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
         method:'POST',headers:{['x-goog-'+'api-key']:key,'Content-Type':'application/json'},
         body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0,seed:42,maxOutputTokens:1200,responseMimeType:'application/json'}})
-      },60000);
+      },180000);
       const tx=await rr.text();
       if(rr.ok){
         try{
