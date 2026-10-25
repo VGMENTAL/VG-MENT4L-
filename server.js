@@ -1209,7 +1209,7 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
 async function runGeminiGameplayFrames(frames, context) {
   const key=String(process.env.GEMINI_API_KEY||'').trim();
   if(!key) return {configured:false,message:'GEMINI_API_KEY is not configured.'};
-  const models=[String(process.env.GEMINI_MODEL||'gemini-2.5-flash'),'gemini-2.5-flash','gemini-2.0-flash'].filter((m,i,a)=>m&&a.indexOf(m)===i);
+  const models=['gemini-3.8-flash','gemini-3.7-flash','gemini-3.6-flash','gemini-2.5-flash',String(process.env.GEMINI_MODEL||'')].filter((m,i,a)=>m&&a.indexOf(m)===i);
   const usable=(Array.isArray(frames)?frames:[]).filter(f=>f&&typeof f.data==='string'&&f.data.startsWith('data:image/')).slice(0,8);
   if(!usable.length) throw new Error('No gameplay evidence frames received.');
   const prompt=`You are VG MENT4L gameplay sensitivity calibration analyst. These are chronological frames sampled across the COMPLETE gameplay video. Compare the whole timeline.
