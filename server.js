@@ -1209,8 +1209,8 @@ Values 0-200 integers. No guaranteed headshots/recoil.`;
 async function runGeminiGameplayFrames(frames, context) {
   const key=String(process.env.GEMINI_API_KEY||'').trim();
   if(!key) return {configured:false,message:'GEMINI_API_KEY is not configured.'};
-  const models=[String(process.env.GEMINI_MODEL||'gemini-3.8-flash'),'gemini-3.7-flash','gemini-3.6-flash','gemini-3.5-flash-lite'].filter((m,i,a)=>m&&a.indexOf(m)===i);
-  const usable=(Array.isArray(frames)?frames:[]).filter(f=>f&&typeof f.data==='string'&&f.data.startsWith('data:image/')).slice(0,28);
+  const models=[String(process.env.GEMINI_MODEL||'gemini-2.5-flash'),'gemini-2.5-flash','gemini-2.0-flash'].filter((m,i,a)=>m&&a.indexOf(m)===i);
+  const usable=(Array.isArray(frames)?frames:[]).filter(f=>f&&typeof f.data==='string'&&f.data.startsWith('data:image/')).slice(0,8);
   if(!usable.length) throw new Error('No gameplay evidence frames received.');
   const prompt=`You are VG MENT4L gameplay sensitivity calibration analyst. These are chronological frames sampled across the COMPLETE gameplay video. Compare the whole timeline.
 HUD-FIRST CALIBRATION: If context.hudAnalysis exists, inspect and use it as a primary input alongside gameplay. Treat HUD control geometry as important: fire-button location and estimated visible size, joystick location, scope/button placement, spacing between controls, finger reach/drag path, likely swipe travel and screen-edge constraints. The player may have reduced button opacity; do not mistake faint controls for absent controls. Use only details the HUD analyzer can support, explicitly mark uncertain/occluded elements, and never invent exact button sizes or coordinates. Cross-check HUD layout against chronological gameplay evidence before changing sensitivity. If HUD and video evidence conflict, explain the uncertainty and prioritize directly visible evidence.\nAnalyze repeated evidence: drag speed/length, overshoot/under-drag, head/neck/chest stopping, recoil/spray, close/mid/long tracking, target switching, movement while firing and weapon behavior. Separate player mistakes, FPS/ping and recording artifacts from sensitivity issues.
@@ -1228,11 +1228,13 @@ Values 0-200. No guaranteed zero recoil/headshots. Prefer smallest evidence-supp
   }
   let last='';
   for(const model of models){
-    for(let attempt=0;attempt<2;attempt++){
+    // Keep each attempt bounded; if one Gemini model stalls, move to the next
+    // supported model instead of aborting the entire analysis.
+    try{
       const rr=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
         method:'POST',headers:{['x-goog-'+'api-key']:key,'Content-Type':'application/json'},
-        body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0,seed:42,maxOutputTokens:1200,responseMimeType:'application/json'}})
-      },180000);
+        body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0,seed:42,maxOutputTokens:1000,responseMimeType:'application/json'}})
+      },75000);
       const tx=await rr.text();
       if(rr.ok){
         try{
@@ -1245,11 +1247,15 @@ Values 0-200. No guaranteed zero recoil/headshots. Prefer smallest evidence-supp
           out.model=model;out.configured=true;out.fullVideo=true;out.frameTimeline=true;out.framesAnalyzed=usable.length;
           return out;
         }catch(e){last=String(e.message||e)}
-      }else{last='Gemini frame analysis HTTP '+rr.status+': '+tx.slice(0,900);if(rr.status!==503&&rr.status!==429) break}
-      await new Promise(x=>setTimeout(x,900*(attempt+1)));
+      }else{
+        last='Gemini frame analysis HTTP '+rr.status+': '+tx.slice(0,900);
+        if(rr.status!==503&&rr.status!==429&&rr.status!==404) continue;
+      }
+    }catch(e){
+      last=e?.name==='AbortError'?'Gemini request timed out for '+model+'; trying a fallback model.':String(e?.message||e);
     }
   }
-  throw new Error(last||'Gemini gameplay frame analysis failed');
+  throw new Error(last||'Gemini gameplay frame analysis failed after fallback attempts. Please retry once; no sensitivity was changed.');
 }
 
 async function runOpenAIGameplayFrames(frames, context) {
