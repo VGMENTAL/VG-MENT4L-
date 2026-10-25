@@ -60,6 +60,13 @@ img,video,canvas,iframe{max-width:100%}
 <input id="code" maxlength="11" placeholder="#A7K2P9X4M7">
 <button id="load" class="btn primary full" style="margin-top:10px">LOAD PROFILE</button>
 <div id="info" class="status">Profile load nahi hua.</div>
+<div class="hud-upload-card" style="margin-top:12px;padding:13px;border:1px dashed #50eaff;border-radius:12px;background:#080f22">
+<label for="hudProfile">🧩 HUD SCREENSHOT — PROFILE ID MODE</label>
+<p class="mut">Website 1 jaisa HUD upload karo. Button opacity kam ho tab bhi AI visible controls, joystick/fire-button placement, scope layout, spacing aur drag path ko detail mein inspect karega; jo cheez clear nahi hogi use guess nahi karega.</p>
+<input id="hudProfile" type="file" accept="image/*">
+<img id="hudProfilePreview" alt="Profile mode HUD preview" class="hidden" style="display:none;width:100%;max-height:360px;object-fit:contain;margin-top:10px;border:1px solid #30436f;border-radius:10px">
+<div id="hudProfileStatus" class="status">HUD optional hai — sensitivity banate waqt analysis ke liye upload karo.</div>
+</div>
 <button id="continueManual" class="btn" style="width:100%;margin-top:10px">CONTINUE WITHOUT PROFILE ID</button>
 </section>
 
@@ -80,6 +87,13 @@ img,video,canvas,iframe{max-width:100%}
 </div>
 <button id="research" class="btn" style="width:100%;margin-top:10px">GET DEVICE INFORMATION</button>
 <div id="manualDevice" class="status">Device research optional hai.</div>
+<div class="hud-upload-card" style="margin-top:14px;padding:13px;border:1px dashed #50eaff;border-radius:12px;background:#080f22">
+<label for="hudManual">🧩 HUD SCREENSHOT — MANUAL MODE</label>
+<p class="mut">Video upload se pehle apna current in-game HUD screenshot upload karo. Low-opacity buttons ko bhi layout context ke saath analyse karne ki koshish hogi; faint/hidden controls ko AI uncertain mark karega, guess nahi karega.</p>
+<input id="hudManual" type="file" accept="image/*">
+<img id="hudManualPreview" alt="Manual mode HUD preview" class="hidden" style="display:none;width:100%;max-height:360px;object-fit:contain;margin-top:10px;border:1px solid #30436f;border-radius:10px">
+<div id="hudManualStatus" class="status">Pehle HUD upload karo; uske neeche gameplay video upload hoga.</div>
+</div>
 </section>
 
 <section class="panel">
@@ -198,9 +212,61 @@ $('research').onclick=()=>loadDevice($('dev').value.trim(),$('manualDevice'));
 function setStep(name){document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active',x.dataset.step===name))}
 function status(msg,cls='status'){$('vm').className=cls;$('vm').innerHTML=msg}
 function baseSens(){return mode==='p'&&profile?getSensFromProfile(profile.sensitivity):manualSens()}
+let hudAnalysisByMode={p:null,m:null};
+let hudPromiseByMode={p:null,m:null};
+let hudSizeByMode={p:null,m:null};
+function getActiveHudState(){
+ const key=mode==='p'?'p':'m';
+ const input=$(key==='p'?'hudProfile':'hudManual');
+ return {file:input?.files?.[0]||null,analysis:hudAnalysisByMode[key],size:hudSizeByMode[key]};
+}
+function resizeHudImageForAnalysis(file,maxSide=1280){
+ return new Promise((resolve,reject)=>{
+  const img=new Image(),url=URL.createObjectURL(file);
+  img.onload=()=>{
+   URL.revokeObjectURL(url);
+   const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+   const width=Math.max(1,Math.round(img.naturalWidth*scale)),height=Math.max(1,Math.round(img.naturalHeight*scale));
+   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+   const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,width,height);
+   canvas.toBlob(blob=>{
+    if(!blob)return reject(new Error('HUD image compression failed'));
+    const reader=new FileReader();reader.onload=()=>resolve({imageData:String(reader.result||''),width,height});reader.onerror=()=>reject(new Error('HUD image read failed'));reader.readAsDataURL(blob);
+   },'image/jpeg',0.84);
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read. Try PNG/JPG screenshot.'))};
+  img.src=url;
+ });
+}
+async function analyzeUploadedHud(key,file){
+ const statusEl=$(key==='p'?'hudProfileStatus':'hudManualStatus');
+ const input=$(key==='p'?'hudProfile':'hudManual');
+ const preview=$(key==='p'?'hudProfilePreview':'hudManualPreview');
+ if(!file){hudAnalysisByMode[key]=null;hudPromiseByMode[key]=null;hudSizeByMode[key]=null;preview.style.display='none';preview.removeAttribute('src');statusEl.textContent='HUD optional hai — gameplay analysis ke liye upload kar sakte ho.';return null;}
+ if(!file.type.startsWith('image/')){statusEl.className='status warn';statusEl.textContent='Please valid HUD screenshot image upload karo.';input.value='';return null;}
+ preview.src=URL.createObjectURL(file);preview.style.display='block';preview.classList.remove('hidden');
+ statusEl.className='status';statusEl.textContent='HUD image compress aur detailed AI layout analysis ho raha hai…';
+ hudAnalysisByMode[key]=null;
+ hudPromiseByMode[key]=(async()=>{
+  const packed=await resizeHudImageForAnalysis(file);
+  hudSizeByMode[key]={width:packed.width,height:packed.height};
+  const response=await fetch(api('/api/hud-analyze'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...packed,device:mode==='p'?(profile?.device||profile?.deviceName||''):$('dev').value.trim(),playerMode:profile?.style||profile?.playerStyle||'',mode:profile?.mode||profile?.gameMode||'',fingers:profile?.fingers||''})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'HUD AI analysis failed');
+  hudAnalysisByMode[key]=data.analysis||null;
+  statusEl.className='status ok';
+  statusEl.textContent='✓ HUD analysis complete. Layout, fire button/joystick placement, visible opacity, scope positions and drag geometry will be sent with gameplay evidence.';
+  return hudAnalysisByMode[key];
+ })().catch(error=>{statusEl.className='status warn';statusEl.textContent='HUD AI analysis abhi complete nahi hua: '+(error.message||error)+'. Gameplay analysis continue ho sakta hai, lekin HUD detail available nahi hogi.';hudAnalysisByMode[key]=null;return null;});
+ return hudPromiseByMode[key];
+}
+$('hudProfile').addEventListener('change',e=>analyzeUploadedHud('p',e.target.files?.[0]));
+$('hudManual').addEventListener('change',e=>analyzeUploadedHud('m',e.target.files?.[0]));
+
 function contextPayload(){
  const b=baseSens(),device=mode==='p'?(profile?.device||profile?.deviceName||''):$('dev').value.trim();
- return {device,sensitivity:b,gameSensitivity:mode==='p'?(profile?.preset||profile?.gameSensitivity||profile?.sensitivityType||'Default'):$('type').value,
+ const hud=getActiveHudState();
+ return {hudUploaded:!!hud.file,hudAnalysis:hud.analysis||null,hudName:hud.file?.name||'',hudSize:hud.size||null,hudPriority:'Treat HUD geometry and button locations as important evidence. Account for low-opacity controls; do not invent details that are not visible.',device,sensitivity:b,gameSensitivity:mode==='p'?(profile?.preset||profile?.gameSensitivity||profile?.sensitivityType||'Default'):$('type').value,
  sourceOb:mode==='p'?(profile?.obVersion||profile?.ob||profile?.sourceOb||'OB55'):$('sob').value,
  targetOb:mode==='p'?(profile?.obVersion||profile?.ob||'OB55'):$('tob').value,
  playerStyle:profile?.style||profile?.playerStyle||'',gameMode:profile?.mode||profile?.gameMode||'',
@@ -356,6 +422,8 @@ $('go').onclick=async()=>{
   let j;
   setStep('vision');
   status('<b>Stage 3/5: Gemini Free AI — Full Timeline</b><br><span class="mut">Poore video se chronological evidence frames analyse ho rahe hain. OpenAI API ki zaroorat nahi hai.</span>');
+  const activeHud=getActiveHudState();
+  if(activeHud.file){const hudKey=mode==='p'?'p':'m';if(!hudAnalysisByMode[hudKey]&&hudPromiseByMode[hudKey])await hudPromiseByMode[hudKey];else if(!hudAnalysisByMode[hudKey])await analyzeUploadedHud(hudKey,activeHud.file);}
   const frames = await extractTimelineFrames(file, meta);
   j = await analyzeWithGeminiFrames(contextPayload(), frames);
   $('bar').classList.remove('aiBusy');setStep('diagnosis');
