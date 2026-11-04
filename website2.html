@@ -72,7 +72,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
 .update-progress{display:none;margin:16px 0 6px;padding:16px 18px;border:1px solid rgba(108,236,255,.35);border-radius:18px;background:rgba(4,8,20,.78);box-shadow:0 0 28px rgba(185,60,255,.12)}
 .update-progress.show{display:block}.update-progress .up-top{display:flex;justify-content:space-between;gap:12px;align-items:center;font-weight:800}.update-progress .up-pct{font-size:22px;color:#6cecff}.update-progress .up-track{height:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0}.update-progress .up-bar{height:100%;width:0;background:linear-gradient(90deg,#6cecff,#b93cff,#ff36e7);transition:width .35s ease}.update-progress .up-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:11px;color:#c9b8d9;text-align:center}.update-progress .up-done{color:#72ffbd;font-weight:800}.update-progress .up-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.25);border-top-color:#6cecff;border-radius:50%;animation:vgspin .8s linear infinite;margin-right:7px;vertical-align:-1px}@keyframes vgspin{to{transform:rotate(360deg)}}
 </style>
-</head>
+<style id="profile-code-removed">#codePanel,#tabCode,#updatedCodeBox{display:none!important}.tabs{display:none!important}#manualPanel{display:block!important}</style></head>
 <body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script>
 <div class="wrap">
 <header>
@@ -110,7 +110,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
     <div id="profileStatus" class="notice">Code enter karke load karo.</div><div id="backendStatus" class="notice">Backend status checking…</div>
   </div>
 
-  <div id="manualPanel" class="hidden">
+  <div id="manualPanel">
     <h2>Import any existing sensitivity</h2>
     <p class="help">Agar sensitivity kisi aur website, player ya tumhare khud ke settings se hai, to code ki zarurat nahi. Purani 6 values dalo aur old OB se target OB tak update karao.</p>
     <div class="grid">
@@ -209,7 +209,7 @@ footer{text-align:center;color:#9e89ad;font-size:11px;margin-top:20px}
   <div class="notice ok"><b>Latest supported/current OB: OB55</b> — This build will not generate an update above OB55. When a new official OB is released and analysed, the supported target can be advanced.</div><div id="obFacts"></div>
 </section>
 
-<footer>VG MENT4L UPDATE'S • Manual imports get a deterministic Profile Code. Same imported information produces the same code; changed sensitivity/OB details produce a new code. Sensitivity is a starting configuration, not a guaranteed headshot/recoil result.</footer>
+<footer>VG MENT4L UPDATE'S • Manual import mode.</footer>
 </div>
 
 <script>
@@ -500,7 +500,7 @@ function updateByOb(oldOb,targetOb,base,p={}){
   }
   return out;
 }
-function showManualCode(code,label){
+function showManualCode(code,label){ return; /* Profile Code feature removed. */
   const box=$('#updatedCodeBox');
   if(!box)return;
   box.style.display='block';
@@ -573,18 +573,8 @@ function stableManualHash(input){
   for(const ch of String(input)){h^=BigInt(ch.charCodeAt(0));h=(h*prime)&mask;}
   return h.toString(36).toUpperCase().padStart(13,'0').slice(-10);
 }
-function makeManualProfileCode(sensitivity,preset,sourceOb,targetOb){
-  const key=JSON.stringify({v:1,sensitivity,preset:String(preset||'Default'),sourceOb:String(sourceOb||'UNKNOWN'),targetOb:String(targetOb||LATEST_OB)});
-  return '#'+stableManualHash(key);
-}
-async function saveManualImportedProfile(code,sensitivity,preset,sourceOb,targetOb){
-  const profile={code,manualImport:true,profileType:'manual-sensitivity',preset:String(preset||'Default'),obVersion:normalizeOb(targetOb)||LATEST_OB,sourceOb:normalizeOb(sourceOb)||'UNKNOWN',sensitivity:{...sensitivity},device:'Manual Import',playerMode:'Manual Import',playerStyle:'Manual',gameMode:'Manual',guns:[],allGuns:false,updatedAt:new Date().toISOString()};
-  localStorage.setItem('vg_ment4l_profile_'+code,JSON.stringify(profile));
-  try{
-    const r=await fetch(API_BASE+'/api/profiles',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(profile)});
-    return r.ok;
-  }catch(e){return false;}
-}
+function makeManualProfileCode(){ return ''; }
+async function saveManualImportedProfile(){ return false; }
 function getSelectedProfileIssues(){
   return [...document.querySelectorAll('.profileIssueCheck:checked')].map(x=>x.value);
 }
