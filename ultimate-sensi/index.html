@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050811">
-<meta name="description" content="AIMCRAFT ULTIMATE — unified Free Fire sensitivity builder, calibration lab, profile transfer and OB update tools.">
+<meta name="description" content="AIMCRAFT ULTIMATE — unified Free Fire sensitivity builder, calibration lab, local profile saving and OB update tools.">
 <title>AIMCRAFT ULTIMATE — Free Fire Sensitivity Lab</title>
 <style>
 :root{--bg:#050811;--panel:#0a1222;--panel2:#0e1930;--line:#24385e;--text:#f4f7ff;--muted:#9aa8c2;--cyan:#5de7ff;--violet:#9d7cff;--green:#62e6a4;--yellow:#ffd36b;--red:#ff7d91}
@@ -25,7 +25,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 .hudPreview{display:none;margin-top:9px;max-height:260px;max-width:100%;border-radius:12px;border:1px solid #294067}.small{font-size:11px;color:#8090ab}.rangeHint{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rangeCard{padding:10px;border:1px solid #263a5d;border-radius:12px;background:#071020}.rangeCard b{display:block;font-size:12px}.rangeCard span{font-size:11px;color:#8fa1bf}
 @media(max-width:720px){.grid,.grid3,.profile{grid-template-columns:1fr}.sensi{grid-template-columns:repeat(2,minmax(0,1fr))}.modegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.rangeHint{grid-template-columns:repeat(2,minmax(0,1fr))}.problem-grid{grid-template-columns:1fr}.hero h1{font-size:43px}}
 </style>
-<style id="profile-code-system-removed">#calCodeCard,#updateCodeCard,#profile{display:none!important}.codebox{display:none!important}#loadProfile,#copyProfile,#saveProfile,#calLoadCode,#calCopyCode,#loadUpdate,#copyBuildCode,#calCopyUpdatedCode,#gpCopyUpdatedCode{display:none!important}</style></head>
+<style id="profile-code-system-removed">#calCodeCard,#updateCodeCard,#profile{display:none!important}.codebox{display:none!important}#loadProfile,#copyProfile,#saveProfile,#calLoadCode,#calCopyCode,#loadUpdate,#copyBuildCode,#calCopyUpdatedCode,#gpCopyUpdatedCode{display:none!important}#nav button[data-tab="profile"]{display:none!important}</style></head>
 <body>
 <div class="wrap">
 <header class="hero">
@@ -121,7 +121,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <div class="card">
 <div class="card" id="updateCodeCard">
 <div class="title">01 · AIMCRAFT PROFILE CODE → ADJUST THIS PROFILE</div>
-<div class="sub">Is website se bana hua Profile ID paste karo. Complete saved profile restore hoga, phir usi profile par OB update/Calibration adjustment hoga.</div>
+<div class="sub">Is website se bana hua Profile Code paste karo. Complete saved profile restore hoga, phir usi profile par OB update/Calibration adjustment hoga.</div>
 <div class="grid" style="margin-top:12px">
 <div class="full"><label>AIMCRAFT Profile ID</label><input id="updateCode" type="text" inputmode="numeric" autocomplete="off" maxlength="15" pattern="[0-9]{12,15}" placeholder="12–15 digit AIMCRAFT Profile ID"></div>
 <div><label>Old OB</label><select id="oldOb"><option>OB55</option><option>UNKNOWN</option></select></div>
@@ -153,7 +153,7 @@ button.primary{width:100%;border:0;border-radius:13px;padding:15px 16px;backgrou
 <textarea id="manualCustomProblem" rows="3" placeholder="Example: M1887 close range mein drag neck se upar chala jata hai aur MP40 spray chest pe rukta hai..."></textarea>
 <div id="manualDeviceResearch" class="notice" style="margin-top:10px">Device Name dalo → <b>DEVICE ANALYZING</b> dabao → device details verify/show hongi. Uske baad sensitivity + problems ke liye <b>SENSITIVITY ANALYZING</b> dabao.</div>
 </div>
-<button class="primary" id="importManual" style="margin-top:11px">SENSITIVITY ANALYZING + CREATE NEW PROFILE</button>
+<button class="primary" id="importManual" style="margin-top:11px">ANALYSE SENSITIVITY</button>
 <div id="manualImportStatus" class="resultMsg" style="margin-top:10px"></div>
 </div>
 <div id="updateResult"></div>
@@ -507,7 +507,7 @@ function setCurrent(p,msg){
 function renderBuild(p){
  setCurrent(p,'PROFILE READY ON THIS DEVICE');
  p=current;
- $('buildResult').innerHTML='<div class="card"><div class="title">STARTING SENSITIVITY — TEST THIS FIRST</div>'+renderSensi(p.v)+'<div class="notice" style="margin-top:11px">This profile is saved on this device only. Profile Code transfer has been removed.</div><div class="notice" style="margin-top:11px"><b>Important:</b> these are starting values, not a guaranteed result.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="goCal">OPEN CALIBRATION LAB</button><button class="secondary" id="saveNow">SAVE ON THIS DEVICE</button></div></div>';
+ $('buildResult').innerHTML='<div class="card"><div class="title">STARTING SENSITIVITY — TEST THIS FIRST</div>'+renderSensi(p.v)+'<div class="notice" style="margin-top:11px">This profile is saved on this device only. Profile is saved on this device only.</div><div class="notice" style="margin-top:11px"><b>Important:</b> these are starting values, not a guaranteed result.</div><div class="actions" style="margin-top:10px"><button class="secondary" id="goCal">OPEN CALIBRATION LAB</button><button class="secondary" id="saveNow">SAVE ON THIS DEVICE</button></div></div>';
  $('goCal').onclick=()=>tab('calibrate');
  $('saveNow').onclick=()=>{setCurrent(p,'PROFILE SAVED ON THIS DEVICE');alert('Profile saved on this device.');};
 }
@@ -518,19 +518,10 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>tab(b.dataset.
 function renderCalibrationLoadedProfile(){
  const box=$('calLoadedProfile');
  if(!box||!current)return;
- const code=codeFor(current);
  box.style.display='block';
- box.innerHTML='<div class="card" style="margin:0;border-color:#315079"><div class="title">LOADED PROFILE INFORMATION ✓</div><div class="sub">Is Profile Code se server par saved complete information load hui hai. Calibration isi loaded profile ki current sensitivity aur device/gun context par chalega.</div><div class="codebox" style="margin-top:10px"><b>Profile ID:</b> '+esc(code)+'</div><div style="margin-top:12px"><div class="title" style="font-size:15px">DEVICE + PROFILE DETAILS</div>'+profileHTML(current)+'</div><div style="margin-top:12px"><div class="title" style="font-size:15px">CURRENT SENSITIVITY — BEFORE CALIBRATION</div>'+renderSensi(current.v)+'</div></div>';
+ box.innerHTML='<div class="card" style="margin:0;border-color:#315079"><div class="title">CURRENT PROFILE INFORMATION ✓</div><div class="sub">This profile is stored locally on this device. Profile Code transfer is no longer available.</div><div style="margin-top:12px"><div class="title" style="font-size:15px">DEVICE + PROFILE DETAILS</div>'+profileHTML(current)+'</div><div style="margin-top:12px"><div class="title" style="font-size:15px">CURRENT SETTINGS</div>'+renderSensi(current.v)+'</div></div>';
 }
-function renderCalibrationGuns(){
- const box=$('calGuns');
- const guns=Array.isArray(current?.guns)&&current.guns.length?current.guns:['All Guns'];
- current.calibrationGuns=[...guns];
- box.innerHTML='<div class="notice ok" style="margin:0"><b>Active Gun Profile:</b> '+esc(guns.join(' + '))+'<br><span class="small">Read-only — BUILD SENSI profile se locked.</span></div>';
- box.onclick=null;
- const s=$('calCodeStatus'); if(s)s.textContent='Active gun profile: '+guns.join(' + ');
- renderCalibrationLoadedProfile();
-}
+
 function renderHistory(){
  renderLearning();
  if(!history.length){$('historyCard').style.display='none';return}
@@ -803,7 +794,7 @@ $('buildBtn').onclick=async()=>{
    await new Promise(r=>setTimeout(r,120));
    $('buildBar').style.width='82%';$('buildStage').textContent='Applying device + HUD evidence…';
    current=makeStarting();
-   $('buildBar').style.width='100%';$('buildStage').textContent='Finalizing stable profile code…';
+   $('buildBar').style.width='100%';$('buildStage').textContent='Finalizing local profile…';
    await new Promise(r=>setTimeout(r,180));
    renderBuild(current);
  }catch(e){alert('Build failed: '+e.message)}
