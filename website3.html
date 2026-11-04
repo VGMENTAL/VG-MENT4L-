@@ -18,12 +18,12 @@ label{font-size:13px;font-weight:700;display:block;margin:5px 0}input,select,tex
 .sens{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.sens div{padding:9px;background:#080e1e;border:1px solid var(--line);border-radius:9px}.sens b{font-size:20px;display:block}
 .video{padding:15px;text-align:center;border:1px dashed #40578d;border-radius:13px}.bar{height:7px;background:#111a31;border-radius:9px;margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--p));border-radius:9px;transition:width .25s}.bar.aiBusy i{width:55%!important;background:linear-gradient(90deg,var(--a),var(--p),var(--a));background-size:220% 100%;animation:aiMove 1.1s linear infinite}@keyframes aiMove{from{background-position:0 0}to{background-position:220% 0}}
 .result{margin-top:12px;padding:15px;border:1px solid #38537e;border-radius:14px;background:linear-gradient(135deg,#102d3c,#25183f)}li{margin:6px 0}.footer{text-align:center;color:#7180a7;font-size:12px;margin-top:18px}
-.issueGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.issueBox{padding:10px;border:1px solid var(--line);border-radius:10px;background:#080e1e}.issueBox input{width:auto}.codeNew{font-size:24px;font-weight:900;letter-spacing:.12em;color:#7deeff}
+.issueGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.issueBox{padding:10px;border:1px solid var(--line);border-radius:10px;background:#080e1e}.issueBox input{width:auto}.codeNew{display:none!important;font-size:24px;font-weight:900;letter-spacing:.12em;color:#7deeff}
 .step{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.chip{padding:7px 9px;border-radius:999px;border:1px solid var(--line);background:#080e1e;color:var(--mut);font-size:12px}.chip.active{border-color:#4ddfff;color:#eaffff;background:#12334a}
 button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:650px){.grid,.issueGrid,.infoGrid{grid-template-columns:1fr}.sens{grid-template-columns:1fr 1fr}}
 </style>
-</head>
+<style id="profile-code-removed">.tabs,#pp{display:none!important}#mp{display:block!important}</style></head>
 <body>
 <main class="wrap">
 <div class="hero"><div class="logo">VG MENT4L</div><div class="mut">CHECK SENSITIVITY · Ultra Gameplay Recalibration</div></div>
@@ -39,7 +39,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <button id="continueManual" class="btn" style="width:100%;margin-top:10px">CONTINUE WITHOUT PROFILE ID</button>
 </section>
 
-<section id="mp" class="panel hidden">
+<section id="mp" class="panel">
 <h2>Manual Sensitivity + Mobile</h2>
 <p class="mut">Profile ID ke bina bhi gameplay analysis kar sakte ho.</p>
 <div class="grid">
@@ -114,7 +114,7 @@ warmBackend();
 setInterval(()=>{ if(document.visibilityState==='visible') warmBackend(); }, 4*60*1000);
 
 const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
-let mode='p',profile=null,file=null,meta=null,lastResult=null,working=false,updatedProfileId='';
+let mode='m',profile=null,file=null,meta=null,lastResult=null,working=false,updatedProfileId='';
 
 const issues=[
 'Aim head se upar ja raha hai','Aim chest pe lock ho raha hai','Aim neck pe lock ho raha hai',
@@ -192,7 +192,7 @@ meta};
 // Save the AI-generated gameplay sensitivity into the existing Profile ID.
 // Website 3 follows Website 2's behavior: the code stays the same and only
 // the sensitivity values are replaced; all other profile information is preserved.
-async function applyGameplaySensitivityToProfile(sensitivity){
+async function applyGameplaySensitivityToProfile(sensitivity){ return {ok:false,skipped:true}; /* Profile Code feature removed. */
  if(!profile?.code) return {ok:false,skipped:true};
  const r=await fetch(api('/api/gameplay-apply'),{
   method:'POST',
@@ -391,17 +391,15 @@ $('fix').onclick=async()=>{
   if(!r.ok)throw new Error((j.error||'Fix failed')+(j.detail?' — '+j.detail:''));
   const s=getSensFromProfile(j.sensitivity);
   lastResult.recommendedSensitivity=s;
-  if(profile && (j.profileId||j.newProfileId)) profile.sensitivity=s;
-  if(j.profileId||j.newProfileId){try{localStorage.setItem('vg_ment4l_profile_'+(j.profileId||j.newProfileId),JSON.stringify({...profile,code:(j.profileId||j.newProfileId),sensitivity:s}))}catch(e){}}
+  if(profile) profile.sensitivity=s;
+
   $('fixOut').className='status ok';
   $('fixOut').innerHTML=`<b>✓ Better sensitivity ready</b>${boxes(s)}
   ${j.diagnosis?`<p><b>AI diagnosis:</b> ${esc(j.diagnosis)}</p>`:''}
   ${j.changes?.length?`<h4>Changes made</h4><ul>${list(j.changes)}</ul>`:''}
-  <p><b>Updated Profile ID:</b> <span class="codeNew">${esc(j.profileId||j.newProfileId||'—')}</span></p>
-  ${(j.profileId||j.newProfileId)?'<button class="btn" id="copyNew">COPY UPDATED CODE</button>':''}
-  <p class="mut">Same Profile ID rakha gaya hai. Is code ke andar sirf sensitivity update hui hai; baaki profile information same hai.</p>
+
   ${j.warning?`<div class="status warn">AI refinement warning: ${esc(j.warning)}</div>`:''}`;
-  if(j.profileId||j.newProfileId)$('copyNew').onclick=()=>navigator.clipboard?.writeText(j.profileId||j.newProfileId);
+
  }catch(e){$('fixOut').className='status warn';$('fixOut').textContent='Fix failed: '+String(e.message||e)}
  finally{working=false;$('fix').disabled=false;$('go').disabled=false}
 };
