@@ -96,12 +96,12 @@ img,video,canvas,iframe{max-width:100%}
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
-</head>
+<style>#tabCode,#codePanel{display:none!important}#manualPanel.hidden{display:block!important}</style></head>
 <body><div id="vgRuntimeError" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(3,5,16,.97);color:#fff;padding:28px;font-family:system-ui,sans-serif;overflow:auto"><div style="max-width:760px;margin:8vh auto;background:#0b1022;border:1px solid #6cecff;border-radius:20px;padding:22px;box-shadow:0 0 50px rgba(108,236,255,.15)"><h2 style="margin-top:0">VG MENT4L — Loading Error</h2><p id="vgRuntimeErrorText">Page load mein problem aayi.</p><button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;font-weight:800">RELOAD</button></div></div><script>(function(){function show(e){var b=document.getElementById('vgRuntimeError'),t=document.getElementById('vgRuntimeErrorText');if(!b||!t)return;var m=(e&&e.message)||String(e||'Unknown error');b.style.display='block';t.textContent='Page load mein JavaScript error aaya: '+m;console.error(e)}window.addEventListener('error',function(e){show(e.error||e.message)});window.addEventListener('unhandledrejection',function(e){show(e.reason)});})();</script>
 <div class="wrap">
 <header>
   <div class="logo">VG MENT4L UPDATE'S</div>
-  <div class="subtitle">OB VERSION SENSITIVITY UPDATE • PROFILE CODE • MANUAL IMPORT</div>
+  <div class="subtitle">OB VERSION SENSITIVITY UPDATE • MANUAL IMPORT</div>
   <div class="badges">
     <span class="badge">OB → OB FRESH CALCULATION</span>
     <span class="badge">6-VALUE SENSITIVITY</span>
@@ -145,7 +145,7 @@ img,video,canvas,iframe{max-width:100%}
       <div class="field">
         <label>Device Name</label>
         <input id="manualDeviceName" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15" autocomplete="off">
-        <div class="help mini">Jis device ki ye sensitivity hai uska exact name dalo. Ye manual Profile Code ke saath save hoga.</div>
+        <div class="help mini">Jis device ki ye sensitivity hai uska exact name dalo.</div>
       </div>
       <div class="field">
         <label>This sensitivity belongs to OB</label>
@@ -229,7 +229,7 @@ img,video,canvas,iframe{max-width:100%}
   <div class="values" id="resultValues"></div>
   <div class="compare" id="compare"></div>
   <div class="notice" id="analysis"></div>
-  <div class="notice ok" id="guide"></div><div class="notice" id="updatedCodeBox" style="display:none"></div>
+  <div class="notice ok" id="guide"></div>
 </section>
 
 <section class="panel">
@@ -238,7 +238,7 @@ img,video,canvas,iframe{max-width:100%}
   <div class="notice ok"><b>Latest supported/current OB: OB55</b> — This build will not generate an update above OB55. When a new official OB is released and analysed, the supported target can be advanced.</div><div id="obFacts"></div>
 </section>
 
-<footer>VG MENT4L UPDATE'S • Manual imports get a deterministic Profile Code. Same imported information produces the same code; changed sensitivity/OB details produce a new code. Sensitivity is a starting configuration, not a guaranteed headshot/recoil result.</footer>
+<footer>VG MENT4L UPDATE'S • Manual sensitivity import and OB comparison.</footer>
 </div>
 
 <script>
@@ -529,8 +529,7 @@ function updateByOb(oldOb,targetOb,base,p={}){
   return out;
 }
 function showManualCode(code,label){
-  const box=$('#updatedCodeBox');
-  if(!box)return;
+  return;
   const device=String($('#manualDeviceName')?.value||'').trim()||'Unknown Device';
   box.style.display='block';
   const saveNotice=manualProfilePersistence?.backendSaved
@@ -859,7 +858,7 @@ async function runManualUpdate(){
     const deviceName=String($('#manualDeviceName').value||'').trim()||'Unknown Device';
     const sameCode=makeManualProfileCode(same,$('#manualPreset').value,oldOb,target,deviceName);
     await saveManualImportedProfile(sameCode,same,$('#manualPreset').value,oldOb,target,deviceName);
-    renderResult(oldOb,target,same,same,`<span class="pill">Same OB</span><span class="pill">Manual import</span><span class="pill">Code: ${esc(sameCode)}</span><span class="pill">Problem Fix available</span>`,`Source OB aur Target OB dono ${normalizeOb(target)} hain, isliye OB conversion apply nahi kiya gaya. Agar aim/drag/recoil mein problem hai to neeche Sensitivity Problem Fixer se isi sensitivity ko recalibrate karo.`);
+    renderResult(oldOb,target,same,same,`<span class="pill">Same OB</span><span class="pill">Manual import</span><span class="pill">Problem Fix available</span>`,`Source OB aur Target OB dono ${normalizeOb(target)} hain, isliye OB conversion apply nahi kiya gaya. Agar aim/drag/recoil mein problem hai to neeche Sensitivity Problem Fixer se isi sensitivity ko recalibrate karo.`);
     showManualCode(sameCode,'MANUAL SENSITIVITY CODE');
     await showUpdateProgress('manual','Same OB confirmed — ready for problem recalibration',100,true);
     updateBusy=false; $('#manualUpdate').disabled=false; setTimeout(()=>$('#manualUpdateProgress')?.classList.remove('show'),1200); return;
@@ -890,7 +889,7 @@ async function runManualUpdate(){
   await showUpdateProgress('manual','Saving update history…',92); await sleep(180);
   const finalCode=makeManualProfileCode(newVals,$('#manualPreset').value,shownOld,target,deviceName);
   await saveManualImportedProfile(finalCode,newVals,$('#manualPreset').value,shownOld,target,deviceName);
-  const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">Code: ${esc(finalCode)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
+  const meta=`<span class="pill">Manual import</span><span class="pill">${esc($('#manualPreset').value)}</span><span class="pill">${esc(shownOld)} → ${esc(target)}</span><span class="pill">${window.__OB_RESEARCH__?.hasResearch?(window.__OB_RESEARCH__?.serverResearch?'🌐 Garena researched':'📚 Verified knowledge'):'📚 Fallback knowledge'}</span>`;
   renderResult(shownOld,target,oldVals,newVals,meta,analysis);
   showManualCode(finalCode,'UPDATED MANUAL SENSITIVITY CODE');
   await showUpdateProgress('manual','Update generation complete — 100%',100,true);
@@ -900,6 +899,7 @@ async function runManualUpdate(){
 
 $('#tabCode').onclick=()=>{ $('#tabCode').classList.add('active');$('#tabManual').classList.remove('active');$('#codePanel').classList.remove('hidden');$('#manualPanel').classList.add('hidden') };
 $('#tabManual').onclick=()=>{ $('#tabManual').classList.add('active');$('#tabCode').classList.remove('active');$('#manualPanel').classList.remove('hidden');$('#codePanel').classList.add('hidden') };
+$('#tabManual').click();
 
 $('#code').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^#A-Z0-9]/g,'').replace(/^([^#])/, '#$1').slice(0,11)});
 
