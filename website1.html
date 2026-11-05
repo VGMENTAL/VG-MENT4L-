@@ -968,24 +968,15 @@ function recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
   };
 }
 function renderRecoilAnalysis(device,style,mode,s,hud,guns,preset,playerStyle){
-  const rawA=recoilControlAnalysis(device,style,mode,s,hud,guns,preset,playerStyle);
-  const a={...rawA,score:Math.max(0,Math.min(100,Number(rawA.score)||0)),close:Math.max(0,Math.min(100,Number(rawA.close)||0)),mid:Math.max(0,Math.min(100,Number(rawA.mid)||0)),long:Math.max(0,Math.min(100,Number(rawA.long)||0)),overshoot:Math.max(0,Math.min(100,Number(rawA.overshoot)||0))};
-  const note=a.score>=90
-    ? '90%+ ka matlab sensitivity curve ke internal control checks pass hue hain. Isse actual game recoil 90%+ reduce hoga aisa claim nahi kiya ja sakta; real result weapon, movement, FPS/touch aur player input par depend karta hai.'
-    : 'Engine 90%+ internal calibration target ko reach karne ke liye curve ko device, HUD, guns aur selected problems ke according tune karta hai.';
-  const gameplayStatus=gameplayAIAnalysis?'Gameplay evidence included in the calibration.':'Gameplay evidence not analysed; profile/HUD/weapon inputs are being used.';
+  const gameplayStatus=gameplayAIAnalysis
+    ? 'Gameplay evidence has been uploaded, but this page does not measure an actual in-game recoil reduction percentage.'
+    : 'No gameplay evidence was analysed. The displayed settings are not a measured recoil-performance result.';
   return `<div class="section recoil-analysis">
-    <h3>🎯 Recoil Control & Sensitivity Calibration</h3>
-    <div class="small"><b>Target:</b> 90%+ internal calibration. <b>Important:</b> Ye actual game mein sensitivity kitne % kaam karegi ya recoil kitne % kam hoga, uska measured percentage nahi hai.</div>
-    <div class="recoil-grid">
-      <div><b>${a.score}%</b><span>Calibration Compatibility</span></div>
-      <div><b>${a.close}%</b><span>Close-Range Control</span></div>
-      <div><b>${a.mid}%</b><span>Mid-Range Recoil Control</span></div>
-      <div><b>${a.long}%</b><span>Long-Range Control</span></div>
-      <div><b>${a.overshoot}%</b><span>Overshoot Control</span></div>
+    <h3>🎯 Recoil & Control Information</h3>
+    <div class="notice warn"><b>Measurement unavailable</b><br>
+      This website cannot reliably measure an actual recoil-reduction percentage, accuracy score, or guaranteed headshot rate from the selected inputs. No percentage score is shown.
     </div>
-    <div class="notice ${a.score>=90?'ok':'warn'}"><b>Calibration: ${esc(a.level)}</b><br>${esc(note)}</div>
-    <div class="small"><b>Analysis:</b> General, Red Dot, 2×, 4×, Sniper aur Free Look ko ek joint six-axis curve ke roop mein check kiya gaya hai. <b>Evidence:</b> ${esc(gameplayStatus)} HUD confidence: ${esc(a.confidence)}. <b>Real-game measurement:</b> abhi available nahi hai.</div>
+    <div class="small"><b>Evidence status:</b> ${esc(gameplayStatus)} HUD and device details are user-provided context, not proof of in-game performance.</div>
   </div>`;
 }
 
