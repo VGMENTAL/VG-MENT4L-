@@ -47,12 +47,12 @@ img,video,canvas,iframe{max-width:100%}
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
-</head>
+<style>.tabs,#pp{display:none!important}#mp.hidden{display:block!important}</style></head>
 <body>
 <main class="wrap">
-<div class="hero"><div class="logo">VG MENT4L</div><div class="mut">CHECK SENSITIVITY · Ultra Gameplay Recalibration</div></div>
+<div class="hero"><div class="logo">VG MENT4L</div><div class="mut">CHECK SENSITIVITY · Manual Input & HUD/Video Upload</div></div>
 
-<div class="tabs"><button id="pt" class="on">1 · ENTER PROFILE ID</button><button id="mt">2 · MANUAL SENSITIVITY</button></div>
+<div class="tabs"><button id="pt" class="on">PROFILE ID</button><button id="mt">MANUAL SENSITIVITY</button></div>
 
 <section id="pp" class="panel">
 <h2>Profile ID + Mobile Information</h2>
@@ -70,9 +70,9 @@ img,video,canvas,iframe{max-width:100%}
 <button id="continueManual" class="btn" style="width:100%;margin-top:10px">CONTINUE WITHOUT PROFILE ID</button>
 </section>
 
-<section id="mp" class="panel hidden">
+<section id="mp" class="panel">
 <h2>Manual Sensitivity + Mobile</h2>
-<p class="mut">Profile ID ke bina bhi gameplay analysis kar sakte ho.</p>
+<p class="mut">Current sensitivity manually enter karo; Profile ID ki zaroorat nahi hai.</p>
 <div class="grid">
 <div><label>Type</label><select id="type"><option>Default</option><option>High</option></select></div>
 <div><label>Source OB</label><select id="sob"></select></div>
@@ -152,7 +152,7 @@ warmBackend();
 setInterval(()=>{ if(document.visibilityState==='visible') warmBackend(); }, 4*60*1000);
 
 const clamp=n=>Math.max(0,Math.min(200,Math.round(Number(n)||0)));
-let mode='p',profile=null,file=null,meta=null,lastResult=null,working=false,updatedProfileId='';
+let mode='m',profile=null,file=null,meta=null,lastResult=null,working=false,updatedProfileId='';
 
 const issues=[
 'Aim head se upar ja raha hai','Aim chest pe lock ho raha hai','Aim neck pe lock ho raha hai',
