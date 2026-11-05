@@ -243,7 +243,7 @@ async function analyzeUploadedHud(key,file){
  const input=$(key==='p'?'hudProfile':'hudManual');
  const preview=$(key==='p'?'hudProfilePreview':'hudManualPreview');
  if(!file){hudAnalysisByMode[key]=null;hudPromiseByMode[key]=null;hudSizeByMode[key]=null;preview.style.display='none';preview.removeAttribute('src');statusEl.textContent='HUD optional hai — gameplay analysis ke liye upload kar sakte ho.';return null;}
- if(!file.type.startsWith('image/')){statusEl.className='status warn';statusEl.textContent='Please valid HUD screenshot image upload karo.';input.value='';return null;}
+ if(!file.type.startsWith('image/')){statusEl.className='status warn';statusEl.textContent='Please valid HUD screenshot image upload karo.';input.value='';preview.style.display='none';preview.removeAttribute('src');hudAnalysisByMode[key]=null;hudPromiseByMode[key]=null;hudSizeByMode[key]=null;return null;}
  preview.src=URL.createObjectURL(file);preview.style.display='block';preview.classList.remove('hidden');
  statusEl.className='status';statusEl.textContent='HUD image compress aur detailed AI layout analysis ho raha hai…';
  hudAnalysisByMode[key]=null;
@@ -347,6 +347,9 @@ $('vid').onchange=async()=>{
 // Start waking the backend as soon as the user chooses a video.
 warmBackend();
  if(!file)return;
+ const videoName=(file.name||'').toLowerCase();
+ const videoTypeOk=file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|3gp|avi)$/.test(videoName);
+ if(!videoTypeOk){status('Please valid video file select karo (MP4/MOV/WEBM etc.).','status warn');$('vid').value='';file=null;return}
  const MAX=2*1024*1024*1024;
  if(file.size>MAX){status(`Video ${(file.size/1073741824).toFixed(2)} GB hai. Maximum 2 GB hai.`,'status warn');file=null;return}
  try{
