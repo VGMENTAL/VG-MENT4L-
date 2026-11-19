@@ -1429,6 +1429,7 @@ async function runGenerateProgress(device){
   generating=true;
   btn.disabled=true;
   progressBox.classList.add('show');
+  const generationIdentity=await getProfileIdentity();
   const stages=[
     [8,'Validating your inputs…'],
     [22,'Reading HUD screenshot…'],
@@ -1458,6 +1459,10 @@ async function runGenerateProgress(device){
   // Render only after HUD + device research are finished. Hardware evidence can
   // therefore influence the same sensitivity that gets displayed and saved.
   await deepRuntimePromise;
+  const identityAfterResearch=await getProfileIdentity();
+  if(identityAfterResearch!==generationIdentity){
+    throw new Error('Inputs changed during generation. Please generate again with your final selections.');
+  }
   progressStage.innerHTML='<span class="generate-spin"></span>Deep device/runtime evidence fused…';
   await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
   progressStage.innerHTML='<span class="generate-spin"></span>Saving Profile ID + syncing backend…';
