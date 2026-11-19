@@ -1533,7 +1533,10 @@ async function startGameplayEvidenceAnalysis(){
 }
 $('#gameplayVideo').addEventListener('change',()=>{
   const f=$('#gameplayVideo').files?.[0],status=$('#gameplayStatus');
-  if(status)status.textContent=f?('✓ Video selected: '+f.name+' — ab ANALYZE GAMEPLAY VIDEO dabao.'):'Pehle gameplay video select karo.';
+  // Clear any previous video analysis immediately so a new file cannot reuse stale evidence.
+  gameplayAIAnalysis=null;gameplayIdentityKey=null;gameplayAnalysisPromise=null;
+  if(status)status.textContent=f?('✓ Video selected: '+f.name+' — ab ANALYZE GAMEPLAY VIDEO dabao. Previous video analysis cleared.'):'Pehle gameplay video select karo. Previous video analysis cleared.';
+  invalidateGeneratedResult('Gameplay video changed');
 });
 $('#analyzeGameplayBtn').addEventListener('click',startGameplayEvidenceAnalysis);
 hudEl.addEventListener('change',()=>{
@@ -1548,6 +1551,7 @@ hudEl.addEventListener('change',()=>{
       hudPreview.classList.remove('show');
       if(meta)meta.textContent='Invalid file — image required';
       hudStatus.textContent='Sirf image screenshot upload karo. Purana preview clear kar diya gaya hai.';
+      invalidateGeneratedResult('Invalid HUD file selected');
       return;
     }
     const url=URL.createObjectURL(file);
