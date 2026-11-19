@@ -146,6 +146,8 @@ img,video,canvas,iframe{max-width:100%}
         <label>Device Name</label>
         <input id="manualDeviceName" placeholder="Example: iQOO Neo 10 / Redmi Note 13 Pro / iPhone 15" autocomplete="off">
         <div class="help mini">Jis device ki ye sensitivity hai uska exact name dalo.</div>
+        <button class="secondary" type="button" id="w2DeviceLookup" style="width:100%;margin-top:9px">GET DEVICE INFORMATION</button>
+        <div id="w2DeviceInfo" class="notice hidden" role="status" aria-live="polite"></div>
       </div>
       <div class="field">
         <label>This sensitivity belongs to OB</label>
@@ -937,6 +939,32 @@ const refreshManualIssueCount=()=>{if(manualIssueCount){const n=document.querySe
 manualIssueInputs.forEach(input=>input.addEventListener('change',refreshManualIssueCount));
 refreshManualIssueCount();
 bindIssueFixers();
+const w2DeviceLookup=$('#w2DeviceLookup'),w2DeviceInfo=$('#w2DeviceInfo');
+if(w2DeviceLookup&&w2DeviceInfo){
+  w2DeviceLookup.onclick=async()=>{
+    const name=String($('#manualDeviceName')?.value||'').trim();
+    w2DeviceInfo.className='notice';
+    w2DeviceInfo.classList.remove('hidden');
+    if(!name){w2DeviceInfo.textContent='Pehle exact device model name likho, jaise brand + model + 4G/5G variant.';return;}
+    w2DeviceLookup.disabled=true;w2DeviceLookup.textContent='LOOKING UP…';
+    w2DeviceInfo.textContent='Device specification cache/database aur available sources check ho rahe hain…';
+    try{
+      const r=await fetch('/api/device-research?device='+encodeURIComponent(name),{cache:'no-store'});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(j.detail||j.error||('HTTP '+r.status));
+      const d=j.device||{};
+      const fields=[['Exact model',d.canonical||d.query||name],['Brand',d.brand],['Chipset / CPU',d.chipset],['GPU',d.gpu],['RAM variants',d.ram],['Display',d.display],['Resolution',d.resolution],['Refresh rate',d.refreshRate],['Operating system',d.os],['Storage',d.storage],['Battery',d.battery],['Charging',d.charging],['Network',d.network]];
+      w2DeviceInfo.replaceChildren();
+      const heading=document.createElement('b');heading.textContent=j.verified?'Saved/verified device information':'Device information (partial)';w2DeviceInfo.appendChild(heading);
+      const note=document.createElement('p');note.style.margin='6px 0';note.textContent=j.notice||'Only returned specification fields are shown; unknown values are not guessed.';w2DeviceInfo.appendChild(note);
+      const grid=document.createElement('div');grid.style.display='grid';grid.style.gridTemplateColumns='repeat(2,minmax(0,1fr))';grid.style.gap='8px';
+      fields.filter(x=>String(x[1]||'').trim()).forEach(([label,value])=>{const card=document.createElement('div');card.style.cssText='padding:9px;border:1px solid rgba(108,236,255,.2);border-radius:10px;background:rgba(0,0,0,.22)';const l=document.createElement('div');l.style.cssText='font-size:10px;opacity:.78;text-transform:uppercase';l.textContent=label;const v=document.createElement('b');v.style.cssText='display:block;margin-top:4px;font-size:13px';v.textContent=String(value);card.append(l,v);grid.appendChild(card);});
+      w2DeviceInfo.appendChild(grid);
+      const source=document.createElement('p');source.style.cssText='margin:8px 0 0;font-size:11px;opacity:.82';source.textContent='Lookup cache: successful device research is saved by the server when database/cache storage is available. Website 2 displays specs only; it does not change any settings.';w2DeviceInfo.appendChild(source);
+    }catch(e){w2DeviceInfo.textContent='Device lookup failed: '+(e.message||'Unknown error')+'. Exact model/variant check karke retry karo.';}
+    finally{w2DeviceLookup.disabled=false;w2DeviceLookup.textContent='GET DEVICE INFORMATION';}
+  };
+}
 loadServerConfig();
 </script>
 </body>
