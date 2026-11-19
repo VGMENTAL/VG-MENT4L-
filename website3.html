@@ -427,8 +427,19 @@ $('go').onclick=async()=>{
   status('<b>Stage 3/5: Gemini Free AI — Full Timeline</b><br><span class="mut">Poore video se chronological evidence frames analyse ho rahe hain. OpenAI API ki zaroorat nahi hai.</span>');
   const activeHud=getActiveHudState();
   if(activeHud.file){const hudKey=mode==='p'?'p':'m';if(!hudAnalysisByMode[hudKey]&&hudPromiseByMode[hudKey])await hudPromiseByMode[hudKey];else if(!hudAnalysisByMode[hudKey])await analyzeUploadedHud(hudKey,activeHud.file);}
-  const frames = await extractTimelineFrames(file, meta);
-  j = await analyzeWithGeminiFrames(contextPayload(), frames);
+  const analysisContext=contextPayload();
+  let frames=null, framePathError=null;
+  try{
+    frames=await extractTimelineFrames(file, meta);
+    j=await analyzeWithGeminiFrames(analysisContext, frames);
+  }catch(frameError){
+    framePathError=String(frameError?.message||frameError);
+    console.warn('Timeline-frame path failed; trying direct full-video Gemini upload:',framePathError);
+    setStep('upload');$('prog').style.width='20%';
+    status('<b>Timeline-frame analysis unavailable.</b><br><span class="mut">Fallback: complete video direct Gemini upload/analysis is being tried. Reason: '+esc(framePathError)+'</span>');
+    j=await analyzeWithGeminiFullVideo(analysisContext);
+    if(j?.result && framePathError) j.result.fallbackNote='Timeline-frame path failed; direct full-video fallback succeeded.';
+  }
   $('bar').classList.remove('aiBusy');setStep('diagnosis');
   $('bar').classList.remove('aiBusy');$('timer').textContent=lastResult?.aiAnalysisMs?('AI server time: '+(lastResult.aiAnalysisMs/1000).toFixed(1)+'s'):'AI analysis complete';$('prog').style.width='92%';setStep('diagnosis');
   if(!j.ok)throw new Error((j.error||'Analysis failed')+(j.detail?' — '+j.detail:''));
