@@ -780,6 +780,7 @@ async function initDb() {
     await pool.query('CREATE INDEX IF NOT EXISTS vg_updates_code_idx ON vg_updates(code)');
     await pool.query('CREATE TABLE IF NOT EXISTS vg_hud_analysis (hud_key TEXT PRIMARY KEY, analysis JSONB NOT NULL, fingerprint JSONB NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     await pool.query('ALTER TABLE vg_hud_analysis ADD COLUMN IF NOT EXISTS fingerprint JSONB NULL');
+    await pool.query('CREATE TABLE IF NOT EXISTS vg_device_research (device_key TEXT PRIMARY KEY, research JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
     dbReady = true;
     dbError = '';
     console.log('VG MENT4L persistent database connected.');
@@ -1643,7 +1644,8 @@ const server = http.createServer(async (req, res) => {
       };
       const nq=normalizeDevice(q);
       let persistentCache={}; try{persistentCache=readJson(DEVICE_RESEARCH_STORE)||{};}catch{};
-      const cached=DEVICE_RESEARCH_CACHE[nq]||persistentCache[nq];
+      let dbCached=null; if(dbReady&&pool){try{const cr=await pool.query('SELECT research FROM vg_device_research WHERE device_key=$1 LIMIT 1',[nq]);dbCached=cr.rows[0]?.research||null;}catch(cacheReadError){console.warn('Device research DB cache read failed:',cacheReadError.message);}}
+      const cached=DEVICE_RESEARCH_CACHE[nq]||persistentCache[nq]||dbCached;
       if(cached){ const device=deviceKnowledgeEnrich({...cached,query:q},q); return json(res,200,{ok:true,device,verified:true,researched:true,query:q,notice:'Verified device specification profile loaded and completed by device intelligence engine.',sourceType:device.sourceType}); }
 
       const hit=lookupDevice(q);
@@ -1711,6 +1713,7 @@ const server = http.createServer(async (req, res) => {
           persistentCache[nq]=merged;
           writeJson(DEVICE_RESEARCH_STORE,persistentCache);
           DEVICE_RESEARCH_CACHE[nq]=merged;
+          if(dbReady&&pool) await pool.query('INSERT INTO vg_device_research(device_key,research,updated_at) VALUES($1,$2::jsonb,NOW()) ON CONFLICT(device_key) DO UPDATE SET research=EXCLUDED.research,updated_at=NOW()',[nq,JSON.stringify(merged)]);
         }catch(cacheError){console.warn('Device research cache write failed:',cacheError.message);}
         merged.confidence=compatible.some(d=>d.confidence==='high')?'high':(compatible.length>1?'medium':(merged.confidence||'medium'));
         merged.notes='Fields are merged only from sources matching the requested model/variant. Missing technical fields may be completed only from deterministic chipset/model knowledge; unknown facts are never invented.';
