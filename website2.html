@@ -941,3 +941,31 @@ loadServerConfig();
 </script>
 </body>
 </html>
+<style id="vg-w2-ui-polish">
+/* UI-only refinement: visual clarity, responsive spacing and focus states. */
+:root{scroll-behavior:smooth}
+.panel{transition:border-color .18s ease,box-shadow .18s ease}
+.panel:focus-within{border-color:rgba(108,236,255,.42)}
+.tab{transition:transform .15s ease,filter .15s ease}
+.tab:active,.primary:active,.secondary:active{transform:translateY(1px)}
+.primary:focus-visible,.secondary:focus-visible,.tab:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+.primary:disabled,.secondary:disabled{opacity:.58;cursor:not-allowed;filter:saturate(.6)}
+.notice,.issueResult{overflow-wrap:anywhere}
+.compare table th{position:sticky;top:0;z-index:1}
+@media(max-width:600px){
+ .wrap{padding-bottom:32px}
+ header{padding:10px 6px 18px}
+ .subtitle{font-size:12px;letter-spacing:.08em;line-height:1.5}
+ .badges{gap:6px}
+ .badge{padding:6px 9px}
+ .tabs{gap:7px}
+ .tab{padding:11px 8px;font-size:13px}
+ .actions{display:grid;grid-template-columns:1fr}
+ .actions button{width:100%}
+ .issuePanel{padding:12px}
+ .update-progress .up-steps{font-size:9px;gap:3px}
+ .update-progress .up-top{align-items:flex-start;font-size:13px}
+ .update-progress .up-pct{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){:root{scroll-behavior:auto}.panel,.tab{transition:none}}
+</style>
