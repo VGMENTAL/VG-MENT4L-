@@ -20,5 +20,5 @@ services:
         value: gpt-5.6-luna
 
 databases:
-  - name: vg-ment4l-db
+  - name: vg-ment4l-device-research-db
     plan: free
