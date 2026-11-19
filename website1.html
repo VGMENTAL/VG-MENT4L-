@@ -1534,10 +1534,17 @@ $('#analyzeGameplayBtn').addEventListener('click',startGameplayEvidenceAnalysis)
 hudEl.addEventListener('change',()=>{
   hudIdentityKey=null;
   hudAIAnalysis=null;
+  hudAnalysisPromise=null;
   const file=hudEl.files?.[0];
   const meta=$('#hudMeta');
   if(file){
-    if(!file.type.startsWith('image/')){hudStatus.textContent='Sirf image screenshot upload karo.';hudPreview.classList.remove('show');return;}
+    if(!String(file.type||'').startsWith('image/')){
+      hudPreview.removeAttribute('src');
+      hudPreview.classList.remove('show');
+      if(meta)meta.textContent='Invalid file — image required';
+      hudStatus.textContent='Sirf image screenshot upload karo. Purana preview clear kar diya gaya hai.';
+      return;
+    }
     const url=URL.createObjectURL(file);
     hudPreview.onload=()=>{
       URL.revokeObjectURL(url);
@@ -1546,10 +1553,10 @@ hudEl.addEventListener('change',()=>{
       const orientation=h>w?'Portrait':'Landscape';
       hudPreview.classList.add('show');
       if(meta) meta.innerHTML=`<span>✓ Preview visible</span><span>${w} × ${h}px</span><span>${orientation}</span><span>${esc(file.name).slice(0,42)}</span>`;
-      hudStatus.innerHTML='<span class="ok">✓ HUD screenshot visible. AI analysis start ho raha hai; layout will be used as the highest-priority tuning signal.</span>';
+      hudStatus.innerHTML='<span class="ok">✓ HUD screenshot visible. AI analysis start ho raha hai.</span>';
       startHUDAnalysis(file).finally(()=>invalidateGeneratedResult('HUD Screenshot analyzed'));
     };
-    hudPreview.onerror=()=>{hudStatus.textContent='HUD screenshot preview load nahi ho saka.';hudPreview.classList.remove('show');};
+    hudPreview.onerror=()=>{URL.revokeObjectURL(url);hudStatus.textContent='HUD screenshot preview load nahi ho saka.';hudPreview.classList.remove('show');hudPreview.removeAttribute('src');if(meta)meta.textContent='Image preview failed';};
     hudPreview.src=url;
   } else {
     hudPreview.removeAttribute('src');
