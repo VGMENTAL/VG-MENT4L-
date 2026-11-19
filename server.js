@@ -42,6 +42,28 @@ const OFFICIAL_OB_URLS = {
 
 const DEVICE_RESEARCH_STORE = path.join(DATA, 'device-research-cache.json');
 const DEVICE_RESEARCH_CACHE = {
+  'vivo t3x 5g': {
+    canonical:'vivo T3x 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 6 Gen 1',gpu:'Adreno 710',
+    ram:'4 GB / 6 GB / 8 GB',display:'6.72-inch LCD · 2408 × 1080 (FHD+)',resolution:'2408 × 1080',
+    refreshRate:'120 Hz',touchSampling:'Not officially specified',touchResponse:'Capacitive multi-touch',
+    os:'Funtouch OS 14 / Android 14',gaming:'Official device specifications only; gaming-specific performance not inferred',
+    storage:'128 GB',battery:'6000 mAh (typical)',charging:'44 W FlashCharge',network:'5G',
+    source:'https://www.vivo.com/in/products/param/t3x-5g?id=590',
+    sources:['https://www.vivo.com/in/products/t3x-5g','https://www.vivo.com/in/products/param/t3x-5g?id=590'],
+    sourceType:'official-spec-cache',sourceLabel:'Official vivo specifications',match:'exact',confidence:'high',query:'vivo T3x 5G'
+  },
+  'vivo t3x': {
+    canonical:'vivo T3x 5G',brand:'vivo',platform:'Android',variant:'5G',
+    chipset:'Qualcomm Snapdragon 6 Gen 1',gpu:'Adreno 710',
+    ram:'4 GB / 6 GB / 8 GB',display:'6.72-inch LCD · 2408 × 1080 (FHD+)',resolution:'2408 × 1080',
+    refreshRate:'120 Hz',touchSampling:'Not officially specified',touchResponse:'Capacitive multi-touch',
+    os:'Funtouch OS 14 / Android 14',gaming:'Official device specifications only; gaming-specific performance not inferred',
+    storage:'128 GB',battery:'6000 mAh (typical)',charging:'44 W FlashCharge',network:'5G',
+    source:'https://www.vivo.com/in/products/param/t3x-5g?id=590',
+    sources:['https://www.vivo.com/in/products/t3x-5g','https://www.vivo.com/in/products/param/t3x-5g?id=590'],
+    sourceType:'official-spec-cache',sourceLabel:'Official vivo specifications',match:'exact',confidence:'high',query:'vivo T3x 5G'
+  },
   'poco m7 5g': {
     canonical:'POCO M7 5G',brand:'POCO',platform:'Android',variant:'5G',
     chipset:'Qualcomm Snapdragon 4 Gen 2',gpu:'Adreno 613',
