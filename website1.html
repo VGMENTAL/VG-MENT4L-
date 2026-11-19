@@ -243,17 +243,35 @@ gunSlots.forEach(sel=>sel.addEventListener('change',()=>{const vals=gunSlots.map
 function hudProfile(){const f=hudEl.files?.[0]; if(!f) return {uploaded:false,desc:'No HUD screenshot uploaded.',ai:null}; const w=hudPreview.naturalWidth||0,h=hudPreview.naturalHeight||0; let desc='HUD screenshot uploaded; AI layout analysis enabled.'; if(w&&h){if(h>w) desc+=' Portrait layout detected; vertical drag/spacing will be emphasized.'; else desc+=' Landscape layout detected; horizontal tracking/spacing will be emphasized.'} return {uploaded:true,width:w,height:h,desc,ai:hudAIAnalysis};}
 function resizeHudForAI(file,maxSide=1280){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));const w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);canvas.toBlob(blob=>{if(!blob)return reject(new Error('HUD image compression failed'));const fr=new FileReader();fr.onload=()=>resolve({dataUrl:String(fr.result||''),width:w,height:h});fr.onerror=reject;fr.readAsDataURL(blob);},'image/jpeg',0.84)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('HUD image could not be read'))};img.src=url;});}
 async function analyzeHUDWithAI(file){
+  if(!file||!String(file.type||'').startsWith('image/'))throw new Error('HUD ke liye valid image upload karo.');
+  if(file.size>20*1024*1024)throw new Error('HUD image 20 MB se badi hai. Smaller screenshot upload karo.');
   const packed=await resizeHudForAI(file,1280);
-  const hudKey=await getCanonicalHUDIdentity();
-  const fingerprint=getHUDFingerprint();
-  const r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,fingerprint,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value})});
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error(j.error||'HUD AI analysis failed');
-  hudIdentityKey=String(j.hudKey||hudKey);
-  return j.analysis||null;
+  const hudKey=await getCanonicalHUDIdentity(),fingerprint=getHUDFingerprint();
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),60000);
+  let r,j;
+  try{
+    r=await fetch('/api/hud-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData:packed.dataUrl,width:packed.width,height:packed.height,hudKey,fingerprint,device:deviceEl.value.trim(),playerMode:styleEl.value,playerStyle:playerStyleEl.value,mode:modeEl.value,fingers:fingersEl.value}),signal:controller.signal});
+    j=await r.json().catch(()=>({}));
+  }catch(err){if(err.name==='AbortError')throw new Error('HUD AI analysis timeout (60 seconds). Retry karo.');throw err}
+  finally{clearTimeout(timeout)}
+  if(!r.ok)throw new Error(j.error||'HUD AI analysis failed');
+  hudIdentityKey=String(j.hudKey||hudKey);return j.analysis||null;
 }
-async function startHUDAnalysis(file){if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}hudStatus.innerHTML='<span class="warning"><span class="generate-spin"></span> HUD AI server analysis chal raha hai…</span>';hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{hudAIAnalysis=a;hudStatus.innerHTML='<span class="ok">✓ HUD AI analysis complete. Fire/joystick/scope layout, control density and drag geometry are now being used heavily.</span>';return a;}).catch(e=>{hudAIAnalysis=null;hudStatus.innerHTML='<span class="warning">⚠ HUD AI response time par complete nahi hua. Safe HUD geometry fallback use kiya jayega.</span>';return null;});return hudAnalysisPromise;}
-
+function startHUDAnalysis(file){
+  if(!file){hudAIAnalysis=null;hudAnalysisPromise=null;return null;}
+  hudStatus.innerHTML='<span class="warning"><span class="generate-spin"></span> HUD image analysis chal raha hai…</span>';
+  const selected=file;
+  hudAnalysisPromise=analyzeHUDWithAI(file).then(a=>{
+    if(hudEl.files?.[0]!==selected)return null;
+    hudAIAnalysis=a;
+    hudStatus.innerHTML=a?'<span class="ok">✓ HUD analysis response received. Uncertain detections are not treated as confirmed.</span>':'<span class="warning">HUD analysis returned no usable findings. Optional input fallback rahega.</span>';
+    return a;
+  }).catch(e=>{
+    if(hudEl.files?.[0]===selected){hudAIAnalysis=null;hudIdentityKey=null;hudStatus.innerHTML='<span class="warning">⚠ HUD analysis unavailable: '+esc(e.message||e)+'. Upload retry kar sakte ho.</span>';}
+    return null;
+  });
+  return hudAnalysisPromise;
+}
 const STYLE_PROFILES={
   "One-Tap / Drag Headshot": {g:10,r:14,x2:10,x4:7,sn:2,fl:8,desc:"Higher General/Red Dot response for faster upward drag and one-tap correction; scoped values stay controlled to reduce overshoot."},
   "Aggressive Drag": {g:16,r:18,x2:14,x4:10,sn:3,fl:12,desc:"Fast camera movement and strong upward drag response. More responsive, but requires a lighter finger."},
@@ -1199,9 +1217,10 @@ async function hashGameplayFile(file){
 async function extractGameplayEvidenceFrames(file){
   const meta=await new Promise((resolve,reject)=>{
     const v=document.createElement('video');v.preload='metadata';v.muted=true;
-    const u=URL.createObjectURL(file);
-    v.onloadedmetadata=()=>{const x={duration:v.duration,w:v.videoWidth,h:v.videoHeight};URL.revokeObjectURL(u);resolve(x)};
-    v.onerror=()=>{URL.revokeObjectURL(u);reject(new Error('Gameplay video read failed. MP4/H.264 video try karo.'))};
+    const u=URL.createObjectURL(file);let timer=setTimeout(()=>{cleanup();reject(new Error('Video metadata timeout. Try another clip.'))},15000);
+    const cleanup=()=>{clearTimeout(timer);v.onloadedmetadata=null;v.onerror=null;URL.revokeObjectURL(u)};
+    v.onloadedmetadata=()=>{const x={duration:v.duration,w:v.videoWidth,h:v.videoHeight};cleanup();if(!Number.isFinite(x.duration)||x.duration<=0||!x.w||!x.h)reject(new Error('Video metadata is incomplete or invalid.'));else resolve(x)};
+    v.onerror=()=>{cleanup();reject(new Error('Gameplay video read failed. Try a supported MP4 video.'))};
     v.src=u;
   });
   const v=document.createElement('video');v.preload='auto';v.muted=true;v.playsInline=true;
@@ -1511,24 +1530,26 @@ deviceEl.addEventListener('input',()=>invalidateGeneratedResult('Device changed'
 allGunsEl.addEventListener('change',()=>invalidateGeneratedResult('Focus Guns changed'));
 gunSlots.forEach(sel=>sel.addEventListener('change',()=>invalidateGeneratedResult('Focus Gun changed')));
 async function startGameplayEvidenceAnalysis(){
-  const input=$('#gameplayVideo'), status=$('#gameplayStatus'), btn=$('#analyzeGameplayBtn');
-  const f=input?.files?.[0];
+  const input=$('#gameplayVideo'),status=$('#gameplayStatus'),btn=$('#analyzeGameplayBtn'),f=input?.files?.[0];
   gameplayAIAnalysis=null;gameplayIdentityKey=null;gameplayAnalysisPromise=null;
   if(!f){if(status)status.innerHTML='<span class="danger">Pehle gameplay video select karo.</span>';return}
   if(!String(f.type||'').startsWith('video/')){if(status)status.innerHTML='<span class="danger">Valid video file select karo.</span>';return}
+  if(f.size>120*1024*1024){if(status)status.innerHTML='<span class="danger">Video 120 MB se badi hai. Smaller/shorter clip try karo.</span>';return}
   if(btn){btn.disabled=true;btn.textContent='⏳ ANALYSING GAMEPLAY...'}
   if(status)status.textContent='Video selected: '+f.name+' — timeline analysis start ho raha hai…';
   try{
-    gameplayAnalysisPromise=(async()=>{gameplayIdentityKey=await hashGameplayFile(f);return analyzeGameplayForWebsite1()})();
-    await gameplayAnalysisPromise;
-    if(status)status.innerHTML='<span class="ok">✓ Gameplay analysis complete.</span>';
+    gameplayAnalysisPromise=(async()=>{const key=await hashGameplayFile(f);if(input.files?.[0]!==f)throw new Error('Video changed during analysis. Select it again and retry.');gameplayIdentityKey=key;return analyzeGameplayForWebsite1()})();
+    const result=await gameplayAnalysisPromise;
+    if(input.files?.[0]!==f)throw new Error('Selected video changed during analysis. Please retry.');
+    if(!result)throw new Error('No usable analysis response received.');
+    if(status)status.innerHTML='<span class="ok">✓ Video processing completed. Analysis response received.</span>';
     invalidateGeneratedResult('Gameplay evidence ready');
   }catch(error){
     console.error('Gameplay evidence analysis failed:',error);
     gameplayAIAnalysis=null;gameplayIdentityKey=null;gameplayAnalysisPromise=null;
     if(status)status.innerHTML='<span class="danger">Gameplay analysis failed: '+esc(error?.message||'Unexpected error')+'. Video select karke retry kar sakte ho.</span>';
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='🎮 ANALYZE GAMEPLAY VIDEO'}
+    if(btn){btn.disabled=false;btn.textContent='🚀 ANALYZE GAMEPLAY + BOOSTER'}
   }
 }
 $('#gameplayVideo').addEventListener('change',()=>{
