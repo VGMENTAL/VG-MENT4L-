@@ -190,10 +190,24 @@ function profileInfo(p,d){
 }
 async function loadDevice(name,target){
  if(!name){target.className='status warn';target.textContent='Device name/profile mein device nahi mila.';return null}
- try{const r=await fetch(api('/api/device-research?device='+encodeURIComponent(name)),{cache:'no-store'}),j=await r.json();
-  if(j.verified){target.className='status ok';target.innerHTML='<b>Verified device information</b>'+infoBoxes(j.device);return j.device}
-  target.className='status warn';target.textContent='Exact device backend verified catalog mein nahi mila; specs invent nahi kiye jayenge.';return null;
- }catch(e){target.className='status warn';target.textContent='Device research backend unavailable.';return null}
+ target.className='status';target.textContent='Device specifications: official/third-party sources, model variant aur saved research cache check ho rahe hain…';
+ try{
+  const r=await fetch(api('/api/device-research?device='+encodeURIComponent(name)),{cache:'no-store'});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.detail||j.error||('HTTP '+r.status));
+  if(j.device){
+   target.className=j.verified?'status ok':'status warn';
+   target.innerHTML='<b>'+(j.verified?'Device research complete':'Partial device research')+'</b><p class="mut">'+esc(j.notice||'')+'</p>'+infoBoxes(j.device)+(j.device.source?'<p><a href="'+esc(j.device.source)+'" target="_blank" rel="noopener">Primary/source link</a></p>':'');
+   return j.device;
+  }
+  target.className='status warn';
+  target.innerHTML='<b>Device research inconclusive</b><p>'+esc(j.notice||'No matching research was returned.')+'</p><p class="mut">Exact model + variant (4G/5G, RAM variant if relevant) likho aur phir retry karo. Device specs guess karke nahi dikhaye jayenge.</p>';
+  return null;
+ }catch(e){
+  target.className='status warn';
+  target.innerHTML='<b>Device research request failed</b><p>'+esc(e.message||String(e))+'</p><p class="mut">Backend wake-up, network, ya research provider error ho sakta hai. Retry button dobara dabao.</p>';
+  return null;
+ }
 }
 $('load').onclick=async()=>{
  if(working)return;const c=$('code').value.toUpperCase().trim();
