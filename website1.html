@@ -1513,10 +1513,18 @@ async function startGameplayEvidenceAnalysis(){
   if(!String(f.type||'').startsWith('video/')){if(status)status.innerHTML='<span class="danger">Valid video file select karo.</span>';return}
   if(btn){btn.disabled=true;btn.textContent='⏳ ANALYSING GAMEPLAY...'}
   if(status)status.textContent='Video selected: '+f.name+' — timeline analysis start ho raha hai…';
-  gameplayAnalysisPromise=(async()=>{gameplayIdentityKey=await hashGameplayFile(f);return analyzeGameplayForWebsite1()})();
-  await gameplayAnalysisPromise;
-  if(btn){btn.disabled=false;btn.textContent='🎮 ANALYZE GAMEPLAY VIDEO'}
-  invalidateGeneratedResult('Gameplay evidence ready');
+  try{
+    gameplayAnalysisPromise=(async()=>{gameplayIdentityKey=await hashGameplayFile(f);return analyzeGameplayForWebsite1()})();
+    await gameplayAnalysisPromise;
+    if(status)status.innerHTML='<span class="ok">✓ Gameplay analysis complete.</span>';
+    invalidateGeneratedResult('Gameplay evidence ready');
+  }catch(error){
+    console.error('Gameplay evidence analysis failed:',error);
+    gameplayAIAnalysis=null;gameplayIdentityKey=null;gameplayAnalysisPromise=null;
+    if(status)status.innerHTML='<span class="danger">Gameplay analysis failed: '+esc(error?.message||'Unexpected error')+'. Video select karke retry kar sakte ho.</span>';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🎮 ANALYZE GAMEPLAY VIDEO'}
+  }
 }
 $('#gameplayVideo').addEventListener('change',()=>{
   const f=$('#gameplayVideo').files?.[0],status=$('#gameplayStatus');
