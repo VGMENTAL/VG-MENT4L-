@@ -40,6 +40,7 @@ const OFFICIAL_OB_URLS = {
   OB55: 'https://ff.garena.com/en/article/1712/'
 };
 
+const DEVICE_RESEARCH_STORE = path.join(DATA, 'device-research-cache.json');
 const DEVICE_RESEARCH_CACHE = {
   'poco m7 5g': {
     canonical:'POCO M7 5G',brand:'POCO',platform:'Android',variant:'5G',
@@ -1641,7 +1642,8 @@ const server = http.createServer(async (req, res) => {
         height:u.searchParams.get('height')||''
       };
       const nq=normalizeDevice(q);
-      const cached=DEVICE_RESEARCH_CACHE[nq];
+      let persistentCache={}; try{persistentCache=readJson(DEVICE_RESEARCH_STORE)||{};}catch{};
+      const cached=DEVICE_RESEARCH_CACHE[nq]||persistentCache[nq];
       if(cached){ const device=deviceKnowledgeEnrich({...cached,query:q},q); return json(res,200,{ok:true,device,verified:true,researched:true,query:q,notice:'Verified device specification profile loaded and completed by device intelligence engine.',sourceType:device.sourceType}); }
 
       const hit=lookupDevice(q);
@@ -1704,12 +1706,18 @@ const server = http.createServer(async (req, res) => {
         merged.sourceType='multi-source-research';
         merged.match='research';
         merged.query=q;
+        // Persist successful cross-source device research for future lookups.
+        try{
+          persistentCache[nq]=merged;
+          writeJson(DEVICE_RESEARCH_STORE,persistentCache);
+          DEVICE_RESEARCH_CACHE[nq]=merged;
+        }catch(cacheError){console.warn('Device research cache write failed:',cacheError.message);}
         merged.confidence=compatible.some(d=>d.confidence==='high')?'high':(compatible.length>1?'medium':(merged.confidence||'medium'));
         merged.notes='Fields are merged only from sources matching the requested model/variant. Missing technical fields may be completed only from deterministic chipset/model knowledge; unknown facts are never invented.';
         const enriched=deviceKnowledgeEnrich(merged,q);
         return json(res,200,{ok:true,device:enriched,verified:true,researched:true,query:q,notice:'Device information collected and cross-checked from multiple specification sources.',sourceType:merged.sourceType});
       }
-      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'No reliable specification source returned a usable exact match. No guessed hardware values were used.'});
+      return json(res,200,{ok:true,device:null,verified:false,query:q,notice:'Device research sources could not confirm this exact model. Try adding the full model name/4G/5G variant or retry later; no guessed specifications were shown.'});
     }
     if (req.method === 'GET' && u.pathname.startsWith('/api/hud-analysis/')) {
       const hudKey=decodeURIComponent(u.pathname.slice('/api/hud-analysis/'.length));
