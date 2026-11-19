@@ -1477,8 +1477,19 @@ btn.addEventListener('click',async()=>{
   if(!device){statusEl.innerHTML='<span class="danger">Pehle device name dalo.</span>';deviceEl.focus();return}
   const guns=selectedGuns(), all=allGunsEl.checked;
   if(!all && !guns.length){allGunsEl.checked=true;gunSlots.forEach(x=>{x.value='';x.disabled=true});}
-  statusEl.textContent='Generation started — 100% completion tak wait karo…';
-  await runGenerateProgress(device);
+  statusEl.textContent='Generation started — processing inputs…';
+  try{
+    await runGenerateProgress(device);
+  }catch(error){
+    console.error('VG MENT4L Website 1 generation failed:',error);
+    generating=false;
+    btn.disabled=false;
+    progressBox.classList.remove('show');
+    statusEl.innerHTML='<span class="danger">Generation could not finish: '+esc(error?.message||'Unexpected error')+'. Inputs safe hain; retry karo. Agar error repeat ho, device research/HUD upload temporarily skip karke generate karo.</span>';
+    progressStage.textContent='Generation failed';
+    progressBar.style.width='0%';
+    progressPct.textContent='0%';
+  }
 });
 styleEl.addEventListener('change',()=>invalidateGeneratedResult('Player Mode changed'));
 playerStyleEl.addEventListener('change',()=>invalidateGeneratedResult('Player Style changed'));
